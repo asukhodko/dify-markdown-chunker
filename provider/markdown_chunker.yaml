@@ -1,0 +1,22 @@
+identity:
+  author: asukhodko
+  name: markdown_chunker
+  label:
+    en_US: Advanced Markdown Chunker
+    zh_Hans: 高级 Markdown 分块器
+    ru_RU: Продвинутый Markdown чанкер
+  description:
+    en_US: Advanced Markdown chunking with structural awareness for better RAG performance
+    zh_Hans: 具有结构感知的高级 Markdown 分块，提升 RAG 性能
+    ru_RU: Продвинутое чанкование Markdown с учётом структуры для улучшения RAG
+  icon: icon.svg
+  tags:
+    - productivity
+    - business
+
+tools:
+  - tools/markdown_chunk_tool.yaml
+
+extra:
+  python:
+    source: provider/markdown_chunker.py

@@ -1,0 +1,28 @@
+[flake8]
+# Maximum line length (Black compatibility)
+max-line-length = 88
+
+# E203: whitespace before ':' - conflicts with Black formatter in slice operations
+# Black formats slices as `x[1 : 2]` which flake8 flags, but this is intentional
+extend-ignore = E203
+
+# Maximum cyclomatic complexity threshold
+# Functions exceeding this should be refactored or documented with noqa
+max-complexity = 15
+
+# Directories to exclude from linting
+exclude = 
+    .git,
+    __pycache__,
+    venv,
+    .pytest_cache,
+    .hypothesis,
+    *.egg-info,
+    build,
+    dist
+
+# Show source code for each error
+show-source = True
+
+# Count the number of occurrences of each error/warning code
+count = True

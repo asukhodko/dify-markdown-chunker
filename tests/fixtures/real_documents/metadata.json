@@ -1,0 +1,158 @@
+{
+  "documents": [
+    {
+      "filename": "api_documentation.md",
+      "type": "api_docs",
+      "description": "REST API documentation with code examples",
+      "size_kb": 10,
+      "expected_strategy": "code",
+      "characteristics": {
+        "code_heavy": true,
+        "has_tables": true,
+        "has_code_blocks": true,
+        "code_blocks_count": 15,
+        "headers_count": 20,
+        "lists_count": 3,
+        "tables_count": 1
+      },
+      "expected_chunks": {
+        "min": 15,
+        "max": 30
+      }
+    },
+    {
+      "filename": "tutorial.md",
+      "type": "tutorial",
+      "description": "Step-by-step tutorial with examples",
+      "size_kb": 8,
+      "expected_strategy": "structural",
+      "characteristics": {
+        "code_heavy": false,
+        "has_tables": false,
+        "has_code_blocks": true,
+        "code_blocks_count": 12,
+        "headers_count": 15,
+        "lists_count": 5,
+        "tables_count": 0
+      },
+      "expected_chunks": {
+        "min": 10,
+        "max": 20
+      }
+    },
+    {
+      "filename": "readme.md",
+      "type": "readme",
+      "description": "Project README with badges and examples",
+      "size_kb": 5,
+      "expected_strategy": "structural",
+      "characteristics": {
+        "code_heavy": false,
+        "has_tables": true,
+        "has_code_blocks": true,
+        "code_blocks_count": 8,
+        "headers_count": 12,
+        "lists_count": 4,
+        "tables_count": 1
+      },
+      "expected_chunks": {
+        "min": 8,
+        "max": 15
+      }
+    },
+    {
+      "filename": "blog_post.md",
+      "type": "blog",
+      "description": "Technical blog post with code and analysis",
+      "size_kb": 7,
+      "expected_strategy": "mixed",
+      "characteristics": {
+        "code_heavy": false,
+        "has_tables": true,
+        "has_code_blocks": true,
+        "code_blocks_count": 6,
+        "headers_count": 10,
+        "lists_count": 3,
+        "tables_count": 1
+      },
+      "expected_chunks": {
+        "min": 10,
+        "max": 18
+      }
+    },
+    {
+      "filename": "technical_spec.md",
+      "type": "specification",
+      "description": "Comprehensive technical specification",
+      "size_kb": 20,
+      "expected_strategy": "structural",
+      "characteristics": {
+        "code_heavy": false,
+        "has_tables": true,
+        "has_code_blocks": true,
+        "code_blocks_count": 20,
+        "headers_count": 50,
+        "lists_count": 10,
+        "tables_count": 5
+      },
+      "expected_chunks": {
+        "min": 30,
+        "max": 60
+      }
+    }
+  ],
+  "test_scenarios": [
+    {
+      "name": "content_preservation",
+      "description": "Verify no content is lost during chunking",
+      "applies_to": "all"
+    },
+    {
+      "name": "line_number_accuracy",
+      "description": "Verify line numbers are correct",
+      "applies_to": "all"
+    },
+    {
+      "name": "strategy_selection",
+      "description": "Verify correct strategy is selected",
+      "applies_to": "all"
+    },
+    {
+      "name": "chunk_size_limits",
+      "description": "Verify chunks respect size limits",
+      "applies_to": "all"
+    },
+    {
+      "name": "metadata_validity",
+      "description": "Verify chunk metadata is valid",
+      "applies_to": "all"
+    },
+    {
+      "name": "code_block_preservation",
+      "description": "Verify code blocks are not split",
+      "applies_to": ["api_documentation.md", "tutorial.md", "technical_spec.md"]
+    },
+    {
+      "name": "table_preservation",
+      "description": "Verify tables are not split",
+      "applies_to": ["api_documentation.md", "blog_post.md", "technical_spec.md"]
+    }
+  ],
+  "performance_targets": {
+    "api_documentation.md": {
+      "max_time_ms": 200
+    },
+    "tutorial.md": {
+      "max_time_ms": 150
+    },
+    "readme.md": {
+      "max_time_ms": 100
+    },
+    "blog_post.md": {
+      "max_time_ms": 150
+    },
+    "technical_spec.md": {
+      "max_time_ms": 400
+    }
+  }
+}

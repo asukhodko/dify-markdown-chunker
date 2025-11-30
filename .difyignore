@@ -1,0 +1,54 @@
+# Dify Plugin Package Ignore File
+# Files and directories listed here will be excluded from the .difypkg package
+
+# Virtual environment (MUST exclude - can be 100+ MB)
+venv/
+.venv/
+env/
+
+# Python cache (MUST exclude)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Test files
+tests/
+*.test.py
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Documentation (keep only README.md)
+# все .md игнорируем
+*.md
+# кроме README.md в корне
+!README.md
+
+*.backup
+*.bak
+
+# Development scripts
+validate_*.py
+package.sh
+package_official.sh
+create_package.py
+
+# Development config
+pytest.ini
+Makefile
+.env.example
+
+# Build artifacts
+*.difypkg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+.hypothesis/
+
+.git
+.github

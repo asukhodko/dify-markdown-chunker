@@ -1,0 +1,127 @@
+identity:
+  name: markdown_chunk_tool
+  author: asukhodko
+  label:
+    en_US: Markdown Chunker
+    zh_Hans: Markdown 分块器
+    ru_RU: Markdown чанкер
+  icon: icon.svg
+
+description:
+  human:
+    en_US: Advanced Markdown chunking with structural awareness for better RAG performance. Intelligently splits documents while preserving context and structure.
+    zh_Hans: 具有结构感知的高级 Markdown 分块，提升 RAG 性能。智能分割文档，同时保留上下文和结构。
+    ru_RU: Продвинутое чанкование Markdown с учётом структуры для улучшения RAG. Интеллектуально разделяет документы, сохраняя контекст и структуру.
+  llm: |
+    A tool for chunking Markdown documents with structural awareness.
+    
+    This tool analyzes Markdown content and intelligently splits it into chunks while preserving document structure,
+    maintaining semantic context, supporting configurable chunk size and overlap, and providing rich metadata.
+    
+    Use this tool when you need to process large Markdown documents for RAG systems.
+
+parameters:
+  - name: input_text
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Input Text
+      zh_Hans: 输入文本
+      ru_RU: Входной текст
+    human_description:
+      en_US: The Markdown text content to be chunked
+      zh_Hans: 要分块的 Markdown 文本内容
+      ru_RU: Текстовое содержимое Markdown для разделения на части
+    llm_description: The Markdown document text that needs to be split into chunks for processing
+
+  - name: max_chunk_size
+    type: number
+    required: false
+    default: 1000
+    form: form
+    label:
+      en_US: Max Chunk Size
+      zh_Hans: 最大块大小
+      ru_RU: Максимальный размер части
+    human_description:
+      en_US: "Maximum size of each chunk in characters (default: 1000)"
+      zh_Hans: "每个块的最大字符数（默认：1000）"
+      ru_RU: "Максимальный размер каждой части в символах (по умолчанию: 1000)"
+    llm_description: Maximum number of characters allowed in each chunk. Larger values create bigger chunks with more context.
+
+  - name: chunk_overlap
+    type: number
+    required: false
+    default: 100
+    form: form
+    label:
+      en_US: Chunk Overlap
+      zh_Hans: 块重叠
+      ru_RU: Перекрытие частей
+    human_description:
+      en_US: "Number of characters to overlap between consecutive chunks (default: 100)"
+      zh_Hans: "连续块之间重叠的字符数（默认：100）"
+      ru_RU: "Количество символов для перекрытия между последовательными частями (по умолчанию: 100)"
+    llm_description: Number of characters that overlap between consecutive chunks to maintain context continuity.
+
+  - name: strategy
+    type: select
+    required: false
+    default: auto
+    form: form
+    label:
+      en_US: Chunking Strategy
+      zh_Hans: 分块策略
+      ru_RU: Стратегия разделения
+    human_description:
+      en_US: "Strategy for chunking the document (default: auto - automatically detect best strategy)"
+      zh_Hans: "文档分块策略（默认：auto - 自动检测最佳策略）"
+      ru_RU: "Стратегия разделения документа (по умолчанию: auto - автоматически определить лучшую стратегию)"
+    llm_description: The chunking strategy to use. Auto automatically selects the best strategy based on content analysis.
+    options:
+      - value: auto
+        label:
+          en_US: Auto (detect best strategy)
+          zh_Hans: 自动（检测最佳策略）
+          ru_RU: Авто (определить лучшую стратегию)
+      - value: code
+        label:
+          en_US: Code-focused
+          zh_Hans: 以代码为中心
+          ru_RU: Ориентированная на код
+      - value: structural
+        label:
+          en_US: Structural (headers)
+          zh_Hans: 结构化（标题）
+          ru_RU: Структурная (заголовки)
+      - value: mixed
+        label:
+          en_US: Mixed content
+          zh_Hans: 混合内容
+          ru_RU: Смешанный контент
+
+  - name: include_metadata
+    type: boolean
+    required: false
+    default: true
+    form: form
+    label:
+      en_US: Include Metadata
+      zh_Hans: 包含元数据
+      ru_RU: Включить метаданные
+    human_description:
+      en_US: "Include structural metadata with each chunk (default: true)"
+      zh_Hans: "在每个块中包含结构元数据（默认：true）"
+      ru_RU: "Включить структурные метаданные в каждую часть (по умолчанию: true)"
+    llm_description: Whether to include metadata about chunk structure, type, strategy used, line numbers, and complexity score.
+
+output_schema:
+  type: object
+  properties:
+    result:
+      $ref: "https://dify.ai/schemas/v1/general_structure.json"
+
+extra:
+  python:
+    source: tools/markdown_chunk_tool.py

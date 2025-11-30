@@ -1,0 +1,47 @@
+version: 2.0.0
+type: plugin
+author: asukhodko
+name: markdown_chunker
+
+label:
+  en_US: Advanced Markdown Chunker
+  zh_Hans: 高级 Markdown 分块器
+  ru_RU: Продвинутый Markdown чанкер
+
+description:
+  en_US: Advanced Markdown chunking with structural awareness for better RAG performance
+  zh_Hans: 具有结构感知的高级 Markdown 分块，提升 RAG 性能
+  ru_RU: Продвинутое чанкование Markdown с учётом структуры для улучшения RAG
+
+icon: icon.svg
+
+resource:
+  memory: 536870912  # 512MB in bytes
+
+permission:
+  tool:
+    enabled: false
+  model:
+    enabled: false
+
+plugins:
+  tools:
+    - provider/markdown_chunker.yaml
+
+meta:
+  version: 2.0.0
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+
+minimum_dify_version: 1.9.0
+
+tags:
+  - productivity
+  - business
+
+created_at: 2025-11-22T00:00:00Z
