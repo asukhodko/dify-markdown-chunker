@@ -80,6 +80,52 @@ class MarkdownChunkTool(Tool):
 
         return filtered
 
+    def _extract_chunks_list(self, result: Any) -> list:
+        """Extract list of chunks from result, regardless of format.
+        
+        Handles both dict format (with 'chunks' key) and direct list format.
+        
+        Args:
+            result: Result from chunker.chunk(), either dict or list
+            
+        Returns:
+            List of chunk objects/dicts
+        """
+        if isinstance(result, dict) and 'chunks' in result:
+            return result['chunks']
+        elif isinstance(result, list):
+            return result
+        else:
+            return []
+
+    def _format_chunk_output(self, chunk: Any, include_metadata: bool) -> str:
+        """Format single chunk for output.
+        
+        Args:
+            chunk: Chunk object or dict
+            include_metadata: Whether to include metadata in output
+            
+        Returns:
+            Formatted chunk string
+        """
+        import json
+        
+        # Extract content and metadata from chunk (handle dict or object)
+        if isinstance(chunk, dict):
+            content = chunk.get('content', '')
+            metadata = chunk.get('metadata', {})
+        else:
+            content = getattr(chunk, 'content', '')
+            metadata = getattr(chunk, 'metadata', {})
+        
+        # Format based on metadata flag
+        if include_metadata and metadata:
+            filtered_metadata = self._filter_metadata_for_rag(metadata)
+            metadata_json = json.dumps(filtered_metadata, ensure_ascii=False, indent=2)
+            return f"<metadata>\n{metadata_json}\n</metadata>\n{content}"
+        else:
+            return content
+
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
@@ -129,42 +175,18 @@ class MarkdownChunkTool(Tool):
                 return_format="dict"
             )
 
-            # 5. Format results for Dify
-            # Dify UI expects result to be an array of strings, not objects
-            # Format: "<metadata>\n{json}\n</metadata>\n<content>"
-            import json
-
-            # If include_analysis=True, result is a dict with 'chunks' key
-            # If include_analysis=False, result is a list of chunks
-            if include_metadata and isinstance(result, dict):
-                chunks_data=result.get("chunks", [])
-            else:
-                # result is already a list of chunk dicts
-                chunks_data=result if isinstance(result, list) else []
-
-            formatted_result=[]
-            for chunk in chunks_data:
-                if isinstance(chunk, dict):
-                    content=chunk.get("content", "")
-                    metadata=chunk.get("metadata", {}) if include_metadata else {}
-                else:
-                    # If chunk is an object, convert it
-                    content=chunk.content
-                    metadata=chunk.metadata if include_metadata else {}
-
-                # Format as string with embedded metadata
-                if include_metadata and metadata:
-                    # Filter metadata to keep only RAG-useful fields
-                    filtered_metadata=self._filter_metadata_for_rag(metadata)
-
-                    # Serialize metadata to JSON string
-                    metadata_json=json.dumps(filtered_metadata, ensure_ascii=False, indent=2)
-                    chunk_str=f"<metadata>\n{metadata_json}\n</metadata>\n{content}"
-                else:
-                    # No metadata, just content
-                    chunk_str=content
-
-                formatted_result.append(chunk_str)
+            # 5. Format results for Dify using unified formatting logic
+            # Dify UI expects result to be an array of strings
+            # Format: "<metadata>\n{json}\n</metadata>\n{content}" or just "{content}"
+            
+            # Extract chunks list from result (handles both dict and list formats)
+            chunks_list = self._extract_chunks_list(result)
+            
+            # Format each chunk consistently
+            formatted_result = [
+                self._format_chunk_output(chunk, include_metadata)
+                for chunk in chunks_list
+            ]
 
             # 6. Return results as array of strings
             yield self.create_variable_message("result", formatted_result)

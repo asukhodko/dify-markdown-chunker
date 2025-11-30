@@ -52,7 +52,7 @@ This plugin provides production-ready markdown chunking capabilities for Dify wi
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/dify-markdown-chunker.git
+git clone https://github.com/asukhodko/dify-markdown-chunker.git
 cd dify-markdown-chunker
 
 # Create virtual environment

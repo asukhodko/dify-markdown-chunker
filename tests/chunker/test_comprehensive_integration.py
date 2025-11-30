@@ -189,10 +189,14 @@ Final subsection content.""",
             ), f"Test case {i+1}: No processing time recorded"
 
             # For specific cases where we know the expected strategy
-            if test_case["expected_strategy"] in ["list", "structural"]:
+            # Note: list strategy is now excluded in auto mode for safety (Fix 2)
+            if test_case["expected_strategy"] == "structural":
                 assert (
                     result.strategy_used == test_case["expected_strategy"]
                 ), f"Test case {i+1}: Expected {test_case['expected_strategy']}, got {result.strategy_used}"
+            elif test_case["expected_strategy"] == "list":
+                # List strategy should NOT be selected in auto mode (Fix 2)
+                assert result.strategy_used != "list", f"Test case {i+1}: List strategy should not be selected in auto mode"
 
     def test_performance_benchmarks_integration(self):
         """Test performance benchmarks with complete pipeline."""

@@ -223,3 +223,112 @@ class TestCareerMatrixIntegration:
         # Verify no empty chunks
         for chunk in chunks:
             assert chunk.content.strip(), "Produced empty chunk"
+
+    # Phase 1 Fix 4: Integration tests for the blocker bugs
+
+    def test_auto_strategy_no_content_loss(self, career_matrix_content: str):
+        """Test that auto strategy doesn't lose content (Fix 2 + Fix 3).
+        
+        This test verifies:
+        - Auto mode doesn't select list strategy (Fix 2)
+        - Content completeness validation passes (Fix 3)
+        - All major sections preserved
+        """
+        config = ChunkConfig(
+            max_chunk_size=1000,
+            overlap_size=200,
+            enable_content_validation=True  # Enable validation
+        )
+        chunker = MarkdownChunker(config)
+        
+        # Should not raise ChunkingError from validation
+        result = chunker.chunk(
+            career_matrix_content,
+            include_analysis=True,
+            return_format='dict'
+        )
+        
+        chunks = result.get('chunks', [])
+        assert len(chunks) > 0, "Should produce chunks"
+        
+        # Verify major headers present (no content loss)
+        # Chunks are dicts when return_format='dict'
+        all_content = '\n'.join(c['content'] if isinstance(c, dict) else c.content for c in chunks)
+        
+        # Check for key sections from career matrix
+        # These should be present if content is complete
+        key_sections = [
+            "# Career Development Matrix",  # Main title
+            "## Engineering Levels",  # Middle level
+            "## Promotion Criteria",  # Middle+ level
+        ]
+        
+        for section in key_sections:
+            assert section in all_content, f"Missing section: {section}"
+        
+        # Verify paragraphs present (not just lists)
+        # This ensures non-list content wasn't lost
+        assert "This document outlines" in all_content, \
+            "Paragraph from Overview section missing - possible content loss"
+
+    def test_metadata_enabled_vs_disabled_consistency(self, career_matrix_content: str):
+        """Test output format consistency (Fix 1).
+        
+        Verifies that both metadata configurations return non-empty arrays
+        with the same number of chunks.
+        """
+        config = ChunkConfig(max_chunk_size=1000)
+        chunker = MarkdownChunker(config)
+        
+        # Chunk with analysis (metadata-like)
+        result_with = chunker.chunk(
+            career_matrix_content,
+            include_analysis=True,
+            return_format='dict'
+        )
+        
+        # Chunk without analysis
+        result_without = chunker.chunk(
+            career_matrix_content,
+            include_analysis=False,
+            return_format='dict'
+        )
+        
+        chunks_with = result_with.get('chunks', [])
+        # When include_analysis=False, result_without might be a list directly
+        if isinstance(result_without, list):
+            chunks_without = result_without
+        else:
+            chunks_without = result_without.get('chunks', [])
+        
+        assert len(chunks_with) > 0, "Should produce chunks with metadata"
+        assert len(chunks_without) > 0, "Should produce chunks without metadata (Fix 1)"
+        assert len(chunks_with) == len(chunks_without), \
+            "Should have same number of chunks regardless of metadata config"
+
+    @pytest.mark.blocker
+    def test_list_strategy_not_selected_in_auto(self, career_matrix_content: str):
+        """Test that auto mode doesn't select list strategy (Fix 2).
+        
+        This is the core fix - list strategy should not be selected for
+        mixed documents in auto mode as it loses non-list content.
+        """
+        config = ChunkConfig(max_chunk_size=1000)
+        chunker = MarkdownChunker(config)
+        
+        result = chunker.chunk(
+            career_matrix_content,
+            include_analysis=True,
+            return_format='dict'
+        )
+        
+        # Verify strategy used is NOT list
+        # When return_format='dict', strategy_used is at top level
+        strategy_used = result.get('strategy_used', '')
+        
+        assert strategy_used != 'list', \
+            f"Auto mode should not select list strategy for mixed documents. Got: {strategy_used}"
+        
+        # Should be structural, code, or another safe strategy
+        assert strategy_used in ['structural', 'code', 'mixed', 'sentences'], \
+            f"Expected safe strategy, got: {strategy_used}"

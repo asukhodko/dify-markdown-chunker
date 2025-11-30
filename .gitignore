@@ -39,3 +39,6 @@ htmlcov/
 .hypothesis/
 
 .kiro
+.qoder/quests/
+
+manual_testing/

@@ -99,7 +99,7 @@ class TestStrategySelector:
         assert selected.name == "medium_priority"
 
     def test_strict_selection_no_applicable(self):
-        """Test strict mode raises error when no strategy can handle."""
+        """Test strict mode uses emergency fallback when no strategy can handle."""
         strategies = [
             MockStrategy("strategy1", 1, can_handle_result=False),
             MockStrategy("strategy2", 2, can_handle_result=False),
@@ -109,8 +109,9 @@ class TestStrategySelector:
         analysis = Mock(spec=ContentAnalysis)
         config = ChunkConfig.default()
 
-        with pytest.raises(StrategySelectionError):
-            selector.select_strategy(analysis, config)
+        # Emergency fallback should activate instead of raising
+        selected = selector.select_strategy(analysis, config)
+        assert selected is not None, "Emergency fallback should select a strategy"
 
     def test_weighted_selection_best_score(self):
         """Test weighted mode selects strategy with best combined score."""

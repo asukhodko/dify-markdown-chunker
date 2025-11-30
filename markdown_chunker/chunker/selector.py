@@ -83,19 +83,41 @@ class StrategySelector:
         Select strategy using strict priority-based selection.
 
         Returns the first strategy (by priority) that can handle the content.
+        
+        Note: List strategy is excluded from auto-selection for safety.
+        It can still be used via explicit strategy override.
         """
         logger.debug("Using strict strategy selection")
+        
+        # FIX 2: Filter out list strategy in auto mode for safety
+        # List strategy can lose non-list content in mixed documents
+        safe_strategies = [
+            s for s in self.strategies 
+            if s.name != "list"
+        ]
+        
+        logger.info("Auto mode: list strategy excluded for safety (mixed-content risk)")
 
-        for strategy in self.strategies:
+        for strategy in safe_strategies:
             if strategy.can_handle(analysis, config):
                 logger.info(
                     f"Selected strategy: {strategy.name} (priority {strategy.priority})"
                 )
                 return strategy
 
-        # No strategy can handle - this should not happen if
-        # SentencesStrategy is included
-        raise StrategySelectionError("No strategy can handle the content")
+        # Fallback to structural strategy if no safe strategy can handle
+        # This should rarely happen since sentences strategy handles everything
+        for strategy in safe_strategies:
+            if strategy.name == "structural":
+                logger.warning("No strategy matched, using structural as fallback")
+                return strategy
+        
+        # Emergency fallback: return first safe strategy
+        if safe_strategies:
+            logger.warning(f"Emergency fallback to: {safe_strategies[0].name}")
+            return safe_strategies[0]
+        
+        raise StrategySelectionError("No safe strategy available")
 
     def _select_weighted(
         self, analysis: ContentAnalysis, config: ChunkConfig
@@ -105,12 +127,23 @@ class StrategySelector:
 
         Evaluates all applicable strategies and selects the one with
         the highest combined score.
+        
+        Note: List strategy is excluded from auto-selection for safety.
+        It can still be used via explicit strategy override.
         """
         logger.debug("Using weighted strategy selection")
+        
+        # FIX 2: Filter out list strategy in auto mode for safety
+        safe_strategies = [
+            s for s in self.strategies 
+            if s.name != "list"
+        ]
+        
+        logger.info("Auto mode: list strategy excluded for safety (mixed-content risk)")
 
         candidates = []
 
-        for strategy in self.strategies:
+        for strategy in safe_strategies:
             if strategy.can_handle(analysis, config):
                 metrics = strategy.get_metrics(analysis, config)
                 candidates.append((strategy, metrics))
@@ -120,7 +153,12 @@ class StrategySelector:
                 )
 
         if not candidates:
-            raise StrategySelectionError("No strategy can handle the content")
+            # Fallback to structural
+            for strategy in safe_strategies:
+                if strategy.name == "structural":
+                    logger.warning("No strategy matched, using structural as fallback")
+                    return strategy
+            raise StrategySelectionError("No safe strategy can handle the content")
 
         # Select strategy with highest final score
         best_strategy, best_metrics = max(candidates, key=lambda x: x[1].final_score)

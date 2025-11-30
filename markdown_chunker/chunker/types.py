@@ -601,6 +601,9 @@ class ChunkConfig:
     enable_fallback: bool = True
     fallback_strategy: str = "sentences"
     max_fallback_level: int = 4
+    
+    # Content validation settings (Phase 1 Fix 3)
+    enable_content_validation: bool = True  # Validate no content loss
 
     # Performance settings
     enable_streaming: bool = False
