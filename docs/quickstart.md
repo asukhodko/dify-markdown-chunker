@@ -1,49 +1,114 @@
-# 🚀 Быстрый старт
+# 🚀 Quick Start
 
-## 📦 Установка
+Get started with Dify Markdown Chunker in 5 minutes.
+
+## 📦 Installation
+
+### As Dify Plugin
+
+1. Download the plugin package (`.difypkg` file)
+2. In Dify UI: Settings → Plugins → Install Plugin
+3. Upload the `.difypkg` file
+4. Configure the plugin in your workflows
+
+### For Development
 
 ```bash
-# Клонирование репозитория
+# Clone the repository
 git clone <repository-url>
 cd dify-markdown-chunker
 
-# Создание виртуального окружения
+# Create virtual environment
 python -m venv venv
 source venv/bin/activate  # Linux/Mac
-# или
+# or
 venv\Scripts\activate     # Windows
 
-# Установка зависимостей
-pip install -e ".[dev]"
-```
+# Install dependencies
+pip install -r requirements.txt
 
-## ✅ Проверка установки
-
-```bash
-# Запуск тестов
+# Run tests
 make test
-
-# Демонстрация возможностей
-make demo
-
-# Проверка качества кода
-make lint
 ```
 
-## 🎯 Основное использование
+## 🎯 Basic Usage
 
-### Простая обработка документа
+### Using in Dify Workflows
+
+```yaml
+# In Dify workflow configuration
+- tool: markdown_chunker
+  config:
+    max_chunk_size: 2048
+    strategy: auto
+```
+
+### Using as Python Library
 
 ```python
-from stage1 import process_markdown
+from markdown_chunker import MarkdownChunker, ChunkConfig
 
-# Обработка Markdown текста
+# Basic usage
+chunker = MarkdownChunker()
+result = chunker.chunk("# Hello\n\nWorld", include_analysis=True)
+
+print(f"Strategy: {result.strategy_used}")
+print(f"Chunks: {len(result.chunks)}")
+for i, chunk in enumerate(result.chunks, 1):
+    print(f"Chunk {i}: {chunk.size} chars, lines {chunk.start_line}-{chunk.end_line}")
+```
+
+### With Custom Configuration
+
+```python
+from markdown_chunker import MarkdownChunker, ChunkConfig
+
+# Custom configuration
+config = ChunkConfig(
+    max_chunk_size=2048,
+    min_chunk_size=256,
+    enable_overlap=True,
+    overlap_size=100
+)
+
+chunker = MarkdownChunker(config)
+result = chunker.chunk(markdown_text, include_analysis=True)
+
+# Access analysis
+print(f"Content type: {result.analysis.content_type}")
+print(f"Code ratio: {result.analysis.code_ratio:.2%}")
+print(f"Complexity: {result.analysis.complexity_score:.2f}")
+```
+
+### Using Configuration Profiles
+
+```python
+from markdown_chunker import ChunkConfig
+
+# For API documentation
+config = ChunkConfig.for_api_docs()
+
+# For code documentation
+config = ChunkConfig.for_code_docs()
+
+# For RAG systems (Dify default)
+config = ChunkConfig.for_dify_rag()
+
+# For search indexing
+config = ChunkConfig.for_search_indexing()
+```
+
+## 📝 Example: Processing a Document
+
+```python
+from markdown_chunker import MarkdownChunker
+
 markdown_text = """
-# Документация API
+# API Documentation
 
-## Введение
+## Introduction
 
-Это пример документации с кодом:
+This is example documentation with code:
 
 ```python
 def hello_world():
@@ -51,243 +116,154 @@ def hello_world():
     return "success"
 ```
 
-### Особенности
+### Features
 
-- Поддержка множественных языков
-- Автоматическое определение типа контента
-- Извлечение метаданных
+- Multiple language support
+- Automatic content type detection
+- Metadata extraction
 
-| Параметр | Тип | Описание |
-|----------|-----|----------|
-| name | str | Имя функции |
-| result | any | Результат выполнения |
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| name | str | Function name |
+| result | any | Execution result |
 """
 
-# Полная обработка документа
-result = process_markdown(markdown_text)
+# Process document
+chunker = MarkdownChunker()
+result = chunker.chunk(markdown_text, include_analysis=True)
 
-# Результаты обработки
-print(f"📄 Обработан документ размером {result.analysis.total_chars} символов")
-print(f"🔍 Найдено элементов:")
-print(f"  - Заголовков: {len(result.elements.headers)}")
-print(f"  - Блоков кода: {len(result.fenced_blocks)}")
-print(f"  - Списков: {len(result.elements.lists)}")
-print(f"  - Таблиц: {len(result.elements.tables)}")
-print(f"📊 Тип контента: {result.analysis.content_type}")
-print(f"⚡ Время обработки: {result.processing_time:.3f}с")
+# Print results
+print(f"📄 Processed document: {result.analysis.total_chars} chars")
+print(f"🔍 Found elements:")
+print(f"  - Headers: {result.analysis.header_count}")
+print(f"  - Code blocks: {result.analysis.code_block_count}")
+print(f"  - Lists: {result.analysis.list_count}")
+print(f"  - Tables: {result.analysis.table_count}")
+print(f"📊 Content type: {result.analysis.content_type}")
+print(f"⚡ Strategy used: {result.strategy_used}")
+print(f"📦 Created {len(result.chunks)} chunks")
 ```
 
-### Работа с отдельными компонентами
+## 🔧 Advanced Usage
+
+### Using Parser Interface
 
 ```python
-from stage1 import (
-    parse_to_ast,
-    extract_fenced_blocks,
-    detect_elements,
-    analyze_content
-)
+from markdown_chunker import ParserInterface
 
-markdown_text = "# Заголовок\n\n```python\nprint('hello')\n```"
+# Parse markdown
+parser = ParserInterface()
+analysis = parser.analyze("# Hello\n\n```python\nprint('world')\n```")
 
-# Парсинг в AST
-ast = parse_to_ast(markdown_text)
-print(f"AST корень: {ast.type}, дочерних узлов: {len(ast.children)}")
-
-# Извлечение блоков кода
-blocks = extract_fenced_blocks(markdown_text)
-for block in blocks:
-    print(f"Блок {block.language}: {len(block.content)} символов")
-
-# Обнаружение структурных элементов
-elements = detect_elements(markdown_text)
-for header in elements.headers:
-    print(f"H{header.level}: {header.text}")
-
-# Анализ контента
-analysis = analyze_content(markdown_text)
-print(f"Сложность: {analysis.complexity_score:.2f}")
-print(f"Соотношение кода: {analysis.code_ratio:.2f}")
+print(f"Content type: {analysis.content_type}")
+print(f"Code ratio: {analysis.code_ratio:.2%}")
+print(f"Complexity: {analysis.complexity_score:.2f}")
 ```
 
-## ⚙️ Конфигурация
-
-### Базовая конфигурация
+### Extracting Preamble
 
 ```python
-from stage1 import Stage1Interface, Stage1Config
+from markdown_chunker import extract_preamble
 
-# Создание конфигурации
-config = Stage1Config(
-    parser=ParserConfig(
-        preferred_parser="markdown-it-py",
-        enable_positions=True
-    ),
-    analyzer=AnalyzerConfig(
-        code_ratio_threshold=0.7,
-        enable_language_detection=True
-    )
-)
+markdown_with_frontmatter = """---
+title: My Document
+author: John Doe
+---
 
-# Использование с конфигурацией
-interface = Stage1Interface(config)
-result = interface.process_document(markdown_text)
+# Content starts here
+"""
+
+preamble = extract_preamble(markdown_with_frontmatter)
+if preamble:
+    print(f"Preamble type: {preamble.type}")
+    print(f"Preamble content: {preamble.content}")
+    print(f"Remaining text: {preamble.remaining_text[:50]}...")
 ```
 
-### Готовые конфигурации
+### Convenience Functions
 
 ```python
-from stage1.config import get_default_config, get_fast_config, get_detailed_config
+from markdown_chunker import chunk_text, chunk_file
 
-# Конфигурация по умолчанию (баланс скорости и качества)
-config = get_default_config()
+# Chunk text directly
+chunks = chunk_text("# Hello\n\nWorld")
 
-# Быстрая конфигурация (максимальная скорость)
-config = get_fast_config()
+# Chunk from file
+chunks = chunk_file("README.md")
 
-# Детальная конфигурация (максимальное качество)
-config = get_detailed_config()
+# With custom config
+from markdown_chunker import ChunkConfig
+config = ChunkConfig.for_code_docs()
+chunks = chunk_file("docs/api.md", config)
 ```
 
-## 🔍 Работа с результатами
+## 🎨 Chunking Strategies
 
-### Структура результатов
+The chunker automatically selects the best strategy based on content analysis:
+
+1. **Code Strategy**: For code-heavy documents (>30% code)
+2. **Mixed Strategy**: For balanced content (code + text)
+3. **List Strategy**: For list-heavy documents
+4. **Table Strategy**: For table-heavy documents
+5. **Structural Strategy**: For well-structured documents with headers
+6. **Sentences Strategy**: Fallback for simple text
+
+You can also force a specific strategy:
 
 ```python
-result = process_markdown(markdown_text)
-
-# AST дерево
-ast_root = result.ast_root
-print(f"Тип корня: {ast_root.type}")
-print(f"Позиция: строки {ast_root.start_pos.line}-{ast_root.end_pos.line}")
-
-# Огражденные блоки
-for i, block in enumerate(result.fenced_blocks):
-    print(f"Блок {i+1}:")
-    print(f"  Язык: {block.language or 'не указан'}")
-    print(f"  Размер: {len(block.content)} символов")
-    print(f"  Строки: {block.start_line}-{block.end_line}")
-    print(f"  Закрыт: {'✅' if block.is_closed else '❌'}")
-    
-    # Извлечение функций и классов
-    if block.language == 'python':
-        functions = block.extract_function_names()
-        classes = block.extract_class_names()
-        print(f"  Функции: {functions}")
-        print(f"  Классы: {classes}")
-
-# Структурные элементы
-elements = result.elements
-
-# Заголовки с иерархией
-for header in elements.headers:
-    indent = "  " * (header.level - 1)
-    print(f"{indent}H{header.level}: {header.text}")
-    print(f"{indent}Якорь: {header.anchor}")
-
-# Списки с анализом
-for i, lst in enumerate(elements.lists):
-    print(f"Список {i+1} ({lst.list_type}):")
-    print(f"  Элементов: {len(lst.items)}")
-    print(f"  Макс. вложенность: {lst.max_nesting_level}")
-    if lst.list_type == 'task':
-        completed = sum(1 for item in lst.items if item.is_completed)
-        print(f"  Выполнено: {completed}/{len(lst.items)}")
-
-# Таблицы
-for i, table in enumerate(elements.tables):
-    print(f"Таблица {i+1}:")
-    print(f"  Размер: {table.column_count}x{len(table.rows)}")
-    print(f"  Заголовки: {', '.join(table.headers)}")
-    print(f"  Выравнивание: {table.alignment}")
-
-# Анализ контента
-analysis = result.analysis
-print(f"\n📊 Анализ контента:")
-print(f"Тип: {analysis.content_type}")
-print(f"Сложность: {analysis.complexity_score:.2f}")
-print(f"Соотношения:")
-print(f"  Код: {analysis.code_ratio:.1%}")
-print(f"  Списки: {analysis.list_ratio:.1%}")
-print(f"  Таблицы: {analysis.table_ratio:.1%}")
+config = ChunkConfig(force_strategy="code")
+chunker = MarkdownChunker(config)
 ```
 
-## 🛠️ Обработка ошибок
-
-```python
-from stage1 import process_markdown
-from stage1.errors import MarkdownParsingError, Stage1Error
-
-try:
-    result = process_markdown(malformed_markdown)
-except MarkdownParsingError as e:
-    print(f"Ошибка парсинга: {e}")
-    # Используем fallback парсер
-    result = process_markdown(malformed_markdown, use_fallback=True)
-except Stage1Error as e:
-    print(f"Общая ошибка Stage 1: {e}")
-    # Обработка ошибки
-```
-
-## 📈 Бенчмарки и производительность
-
-```python
-from stage1.benchmark import benchmark_parsers, print_benchmark_results
-
-# Запуск бенчмарков
-results = benchmark_parsers()
-
-# Вывод результатов
-print_benchmark_results(results)
-
-# Получение лучшего парсера
-best_parser = max(results.items(), key=lambda x: x[1].parse_time)
-print(f"Самый быстрый парсер: {best_parser[0]}")
-```
-
-## 🎯 Подготовка к Stage 2
-
-```python
-# Получение данных для чанкования
-result = process_markdown(markdown_text)
-
-# Подготовка для Stage 2
-chunking_data = {
-    'ast': result.ast_root,
-    'blocks': result.fenced_blocks,
-    'elements': result.elements,
-    'analysis': result.analysis,
-    'strategy_hint': result.analysis.content_type  # code_heavy, list_heavy, etc.
-}
-
-# Рекомендуемая стратегия чанкования
-if result.analysis.content_type == 'code_heavy':
-    print("Рекомендуется CodeChunkStrategy")
-elif result.analysis.content_type == 'list_heavy':
-    print("Рекомендуется ListChunkStrategy")
-else:
-    print("Рекомендуется StructuralStrategy")
-```
-
-## 🔧 Отладка и диагностика
+## 🧪 Testing Your Setup
 
 ```bash
-# Включение подробного логирования
-export STAGE1_LOG_LEVEL=DEBUG
+# Run all tests
+make test
 
-# Запуск с профилированием
-python -m cProfile -o profile.stats your_script.py
+# Run with verbose output
+make test-verbose
 
-# Анализ производительности
-python -c "
-import pstats
-p = pstats.Stats('profile.stats')
-p.sort_stats('cumulative').print_stats(10)
-"
+# Run with coverage
+make test-coverage
+
+# Run quick tests only
+make test-quick
 ```
 
-## 📚 Следующие шаги
+## 📚 Next Steps
 
-1. Изучите [примеры использования](examples.md) для более сложных сценариев
-2. Ознакомьтесь с [архитектурой](architecture.md) для понимания внутреннего устройства
-3. Прочитайте документацию по [интеграции с Stage 2](stage2-integration.md)
-4. Изучите [API отдельных компонентов](markdown-ast.md) для тонкой настройки
+1. Read the [Usage Guide](usage.md) for detailed examples
+2. Check the [API Reference](api/README.md) for complete API documentation
+3. Learn about [Chunking Strategies](architecture/strategies.md)
+4. See [Configuration Reference](reference/configuration.md) for all options
+5. Review [Dify Integration](architecture/dify-integration.md) for workflow setup
+
+## 🆘 Troubleshooting
+
+### Import Errors
+
+```python
+# ❌ Wrong
+from stage1 import process_markdown
+
+# ✅ Correct
+from markdown_chunker import MarkdownChunker
+```
+
+### Configuration Issues
+
+```python
+# Make sure to use ChunkConfig
+from markdown_chunker import ChunkConfig
+
+config = ChunkConfig(max_chunk_size=2048)
+```
+
+### Common Issues
+
+- **"Module not found"**: Make sure you installed dependencies: `pip install -r requirements.txt`
+- **"Tests failing"**: Activate virtual environment: `source venv/bin/activate`
+- **"Import errors"**: Use correct imports from `markdown_chunker` package
+
+For more help, see [Troubleshooting Guide](guides/troubleshooting.md).

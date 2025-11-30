@@ -65,7 +65,7 @@ dify-markdown-chunker/
 ├── tools/
 │   ├── markdown_chunk_tool.yaml  # Конфигурация инструмента
 │   └── markdown_chunk_tool.py    # Логика чанкования
-├── markdown_chunker/         # Библиотека чанкования (из Stage 1-2)
+├── markdown_chunker/         # Библиотека чанкования
 │   ├── api/
 │   ├── chunker/
 │   └── parser/
