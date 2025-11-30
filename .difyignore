@@ -52,3 +52,6 @@ Makefile
 
 .git
 .github
+
+# All hidden files and directories
+.*
