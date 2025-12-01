@@ -269,7 +269,7 @@ class Header:
 
     def get_hierarchy_path(self, all_headers: List["Header"]) -> List[str]:
         """Get the hierarchy path of this header."""
-        path = []
+        path: List[str] = []
         current_level = self.level
 
         # Find parent headers
@@ -648,7 +648,7 @@ class ContentAnalysis:
         else:
             return "sentences"
 
-    def get_element_counts(self) -> Dict[str, int]:
+    def get_element_counts(self) -> Dict[str, Any]:
         """Get all element counts as a dictionary."""
         return {
             "code_blocks": self.code_block_count,
@@ -661,7 +661,7 @@ class ContentAnalysis:
 
     def validate_consistency(self) -> List[str]:
         """Validate internal consistency and return any issues."""
-        issues = []
+        issues: List[str] = []
 
         # Check ratio consistency
         total_ratio = self.code_ratio + self.text_ratio
@@ -693,7 +693,7 @@ class ContentAnalysis:
 
     def validate_structure_integrity(self) -> List[str]:
         """Validate structural integrity of the analysis data."""
-        issues = []
+        issues: List[str] = []
 
         self._validate_basic_counts(issues)
         self._validate_element_counts(issues)
@@ -754,7 +754,7 @@ class ContentAnalysis:
         self, other_components: Dict[str, Any]
     ) -> List[str]:
         """Validate consistency with other Stage 1 components."""
-        issues = []
+        issues: List[str] = []
 
         self._validate_ast_consistency(other_components, issues)
         self._validate_fenced_blocks_consistency(other_components, issues)

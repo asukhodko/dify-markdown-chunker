@@ -261,7 +261,7 @@ class StrategySelector:
         Returns:
             List of validation issues (empty if valid)
         """
-        issues = []
+        issues: List[str] = []
 
         if not self.strategies:
             issues.append("No strategies configured")

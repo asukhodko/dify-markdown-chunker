@@ -79,7 +79,7 @@ def test_property_selection_is_deterministic(
 
     for i in range(code_blocks):
         markdown_lines.append("")
-        markdown_lines.append(f"```python")
+        markdown_lines.append("```python")
         markdown_lines.append(f"code_{i} = {i}")
         markdown_lines.append("```")
 

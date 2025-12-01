@@ -7,7 +7,7 @@ This module provides lazy loading, caching, and performance monitoring.
 import time
 import weakref
 from functools import lru_cache, wraps
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 
 class StrategyCache:
@@ -15,7 +15,7 @@ class StrategyCache:
 
     def __init__(self) -> None:
         self._strategies: Dict[str, Any] = {}
-        self._weak_cache = weakref.WeakValueDictionary()
+        self._weak_cache: weakref.WeakValueDictionary = weakref.WeakValueDictionary()
 
     def get_strategy(self, strategy_name: str, factory: Callable) -> Any:
         """Get strategy instance, creating it lazily if needed."""
@@ -124,7 +124,7 @@ class ChunkCache:
     def __init__(self, max_size: int = 100):
         self.max_size = max_size
         self._cache: Dict[str, Any] = {}
-        self._access_order = []
+        self._access_order: List[str] = []
 
     def get(self, key: str) -> Optional[Any]:
         """Get cached result."""

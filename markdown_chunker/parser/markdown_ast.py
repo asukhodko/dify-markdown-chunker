@@ -493,6 +493,7 @@ def _auto_select_parser() -> MarkdownParser:
 
     for parser_name in priority_order:
         try:
+            parser: MarkdownParser
             if parser_name == "markdown-it-py":
                 parser = MarkdownItPyAdapter()
             elif parser_name == "mistune":
@@ -524,6 +525,7 @@ def _get_parser(parser_type: str) -> MarkdownParser:
     else:
         # Try to create the parser
         try:
+            parser: MarkdownParser
             if parser_type == "markdown-it-py":
                 parser = MarkdownItPyAdapter()
             elif parser_type == "mistune":

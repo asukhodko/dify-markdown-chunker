@@ -239,7 +239,7 @@ class ASTBuilder:
     def _resolve_header_hierarchy(self, node: MarkdownNode) -> None:
         """Resolve header hierarchy with proper parent-child relationships."""
         headers = node.find_descendants("heading")
-        header_stack = []  # Stack to track header hierarchy
+        header_stack: List[MarkdownNode] = []  # Stack to track header hierarchy
 
         for header in headers:
             level = header.metadata.get("level", 1)
@@ -286,10 +286,6 @@ class ASTBuilder:
             if child.type in ["list", "blockquote", "list_item"]:
                 child_level += 1
             self._calculate_nesting_levels(child, child_level)
-
-
-# Backward compatibility alias
-EnhancedASTBuilder = ASTBuilder
 
 
 # Backward compatibility alias

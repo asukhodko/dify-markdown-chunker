@@ -487,8 +487,8 @@ class TestFallbackChain:
         chunks = result.chunks if hasattr(result, "chunks") else result
 
         assert len(chunks) > 0, (
-            f"Code strategy on text-only document returned empty. "
-            f"Fallback should have produced chunks."
+            "Code strategy on text-only document returned empty. "
+            "Fallback should have produced chunks."
         )
 
 
@@ -607,7 +607,8 @@ class TestOverlapExactness:
         # Check overlap between adjacent chunks
         for i in range(1, len(chunks)):
             curr = chunks[i]
-            prev = chunks[i - 1]
+            # Track previous chunk for comparison
+            # prev = chunks[i - 1]  # noqa: F841
 
             if curr.get_metadata("has_overlap", False):
                 overlap_size = curr.get_metadata("overlap_size", 0)

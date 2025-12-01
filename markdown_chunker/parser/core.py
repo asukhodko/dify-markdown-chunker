@@ -35,7 +35,7 @@ from .validation import InputValidator
 try:
     from .nesting_resolver import NestingResolver
 except ImportError:
-    NestingResolver = None
+    NestingResolver = None  # type: ignore[misc,assignment]
 
 # Import stage2_interface if it exists (backward compatibility)
 try:
@@ -75,7 +75,7 @@ class FencedBlockExtractor:
         normalized_text = InputValidator.validate_and_normalize(md_text)
         blocks = []
         lines = normalized_text.split("\n")
-        open_blocks_stack = []  # Stack of currently open blocks
+        open_blocks_stack: List[FencedBlock] = []  # Stack of currently open blocks
 
         i = 0
         while i < len(lines):

@@ -222,7 +222,7 @@ class TestTableStrategyProperties:
                         )
                         assert (
                             is_separator
-                        ), f"Table separator not found after header in chunk"
+                        ), "Table separator not found after header in chunk"
 
     @settings(max_examples=50, deadline=5000)
     @given(markdown_text=markdown_with_tables(min_tables=1, max_tables=2))
@@ -281,10 +281,11 @@ class TestTableStrategyProperties:
             if not found_with_correct_cols:
                 # Check if any chunk table has same column count
                 # (for cases where table might be modified but structure preserved)
-                has_matching_structure = any(
-                    chunk_table.split("\n")[0].count("|") - 1 == orig_cols
-                    for chunk_table in all_chunk_tables
-                )
+                pass
+                # has_matching_structure = any(  # noqa: F841
+                #     chunk_table.split("\n")[0].count("|") - 1 == orig_cols
+                #     for chunk_table in all_chunk_tables
+                # )
                 # This is a weak check - just ensure structure exists somewhere
                 # Don't fail if table is missing (other tests check that)
 

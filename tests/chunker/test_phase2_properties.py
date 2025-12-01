@@ -334,7 +334,7 @@ class TestPhase2Properties:
         assume(len(chunks) > 0)
 
         # Check that URLs are not broken
-        all_output = "\n".join(chunk.content for chunk in chunks)
+        # all_output = "\n".join(chunk.content for chunk in chunks)  # noqa: F841
 
         # The URL we added should appear intact
         if urls[0] in document_with_urls:

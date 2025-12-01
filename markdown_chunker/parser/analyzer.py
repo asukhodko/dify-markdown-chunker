@@ -10,7 +10,7 @@ Algorithm Documentation:
     - Metrics: docs/markdown-extractor/06-algorithms/metrics.md
 """
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from .types import ContentAnalysis, ElementCollection, FencedBlock
 
@@ -65,14 +65,14 @@ class ContentAnalyzer:
         table_count = len(elements.tables)
 
         # P1-006: Programming languages with occurrence counts
-        languages = {}
+        languages: Dict[str, int] = {}
         for block in fenced_blocks:
             if block.language:
                 lang = block.language.lower()
                 languages[lang] = languages.get(lang, 0) + 1
 
         # P1-005: Header count by level
-        header_count_by_level = {}
+        header_count_by_level: Dict[int, int] = {}
         for header in elements.headers:
             level = header.level
             header_count_by_level[level] = header_count_by_level.get(level, 0) + 1
@@ -106,7 +106,7 @@ class ContentAnalyzer:
         punctuation_ratio = punctuation_chars / total_chars if total_chars > 0 else 0.0
 
         # Count special characters
-        special_chars = {}
+        special_chars: Dict[str, int] = {}
         special_char_set = {"#", "*", "_", "`", "[", "]", "(", ")", "|", "-", "+", "~"}
         for char in md_text:
             if char in special_char_set:
@@ -148,7 +148,7 @@ class ContentAnalyzer:
                 }
             )
         # Sort by start_line to maintain document order
-        block_elements.sort(key=lambda x: x["start_line"])
+        block_elements.sort(key=lambda x: x.get("start_line", 0))
 
         # Mixed content detection
         has_mixed_content = self._detect_mixed_content(

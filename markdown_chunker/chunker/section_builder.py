@@ -12,10 +12,10 @@ try:
 except ImportError:
     # Fallback for testing environment
     try:
-        from ..parser.types import MarkdownNode, NodeType, Stage1Results
+        from ..parser.types import MarkdownNode, NodeType, Stage1Results  # type: ignore[no-redef]
     except ImportError:
         # Create dummy classes for testing
-        class MarkdownNode:
+        class MarkdownNode:  # type: ignore[no-redef]
             def __init__(self):
                 self.type = None
                 self.metadata = {}
@@ -26,7 +26,7 @@ except ImportError:
             def get_text_content(self):
                 return ""
 
-        class NodeType:
+        class NodeType:  # type: ignore[no-redef]
             HEADER = "header"
             PARAGRAPH = "paragraph"
             LIST = "list"
@@ -35,7 +35,7 @@ except ImportError:
             TABLE = "table"
             BLOCKQUOTE = "blockquote"
 
-        class Stage1Results:
+        class Stage1Results:  # type: ignore[no-redef]
             def __init__(self):
                 self.ast = None
 
@@ -90,7 +90,7 @@ class SectionBuilder:
         """
         sections = []
         current_section = None
-        header_stack = []  # Track header hierarchy
+        header_stack: List[str] = []  # Track header hierarchy
         has_seen_header = False
 
         # Walk through AST nodes

@@ -317,7 +317,7 @@ class TestMixedStrategyProperties:
                 header_words.update(w for w in header_text.split() if len(w) > 1)
 
         # Words that are missing but NOT headers (actual content loss)
-        non_header_missing = missing_words - header_words
+        # non_header_missing = missing_words - header_words  # noqa: F841
 
         # Allow small tolerance for markdown processing
         # Use higher tolerance (50%) if all missing words are headers

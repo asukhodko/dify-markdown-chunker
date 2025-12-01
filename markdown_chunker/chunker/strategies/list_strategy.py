@@ -386,7 +386,7 @@ class ListStrategy(BaseStrategy):
             return []
 
         root_items = []
-        stack = []  # Stack to track parent items
+        stack: List[ListItemInfo] = []  # Stack to track parent items
 
         for item in list_items:
             # Find appropriate parent based on level
@@ -829,7 +829,7 @@ class ListStrategy(BaseStrategy):
         if not chunks:
             return {"total_chunks": 0, "list_types": {}}
 
-        list_types = {}
+        list_types: Dict[str, int] = {}
         total_items = 0
         continuation_chunks = 0
         nested_chunks = 0

@@ -387,8 +387,8 @@ class MetadataEnricher:
             return {"total_chunks": 0}
 
         # Collect statistics
-        strategies = {}
-        content_types = {}
+        strategies: Dict[str, int] = {}
+        content_types: Dict[str, int] = {}
         total_words = 0
         total_lines = 0
 

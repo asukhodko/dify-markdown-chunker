@@ -1,5 +1,4 @@
-"""
-Property-based tests for FallbackManager behavior.
+"""Property-based tests for FallbackManager behavior.
 
 Tests verify that fallback chain works correctly across all scenarios:
 - Fallback produces valid chunks when primary fails
@@ -11,14 +10,13 @@ Tests verify that fallback chain works correctly across all scenarios:
 **Validates: Requirements 1.3, 2.2**
 """
 
-from unittest.mock import MagicMock, Mock
+from unittest.mock import Mock
 
 import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
 from markdown_chunker.chunker.components.fallback_manager import (
-    FallbackLevel,
     FallbackManager,
 )
 from markdown_chunker.chunker.strategies.base import BaseStrategy

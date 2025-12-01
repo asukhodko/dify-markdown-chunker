@@ -13,7 +13,6 @@ from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from markdown_chunker.parser.analyzer import ContentAnalyzer
-from markdown_chunker.parser.core import extract_fenced_blocks
 from markdown_chunker.parser.elements import detect_elements
 
 # ============================================================================

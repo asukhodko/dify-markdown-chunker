@@ -11,10 +11,8 @@ Tests verify that overlap works correctly across all scenarios:
 **Validates: Requirements 3.4, 10.2**
 """
 
-from unittest.mock import Mock
-
 import pytest
-from hypothesis import assume, given, settings
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from markdown_chunker.chunker.components.overlap_manager import OverlapManager
@@ -100,7 +98,7 @@ def test_property_overlap_is_exact_duplicate(chunks, overlap_size):
             prev_chunk = overlapped[i - 1]
             assert (
                 overlap_text in prev_chunk.content
-            ), f"Overlap text not found in previous chunk"
+            ), "Overlap text not found in previous chunk"
 
 
 @given(
@@ -166,7 +164,7 @@ def test_property_overlap_percentage_works(chunks, overlap_percentage):
 
             # Overlap should be roughly the configured percentage
             # Allow variance for sentence boundaries
-            expected_size = int(prev_size * overlap_percentage)
+            # expected_size = int(prev_size * overlap_percentage)  # noqa: F841
 
             # Should be within reasonable range
             assert (

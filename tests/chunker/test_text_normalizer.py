@@ -51,7 +51,7 @@ class TestNormalizeWhitespace:
     def test_empty_input(self):
         """Empty input should return empty output."""
         assert normalize_whitespace("") == ""
-        assert normalize_whitespace(None) == None
+        assert normalize_whitespace(None) is None
 
     def test_preserves_intentional_formatting(self):
         """Should preserve intentional paragraph structure."""

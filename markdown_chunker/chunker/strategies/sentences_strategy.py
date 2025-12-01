@@ -276,7 +276,7 @@ class SentencesStrategy(BaseStrategy):
         # FIX: Split by lines and group related content together
         lines = content.split("\n")
         paragraphs = []
-        current_para = []
+        current_para: List[str] = []
         in_list = False
         in_table = False
 

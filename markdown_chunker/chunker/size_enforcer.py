@@ -102,8 +102,8 @@ def _split_at_boundaries(chunk: Chunk, config: ChunkConfig) -> List[Chunk]:
 
     if len(paragraphs) > 1:
         # We have multiple paragraphs
-        sub_chunks = []
-        current_parts = []
+        sub_chunks: List[Chunk] = []
+        current_parts: List[str] = []
         current_size = 0
 
         for para in paragraphs:
@@ -193,8 +193,8 @@ def _split_large_paragraph(
         return _split_at_word_boundaries(para, max_size, original_chunk, start_index)
 
     # Group sentences into chunks
-    sub_chunks = []
-    current_sentences = []
+    sub_chunks: List[Chunk] = []
+    current_sentences: List[str] = []
     current_size = 0
 
     for sentence in sentences:

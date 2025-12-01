@@ -243,7 +243,7 @@ class InlineTokenProcessor:
         tokens.sort(key=lambda t: t.start_pos)
 
         # Remove overlapping tokens (keep first one)
-        merged = []
+        merged: List[InlineToken] = []
         for token in tokens:
             if not merged or token.start_pos >= merged[-1].end_pos:
                 merged.append(token)
@@ -305,7 +305,7 @@ class MarkdownNodeFactory:
 
         metadata = token.attributes.copy()
         if token.type == "inline_code":
-            metadata["inline_code"] = True
+            metadata["inline_code"] = "true"
 
         return self.create_node(
             node_type=node_type,
@@ -486,7 +486,7 @@ class EnhancedASTBuilder:
         """Validate correctness of tree structure and node connections."""
 
         # Check for circular references
-        visited_nodes = set()
+        visited_nodes: set[int] = set()
         self._check_circular_references(ast, visited_nodes)
 
         # Validate parent-child relationships
@@ -497,14 +497,15 @@ class EnhancedASTBuilder:
 
         self.logger.debug("Tree correctness validation completed")
 
-    def _check_circular_references(self, node: MarkdownNode, visited: set) -> None:
+    def _check_circular_references(self, node: MarkdownNode, visited: set[int]) -> None:
         """Check for circular references in the tree."""
+        visited_nodes = visited
         node_id = id(node)
 
-        if node_id in visited:
+        if node_id in visited_nodes:
             raise ValueError(f"Circular reference detected in AST at node {node.type}")
 
-        visited.add(node_id)
+        visited_nodes.add(node_id)
 
         for child in node.children:
             self._check_circular_references(child, visited.copy())
@@ -531,14 +532,14 @@ class EnhancedASTBuilder:
     def _check_orphaned_nodes(self, ast: MarkdownNode) -> None:
         """Check for orphaned nodes that should have parents."""
 
-        def collect_all_nodes(node: MarkdownNode, all_nodes: set, parent_map: dict):
+        def collect_all_nodes(node: MarkdownNode, all_nodes: set[int], parent_map: dict[int, int]) -> None:
             all_nodes.add(id(node))
             for child in node.children:
                 parent_map[id(child)] = id(node)
                 collect_all_nodes(child, all_nodes, parent_map)
 
-        all_nodes = set()
-        parent_map = {}
+        all_nodes: set[int] = set()
+        parent_map: dict[int, int] = {}
         collect_all_nodes(ast, all_nodes, parent_map)
 
         # Root should not have parent

@@ -7,7 +7,6 @@ Tests Task 14.1: Test with real career matrix document
 - Verify Markdown structure preserved
 """
 
-import os
 from pathlib import Path
 
 import pytest
@@ -53,12 +52,14 @@ class TestCareerMatrixIntegration:
             for j, line in enumerate(lines[:-1]):  # Exclude last line
                 if line.strip().startswith("#"):
                     # Next non-empty line should not be a header
-                    remaining_lines = [l for l in lines[j + 1 :] if l.strip()]
+                    remaining_lines = [line for line in lines[j + 1:] if line.strip()]
                     if remaining_lines:
                         # There should be content after header
-                        has_content = any(
-                            not l.strip().startswith("#") for l in remaining_lines
-                        )
+                        pass
+                        # has_content = any(  # noqa: F841
+                        #     not line.strip().startswith("#")
+                        #     for line in remaining_lines
+                        # )
                         # This is a soft check - headers can be followed by sub-headers
                         # The key is that we don't have ONLY a header at the end
 

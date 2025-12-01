@@ -377,7 +377,7 @@ class PhantomBlockPreventer:
         Returns:
             List of warning messages
         """
-        warnings = []
+        warnings: List[str] = []
 
         if len(blocks) <= 1:
             return warnings

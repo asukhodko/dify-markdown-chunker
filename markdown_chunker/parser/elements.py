@@ -1,5 +1,4 @@
-"""
-Structural element detector for Markdown documents.
+"""Structural element detector for Markdown documents.
 
 This module implements detection of headers, lists, tables, and other structural
 elements based on the algorithms from
@@ -7,7 +6,7 @@ docs/markdown-extractor/TECHNICAL-SPECIFICATION.md.
 """
 
 import re
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from .types import ElementCollection, Header, ListItem, MarkdownList, Table
 
@@ -74,9 +73,9 @@ class ElementDetector:
 
     def _detect_lists(self, lines: List[str]) -> List[MarkdownList]:
         """Detect lists with nesting support."""
-        lists = []
-        current_list = None
-        current_items = []
+        lists: List[MarkdownList] = []
+        current_list: Optional[Dict[str, Any]] = None
+        current_items: List[ListItem] = []
 
         for line_num, line in enumerate(lines):
             list_item = self._parse_list_item(line, line_num)
@@ -94,17 +93,17 @@ class ElementDetector:
                     # Continue current list
                     current_items.append(list_item)
                     current_list["max_nesting"] = max(
-                        current_list["max_nesting"], list_item.level
+                        int(current_list["max_nesting"]), list_item.level
                     )
             else:
                 if current_list is not None:
                     # End current list
                     markdown_list = MarkdownList(
-                        type=current_list["type"],
+                        type=str(current_list["type"]),
                         items=current_items,
-                        start_line=current_list["start_line"],
+                        start_line=int(current_list["start_line"]),  # type: ignore[arg-type]
                         end_line=line_num - 1,
-                        max_nesting_level=current_list["max_nesting"],
+                        max_nesting_level=int(current_list["max_nesting"]),  # type: ignore[arg-type]
                     )
                     lists.append(markdown_list)
                     current_list = None
@@ -113,11 +112,11 @@ class ElementDetector:
         # Handle list at end of file
         if current_list is not None:
             markdown_list = MarkdownList(
-                type=current_list["type"],
+                type=str(current_list["type"]),
                 items=current_items,
-                start_line=current_list["start_line"],
+                start_line=int(current_list["start_line"]),  # type: ignore[arg-type]
                 end_line=len(lines) - 1,
-                max_nesting_level=current_list["max_nesting"],
+                max_nesting_level=int(current_list["max_nesting"]),  # type: ignore[arg-type]
             )
             lists.append(markdown_list)
 

@@ -252,7 +252,7 @@ class APIValidator:
         Returns:
             List of validation errors
         """
-        errors = []
+        errors: List[APIError] = []
 
         # Check if config is dict
         if not isinstance(config, dict):
@@ -282,7 +282,7 @@ class APIValidator:
         Returns:
             List of validation errors
         """
-        errors = []
+        errors: List[APIError] = []
 
         # Check if strategy is string
         if not isinstance(strategy, str):

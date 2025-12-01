@@ -124,7 +124,7 @@ class APIError:
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert error to dictionary."""
-        result = {"code": self.code, "message": self.message}
+        result: Dict[str, Any] = {"code": self.code, "message": self.message}
         if self.details:
             result["details"] = self.details
         if self.field:

@@ -194,10 +194,11 @@ class TestListStrategyProperties:
 
         if list_chunks:
             # At least some should have nesting info
-            has_nesting_info = any(
-                "max_nesting" in chunk.metadata or "has_nested_items" in chunk.metadata
-                for chunk in list_chunks
-            )
+            pass
+            # has_nesting_info = any(  # noqa: F841
+            #     "max_nesting" in chunk.metadata or "has_nested_items" in chunk.metadata
+            #     for chunk in list_chunks
+            # )
             # This is optional - not all list chunks need nesting info
             # Just verify no errors occur
 

@@ -176,7 +176,7 @@ class OverlapManager:
             return truncate_at_word_boundary(content, target_size, from_end=True)
 
         # Collect sentences from end until we reach target size
-        overlap_sentences = []
+        overlap_sentences: List[str] = []
         current_size = 0
 
         for sentence in reversed(sentences):
@@ -225,7 +225,7 @@ class OverlapManager:
             return truncate_at_word_boundary(content, target_size, from_end=False)
 
         # Collect sentences from beginning until we reach target size
-        overlap_sentences = []
+        overlap_sentences: List[str] = []
         current_size = 0
 
         for sentence in sentences:

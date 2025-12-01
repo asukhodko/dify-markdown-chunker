@@ -534,7 +534,7 @@ class ErrorCollector:
         info_count = 0  # Not tracking info separately in simplified version
 
         # Count by category
-        categories = {}
+        categories: Dict[str, int] = {}
         for error in self.errors:
             categories[error.category] = categories.get(error.category, 0) + 1
         for warning in self.warnings:

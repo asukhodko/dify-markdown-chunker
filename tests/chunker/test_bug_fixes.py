@@ -332,7 +332,7 @@ class TestIntegration:
 ## Features
 
 - Feature 1: Authentication
-- Feature 2: Authorization  
+- Feature 2: Authorization
 - [ ] Feature 3: Pending
 - [x] Feature 4: Complete
 

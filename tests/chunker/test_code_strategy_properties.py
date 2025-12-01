@@ -193,12 +193,12 @@ class TestCodeStrategyProperties:
             ):
                 assert (
                     "language" in chunk.metadata
-                ), f"Code chunk missing language metadata"
+                ), "Code chunk missing language metadata"
 
             # All chunks from code strategy should have strategy metadata
             assert (
                 chunk.metadata.get("strategy") == "code"
-            ), f"Chunk should have code strategy metadata"
+            ), "Chunk should have code strategy metadata"
 
     @settings(max_examples=100, deadline=5000)
     @given(markdown_text=markdown_with_code(min_blocks=1, max_blocks=5))

@@ -346,7 +346,7 @@ class StructuralStrategy(BaseStrategy):
             return []
 
         # Stack to track parent headers at each level
-        parent_stack = []
+        parent_stack: List[HeaderInfo] = []
         root_headers = []
 
         for header in headers:
@@ -774,7 +774,7 @@ class StructuralStrategy(BaseStrategy):
         Returns:
             Full header path (e.g., "/Documentation/Getting Started/Installation")
         """
-        path_parts = []
+        path_parts: List[str] = []
         current = header
 
         # Collect all parents
@@ -807,7 +807,12 @@ class StructuralStrategy(BaseStrategy):
                 f"good for structural chunking"
             )
         else:
-            if analysis.header_count < 3:
+            if isinstance(analysis.header_count, dict):
+                total_headers = sum(analysis.header_count.values())
+                return (
+                    f"Too few headers ({total_headers}) for structural strategy"
+                )
+            elif analysis.header_count < 3:
                 return (
                     f"Too few headers ({analysis.header_count}) for structural strategy"
                 )
@@ -1191,7 +1196,7 @@ class StructuralStrategy(BaseStrategy):
         Returns:
             List of blocks to use as overlap
         """
-        overlap_blocks = []
+        overlap_blocks: List = []
         current_size = 0
 
         # Take blocks from end until we reach overlap_size
