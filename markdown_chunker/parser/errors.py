@@ -238,8 +238,8 @@ def create_fallback_analysis(md_text: str) -> ContentAnalysis:
     )
 
 
-class ErrorCollector:
-    """Collects and manages processing errors."""
+class SimpleErrorCollector:
+    """Simple error collector for basic processing errors."""
 
     def __init__(self):
         self.errors: List[ProcessingError] = []
@@ -295,19 +295,19 @@ class ErrorCollector:
         self.errors.clear()
 
 
-# Global error collector for the module
-error_collector = ErrorCollector()
+# Global error collector for the module (uses simple collector)
+_simple_error_collector = SimpleErrorCollector()
 
 
-def get_error_collector() -> ErrorCollector:
+def get_error_collector() -> SimpleErrorCollector:
     """Get the global error collector."""
-    return error_collector
+    return _simple_error_collector
 
 
 def reset_error_collector() -> None:
     """Reset the global error collector."""
-    global error_collector
-    error_collector = ErrorCollector()
+    global _simple_error_collector
+    _simple_error_collector = SimpleErrorCollector()
 
 
 # Context manager for error handling
@@ -316,7 +316,7 @@ class ErrorHandlingContext:
 
     def __init__(self, component: str):
         self.component = component
-        self.collector = ErrorCollector()
+        self.collector = SimpleErrorCollector()
 
     def __enter__(self):
         return self.collector
@@ -420,7 +420,7 @@ class ErrorSummary:
         )
 
 
-class EnhancedErrorCollector:
+class ErrorCollector:
     """
     Enhanced error collector with structured logging.
 

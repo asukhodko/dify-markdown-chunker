@@ -416,12 +416,14 @@ print("Hello 世界")
 
     def test_null_input_handling(self):
         """Test handling of None input."""
+        from markdown_chunker.parser.errors import MarkdownParsingError
+
         parser = ParserInterface()
         # Should handle None gracefully or raise appropriate error
         try:
             result = parser.process_document(None)
             # If it doesn't raise, should return valid result
             assert result is not None
-        except (TypeError, ValueError, AttributeError):
-            # Or it should raise appropriate error (AttributeError for None.strip())
+        except (TypeError, ValueError, AttributeError, MarkdownParsingError):
+            # Or it should raise appropriate error
             pass

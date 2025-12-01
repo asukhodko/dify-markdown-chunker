@@ -11,7 +11,7 @@ import re
 from dataclasses import dataclass
 from typing import List, Optional
 
-from .errors import EnhancedErrorCollector, SourceLocation
+from .errors import ErrorCollector, SourceLocation
 
 
 @dataclass
@@ -58,10 +58,10 @@ class FenceHandler:
     """Enhanced fence handler with proper Markdown specification compliance."""
 
     def __init__(
-        self, error_collector: Optional[EnhancedErrorCollector] = None
+        self, error_collector: Optional[ErrorCollector] = None
     ):
         """Initialize fence handler."""
-        self.error_collector = error_collector or EnhancedErrorCollector()
+        self.error_collector = error_collector or ErrorCollector()
         self.logger = logging.getLogger(__name__)
 
         # Patterns for fence detection
