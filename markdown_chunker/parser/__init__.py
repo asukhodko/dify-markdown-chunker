@@ -121,16 +121,16 @@ try:
     )
 except ImportError:
     # Fallback if nesting_resolver is removed
-    class BlockCandidate:
+    class BlockCandidate:  # type: ignore[no-redef]
         pass
 
-    class NestingResolver:
+    class NestingResolver:  # type: ignore[no-redef]
         pass
 
-    def resolve_nesting(*args, **kwargs):
+    def resolve_nesting(*args, **kwargs):  # type: ignore[misc]
         return []
 
-    def validate_block_nesting(*args, **kwargs):
+    def validate_block_nesting(*args, **kwargs):  # type: ignore[misc]
         return True
 
 

@@ -57,7 +57,7 @@ class FallbackManager:
         # Backward compatibility alias
         self._fallback_strategy = self._sentences_strategy
 
-    def execute_with_fallback(
+    def execute_with_fallback(  # noqa: C901
         self,
         content: str,
         stage1_results: Stage1Results,

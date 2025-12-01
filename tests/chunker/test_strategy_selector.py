@@ -92,6 +92,13 @@ class TestStrategySelector:
 
         selector = StrategySelector(strategies, mode="strict")
         analysis = Mock(spec=ContentAnalysis)
+        # Configure mock for density check and logging
+        analysis.get_total_header_count.return_value = 0
+        analysis.max_header_depth = 0
+        analysis.table_count = 0
+        analysis.list_count = 0
+        analysis.list_ratio = 0.0
+        analysis.code_ratio = 0.0
         config = ChunkConfig.default()
 
         selected = selector.select_strategy(analysis, config)
@@ -107,6 +114,13 @@ class TestStrategySelector:
 
         selector = StrategySelector(strategies, mode="strict")
         analysis = Mock(spec=ContentAnalysis)
+        # Configure mock for density check and logging
+        analysis.get_total_header_count.return_value = 0
+        analysis.max_header_depth = 0
+        analysis.table_count = 0
+        analysis.list_count = 0
+        analysis.list_ratio = 0.0
+        analysis.code_ratio = 0.0
         config = ChunkConfig.default()
 
         # Emergency fallback should activate instead of raising
@@ -127,6 +141,11 @@ class TestStrategySelector:
 
         selector = StrategySelector(strategies, mode="weighted")
         analysis = Mock(spec=ContentAnalysis)
+        # Configure mock for density check
+        analysis.get_total_header_count.return_value = 0
+        analysis.max_header_depth = 0
+        analysis.table_count = 0
+        analysis.list_ratio = 0.0
         config = ChunkConfig.default()
 
         selected = selector.select_strategy(analysis, config)
@@ -143,6 +162,11 @@ class TestStrategySelector:
 
         selector = StrategySelector(strategies, mode="weighted")
         analysis = Mock(spec=ContentAnalysis)
+        # Configure mock for density check
+        analysis.get_total_header_count.return_value = 0
+        analysis.max_header_depth = 0
+        analysis.table_count = 0
+        analysis.list_ratio = 0.0
         config = ChunkConfig.default()
 
         with pytest.raises(StrategySelectionError):
@@ -205,6 +229,10 @@ class TestStrategySelector:
         analysis.header_count = 8
         analysis.complexity_score = 0.6
         analysis.has_mixed_content = True
+        # Configure mock for density check
+        analysis.get_total_header_count.return_value = 8
+        analysis.max_header_depth = 2
+        analysis.list_ratio = 0.1
 
         config = ChunkConfig.default()
 
@@ -363,6 +391,13 @@ class TestStrategySelectionIntegration:
 
         selector = StrategySelector(strategies, mode="strict")
         analysis = Mock(spec=ContentAnalysis)
+        # Configure mock for density check and logging
+        analysis.get_total_header_count.return_value = 0
+        analysis.max_header_depth = 0
+        analysis.table_count = 0
+        analysis.list_count = 0
+        analysis.list_ratio = 0.0
+        analysis.code_ratio = 0.0
         config = ChunkConfig.default()
 
         # Should select "mixed" (first applicable by priority)
@@ -377,6 +412,13 @@ class TestStrategySelectionIntegration:
         ]
 
         analysis = Mock(spec=ContentAnalysis)
+        # Configure mock for density check and logging
+        analysis.get_total_header_count.return_value = 0
+        analysis.max_header_depth = 0
+        analysis.table_count = 0
+        analysis.list_count = 0
+        analysis.list_ratio = 0.0
+        analysis.code_ratio = 0.0
         config = ChunkConfig.default()
 
         # Strict mode: select by priority

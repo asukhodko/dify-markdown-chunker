@@ -79,8 +79,8 @@ class TableStrategy(BaseStrategy):
 
     @property
     def priority(self) -> int:
-        """Medium priority."""
-        return 4
+        """Medium-low priority."""
+        return 5
 
     def can_handle(self, analysis: ContentAnalysis, config: ChunkConfig) -> bool:
         """
@@ -355,7 +355,7 @@ class TableStrategy(BaseStrategy):
         """
         content = table.get_full_content()
 
-        metadata = {
+        metadata: dict = {
             "column_count": table.column_count,
             "row_count_in_chunk": len(table.rows),
             "total_rows": len(table.rows),

@@ -443,7 +443,8 @@ class MarkdownChunker:
             DeprecationWarning,
             stacklevel=2,
         )
-        return self.chunk(md_text, strategy=strategy, include_analysis=True)
+        result = self.chunk(md_text, strategy=strategy, include_analysis=True)
+        return result  # type: ignore[return-value]
 
     def _get_strategy_by_name(self, name: str) -> Optional[BaseStrategy]:
         """
@@ -768,11 +769,13 @@ class MarkdownChunker:
             old_config = self.config
             self.config = chunk_config
             try:
-                return self.chunk(md_text, strategy=strategy, return_format="dict")
+                result = self.chunk(md_text, strategy=strategy, return_format="dict")
+                return result  # type: ignore[return-value]
             finally:
                 self.config = old_config
         else:
-            return self.chunk(md_text, strategy=strategy, return_format="dict")
+            result = self.chunk(md_text, strategy=strategy, return_format="dict")
+            return result  # type: ignore[return-value]
 
 
 class ConfigurationError(ChunkingError):

@@ -234,7 +234,7 @@ class TestMixedStrategyProperties:
 
     @settings(max_examples=20, deadline=5000)
     @given(document=mixed_document(min_sections=3, max_sections=5))
-    def test_property_no_content_loss(self, document):
+    def test_property_no_content_loss(self, document):  # noqa: C901
         """
         **Property 14b: No Content Loss**
 

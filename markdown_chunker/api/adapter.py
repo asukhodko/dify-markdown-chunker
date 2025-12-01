@@ -59,9 +59,11 @@ class APIAdapter:
             # Process content
             # Convert "auto" strategy to None for automatic selection
             strategy = None if request.strategy == "auto" else request.strategy
-            result = chunker.chunk(
+            raw_result = chunker.chunk(
                 request.content, strategy=strategy, include_analysis=True
             )
+            # With include_analysis=True, result is ChunkingResult
+            result = raw_result  # type: ignore[assignment]
 
             # Convert to API response
             chunks = [chunk.to_dict() for chunk in result.chunks]

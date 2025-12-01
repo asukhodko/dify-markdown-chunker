@@ -12,7 +12,11 @@ try:
 except ImportError:
     # Fallback for testing environment
     try:
-        from ..parser.types import MarkdownNode, NodeType, Stage1Results  # type: ignore[no-redef]
+        from ..parser.types import (  # type: ignore[no-redef]
+            MarkdownNode,
+            NodeType,
+            Stage1Results,
+        )
     except ImportError:
         # Create dummy classes for testing
         class MarkdownNode:  # type: ignore[no-redef]
@@ -34,6 +38,10 @@ except ImportError:
             CODE_BLOCK = "code_block"
             TABLE = "table"
             BLOCKQUOTE = "blockquote"
+            TEXT = "text"
+            LINK = "link"
+            EMPHASIS = "emphasis"
+            STRONG = "strong"
 
         class Stage1Results:  # type: ignore[no-redef]
             def __init__(self):
@@ -64,6 +72,45 @@ class SectionBuilder:
     def __init__(self):
         """Initialize section builder."""
         self.block_id_counter = 0
+
+    def _get_header_level(self, node: MarkdownNode) -> int:
+        """
+        Extract header level from node metadata.
+
+        Handles different metadata formats:
+        - level: direct level number (1-6)
+        - tag: 'h1', 'h2', etc.
+        - markup: '#', '##', etc.
+
+        Args:
+            node: Header AST node
+
+        Returns:
+            Header level (1-6), defaults to 1 if not found
+        """
+        metadata = node.metadata
+
+        # Try direct level first
+        if "level" in metadata:
+            return metadata["level"]
+
+        # Try tag (h1, h2, etc.)
+        if "tag" in metadata:
+            tag = metadata["tag"]
+            if isinstance(tag, str) and tag.startswith("h") and len(tag) == 2:
+                try:
+                    return int(tag[1])
+                except ValueError:
+                    pass
+
+        # Try markup (#, ##, etc.)
+        if "markup" in metadata:
+            markup = metadata["markup"]
+            if isinstance(markup, str) and markup.startswith("#"):
+                return len(markup)
+
+        # Default to level 1
+        return 1
 
     def build_sections(
         self, ast: MarkdownNode, boundary_level: int = 2
@@ -97,7 +144,7 @@ class SectionBuilder:
         for node in self._walk_ast(ast):
             if node.type == NodeType.HEADER:
                 has_seen_header = True
-                level = node.metadata.get("level", 1)
+                level = self._get_header_level(node)
                 text = node.get_text_content().strip()
 
                 # Check if this is a boundary header
@@ -115,9 +162,13 @@ class SectionBuilder:
                     header_stack = header_stack[: level - 1] + [text]
                 else:
                     # Sub-header within section
-                    if current_section:
-                        block = self._create_header_block(node)
-                        current_section.content_blocks.append(block)
+                    # If no current section exists (first header is deeper
+                    # than boundary), create a root section to avoid losing content
+                    if current_section is None:
+                        current_section = self._create_root_section()
+
+                    block = self._create_header_block(node)
+                    current_section.content_blocks.append(block)
 
             elif node.type in [
                 NodeType.PARAGRAPH,
@@ -244,7 +295,7 @@ class SectionBuilder:
             LogicalBlock representing the header
         """
         self.block_id_counter += 1
-        level = node.metadata.get("level", 1)
+        level = self._get_header_level(node)
         text = node.get_text_content().strip()
 
         # Render header with markdown syntax
@@ -343,14 +394,94 @@ class SectionBuilder:
             return "\n".join(f"> {line}" for line in lines)
 
         elif node.type == NodeType.PARAGRAPH:
-            # Return paragraph content as-is
-            # Normalization happens at block-join time, not within nodes
-            return node.get_text_content()
+            # Reconstruct paragraph with inline elements (links, emphasis)
+            return self._render_inline_content(node)
 
         else:
-            # Other content - return as-is
-            # Normalization happens at block-join time, not within nodes
+            # Other content - reconstruct with inline elements
+            return self._render_inline_content(node)
             return node.get_text_content()
+
+    def _render_inline_content(self, node: MarkdownNode) -> str:  # noqa: C901
+        """
+        Render node content preserving inline elements (links, emphasis).
+
+        This method reconstructs markdown from AST, preserving:
+        - Links: [text](url)
+        - Emphasis: *text* or _text_
+        - Strong: **text** or __text__
+        - Inline code: `code`
+
+        Args:
+            node: AST node to render
+
+        Returns:
+            Markdown string with preserved inline formatting
+        """
+        # If node has no children, use content directly
+        if not node.children:
+            if node.content and node.content.strip():
+                return node.content
+            return node.get_text_content()
+
+        # Reconstruct content from children, preserving inline elements
+        parts = []
+        for child in node.children:
+            if child.type == NodeType.LINK:
+                # Reconstruct link: [text](url)
+                # Check for nested IMAGE (badge pattern: [![alt](img)](url))
+                href = child.metadata.get(
+                    "href", child.metadata.get("hre", child.metadata.get("url", ""))
+                )
+
+                # Check if link contains an image (badge)
+                image_children = [c for c in child.children if c.type == NodeType.IMAGE]
+                if image_children:
+                    # Badge: [![alt](img)](url)
+                    img = image_children[0]
+                    alt = img.content or img.metadata.get("alt", "")
+                    src = img.metadata.get("src", "")
+                    if href:
+                        parts.append(f"[![{alt}]({src})]({href})")
+                    else:
+                        parts.append(f"![{alt}]({src})")
+                else:
+                    # Regular link: [text](url)
+                    text = child.content or child.get_text_content()
+                    if href:
+                        parts.append(f"[{text}]({href})")
+                    else:
+                        parts.append(text)
+            elif child.type == NodeType.IMAGE:
+                # Reconstruct image: ![alt](src)
+                alt = child.content or child.metadata.get("alt", "")
+                src = child.metadata.get("src", "")
+                parts.append(f"![{alt}]({src})")
+            elif child.type == NodeType.EMPHASIS:
+                # Reconstruct emphasis: *text*
+                text = child.content or child.get_text_content()
+                parts.append(f"*{text}*")
+            elif child.type == NodeType.STRONG:
+                # Reconstruct strong: **text**
+                text = child.content or child.get_text_content()
+                parts.append(f"**{text}**")
+            elif child.type == NodeType.TEXT:
+                # Plain text
+                text = child.content or child.get_text_content()
+                parts.append(text)
+            else:
+                # Other types - recurse
+                parts.append(self._render_inline_content(child))
+
+        result = "".join(parts)
+
+        # If reconstruction failed, fall back to node.content or get_text_content
+        if not result.strip():
+            if node.content and node.content.strip():
+                return node.content
+            return node.get_text_content()
+
+        return result
 
     def _render_list(self, list_node: MarkdownNode) -> str:
         """
@@ -439,17 +570,23 @@ class SectionBuilder:
                 # Nested list - render separately
                 nested_lists.append(self._render_list(child))
             else:
-                # Regular content
-                content = child.get_text_content()
+                # Regular content - preserve markdown formatting (links, emphasis)
+                # Use child.content if available, fall back to get_text_content()
+                if child.content and child.content.strip():
+                    content = child.content
+                else:
+                    content = child.get_text_content()
                 if content.strip():
                     content_parts.append(content.strip())
 
-        # Join content
-        item_content = (
-            " ".join(content_parts)
-            if content_parts
-            else item_node.get_text_content().strip()
-        )
+        # Join content - preserve markdown formatting
+        if content_parts:
+            item_content = " ".join(content_parts)
+        elif item_node.content and item_node.content.strip():
+            # Use raw content if available (preserves links)
+            item_content = item_node.content.strip()
+        else:
+            item_content = item_node.get_text_content().strip()
 
         # Format the item
         result = f"{indent}{marker} {item_content}"

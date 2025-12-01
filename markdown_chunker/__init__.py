@@ -24,6 +24,8 @@ __version__ = "1.0.0"
 import importlib.util
 from pathlib import Path
 
+from typing import Optional
+
 # Main chunking interface
 from .chunker.core import MarkdownChunker
 from .chunker.types import Chunk, ChunkConfig, ChunkingResult
@@ -89,11 +91,12 @@ def chunk_text(text: str, config: ChunkConfig = None) -> list:
         - ChunkConfig: Configuration options
     """
     chunker = MarkdownChunker(config)
-    result = chunker.chunk(text, include_analysis=True)
+    raw_result = chunker.chunk(text, include_analysis=True)
+    result = raw_result  # type: ignore[assignment]
     return result.chunks
 
 
-def chunk_file(file_path: str, config: ChunkConfig = None) -> list:
+def chunk_file(file_path: str, config: Optional[ChunkConfig] = None) -> list:
     """
     Convenience function to chunk markdown file.
 

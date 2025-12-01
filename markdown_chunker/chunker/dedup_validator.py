@@ -5,7 +5,7 @@ This module validates that chunks don't contain massive unintentional duplicatio
 beyond the configured overlap. It addresses BLOCK-3 from the bug report.
 """
 
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from .types import Chunk
 
@@ -50,7 +50,9 @@ def find_duplicate_substrings(
     return duplicates
 
 
-def calculate_duplication_ratio(chunk: Chunk, previous_chunk: Chunk = None) -> float:
+def calculate_duplication_ratio(  # noqa: C901
+    chunk: Chunk, previous_chunk: Optional[Chunk] = None
+) -> float:
     """
     Calculate the duplication ratio for a chunk.
 

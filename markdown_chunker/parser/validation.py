@@ -366,7 +366,7 @@ class Stage1APIValidator:
             validation.add_error(f"ContentAnalysis validation failed: {str(e)}")
         return validation
 
-    def _validate_analysis_numeric_fields(
+    def _validate_analysis_numeric_fields(  # noqa: C901
         self, analysis, validation: ElementCountValidation
     ) -> None:
         """Validate numeric fields in ContentAnalysis."""

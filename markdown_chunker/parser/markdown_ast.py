@@ -209,10 +209,111 @@ class MarkdownItPyAdapter(MarkdownParser):
                 else:
                     parent_node.content = content
 
-        # Process children tokens recursively
+        # Process children tokens with link context tracking
         if hasattr(token, "children") and token.children:
-            for child_token in token.children:
-                self._process_inline_token(child_token, parent_node)
+            self._process_inline_children(token.children, parent_node)
+
+    def _process_inline_children(  # noqa: C901
+        self, children, parent_node: MarkdownNode
+    ) -> None:
+        """Process inline token children with link/emphasis context tracking.
+
+        This method handles link_open, link_close, image, and text tokens,
+        creating proper LINK and IMAGE nodes in the AST.
+        """
+        current_link: Optional[MarkdownNode] = None
+
+        for child in children:
+            if child.type == "link_open":
+                # Extract href from token attributes
+                href = ""
+                if hasattr(child, "attrGet"):
+                    href = child.attrGet("href") or ""
+                elif hasattr(child, "attrs") and child.attrs:
+                    # Fallback: attrs might be a list of tuples
+                    for attr in child.attrs:
+                        if attr[0] == "href":
+                            href = attr[1]
+                            break
+
+                # Create LINK node
+                current_link = MarkdownNode(
+                    type=NodeType.LINK,
+                    content="",
+                    start_pos=Position(line=0, column=0, offset=0),
+                    end_pos=Position(line=0, column=0, offset=0),
+                    children=[],
+                    metadata={"href": href},
+                )
+                parent_node.children.append(current_link)
+
+            elif child.type == "link_close":
+                # Close current link context
+                current_link = None
+
+            elif child.type == "text":
+                # Add text to current link or parent
+                content = getattr(child, "content", "") or ""
+                if content:
+                    target = current_link if current_link else parent_node
+                    if target.content:
+                        target.content += content
+                    else:
+                        target.content = content
+
+            elif child.type == "code_inline":
+                # Add inline code to current link or parent
+                content = getattr(child, "content", "") or ""
+                if content:
+                    target = current_link if current_link else parent_node
+                    # Wrap in backticks for inline code
+                    code_content = f"`{content}`"
+                    if target.content:
+                        target.content += code_content
+                    else:
+                        target.content = code_content
+
+            elif child.type == "image":
+                # Extract image attributes
+                src = ""
+                alt = getattr(child, "content", "") or ""
+                if hasattr(child, "attrGet"):
+                    src = child.attrGet("src") or ""
+                elif hasattr(child, "attrs") and child.attrs:
+                    for attr in child.attrs:
+                        if attr[0] == "src":
+                            src = attr[1]
+                            break
+
+                # Create IMAGE node
+                image_node = MarkdownNode(
+                    type=NodeType.IMAGE,
+                    content=alt,
+                    start_pos=Position(line=0, column=0, offset=0),
+                    end_pos=Position(line=0, column=0, offset=0),
+                    children=[],
+                    metadata={"src": src, "alt": alt},
+                )
+
+                # Add to current link (for badges) or parent
+                target = current_link if current_link else parent_node
+                target.children.append(image_node)
+
+            elif child.type == "softbreak":
+                # Add newline
+                target = current_link if current_link else parent_node
+                if target.content:
+                    target.content += "\n"
+                else:
+                    target.content = "\n"
+
+            elif child.type == "hardbreak":
+                # Add line break
+                target = current_link if current_link else parent_node
+                if target.content:
+                    target.content += "\n"
+                else:
+                    target.content = "\n"
 
     def _aggregate_child_content(self, node: MarkdownNode):
         """Aggregate content from child nodes for headers/paragraphs."""

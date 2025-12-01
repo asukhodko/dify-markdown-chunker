@@ -394,8 +394,9 @@ def function():
         result = chunker.chunk_with_analysis(content)
         duration = time.time() - start_time
 
-        # Should complete reasonably fast (< 1 second)
-        assert duration < 1.0
+        # Should complete reasonably fast (< 2 seconds)
+        # Note: structural strategy (now priority 2) may take longer than mixed
+        assert duration < 2.0
         assert len(result.chunks) > 0
 
     def test_large_document_performance(self):

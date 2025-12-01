@@ -157,7 +157,7 @@ def _split_at_boundaries(chunk: Chunk, config: ChunkConfig) -> List[Chunk]:
         return _split_large_paragraph(content, max_size, chunk, 0)
 
 
-def _split_large_paragraph(
+def _split_large_paragraph(  # noqa: C901
     para: str, max_size: int, original_chunk: Chunk, start_index: int
 ) -> List[Chunk]:
     """

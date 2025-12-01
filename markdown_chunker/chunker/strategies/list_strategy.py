@@ -83,8 +83,8 @@ class ListStrategy(BaseStrategy):
 
     @property
     def priority(self) -> int:
-        """Medium-high priority."""
-        return 3
+        """Medium priority - list is excluded from auto mode anyway."""
+        return 4
 
     def can_handle(self, analysis: ContentAnalysis, config: ChunkConfig) -> bool:
         """

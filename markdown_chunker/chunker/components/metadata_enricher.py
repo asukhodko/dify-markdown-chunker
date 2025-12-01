@@ -5,7 +5,7 @@ their usability and searchability.
 """
 
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..types import Chunk, ChunkConfig
 
@@ -138,6 +138,18 @@ class MetadataEnricher:
             end_line=chunk.end_line,
             metadata=enriched_metadata,
         )
+
+        # Fix header_path based on actual content
+        enriched_chunk = self.fix_header_path(enriched_chunk)
+
+        # Fix section paths for multi-section chunks
+        enriched_chunk = self.fix_section_paths(enriched_chunk)
+
+        # Fix section_id using consistent slugification
+        enriched_chunk = self.fix_section_id(enriched_chunk)
+
+        # Fix overlap metadata
+        enriched_chunk = self.fix_overlap_metadata(enriched_chunk)
 
         return enriched_chunk
 
@@ -411,3 +423,290 @@ class MetadataEnricher:
             "avg_words_per_chunk": total_words / len(chunks) if chunks else 0,
             "avg_lines_per_chunk": total_lines / len(chunks) if chunks else 0,
         }
+
+    def _extract_headers_from_content(self, content: str) -> List[Tuple[int, str]]:
+        """
+        Extract headers from chunk content.
+
+        Args:
+            content: Chunk content
+
+        Returns:
+            List of (level, header_text) tuples
+        """
+        headers = []
+        for line in content.split("\n"):
+            match = re.match(r"^(#{1,6})\s+(.+)$", line.strip())
+            if match:
+                level = len(match.group(1))
+                text = match.group(2).strip()
+                headers.append((level, text))
+        return headers
+
+    def _build_header_path(self, headers: List[Tuple[int, str]]) -> str:
+        """
+        Build header path from list of headers.
+
+        Creates a hierarchical path based on header levels.
+
+        Args:
+            headers: List of (level, header_text) tuples
+
+        Returns:
+            Header path string like "/Section/Subsection/Topic"
+        """
+        if not headers:
+            return ""
+
+        # Build path maintaining hierarchy
+        path_stack: List[Tuple[int, str]] = []
+
+        for level, text in headers:
+            # Remove headers at same or lower level
+            while path_stack and path_stack[-1][0] >= level:
+                path_stack.pop()
+            path_stack.append((level, text))
+
+        # Return the final path in /path/format
+        if not path_stack:
+            return ""
+        return "/" + "/".join(text for _, text in path_stack)
+
+    def fix_header_path(self, chunk: Chunk) -> Chunk:
+        """
+        Fix header_path metadata based on actual content in the chunk.
+
+        Parses the chunk content to extract real headers and generates
+        header_path based on found headers.
+
+        Args:
+            chunk: Chunk to fix
+
+        Returns:
+            Chunk with corrected header_path metadata
+        """
+        # Check if header_path is already correctly set (starts with /)
+        existing_path = chunk.get_metadata("header_path", "")
+        if (
+            existing_path
+            and isinstance(existing_path, str)
+            and existing_path.startswith("/")
+        ):
+            # header_path is already in correct format, just add headers_in_chunk
+            headers = self._extract_headers_from_content(chunk.content)
+            if headers:
+                new_metadata = chunk.metadata.copy()
+                new_metadata["headers_in_chunk"] = [text for _, text in headers]
+                new_metadata["header_levels"] = [level for level, _ in headers]
+                return Chunk(
+                    content=chunk.content,
+                    start_line=chunk.start_line,
+                    end_line=chunk.end_line,
+                    metadata=new_metadata,
+                )
+            return chunk
+
+        headers = self._extract_headers_from_content(chunk.content)
+
+        if not headers:
+            # No headers in content, keep existing or set empty
+            return chunk
+
+        # Build header path from actual headers
+        header_path = self._build_header_path(headers)
+
+        # Update metadata
+        new_metadata = chunk.metadata.copy()
+        new_metadata["header_path"] = header_path
+
+        # Also store individual headers for reference
+        new_metadata["headers_in_chunk"] = [text for _, text in headers]
+        new_metadata["header_levels"] = [level for level, _ in headers]
+
+        return Chunk(
+            content=chunk.content,
+            start_line=chunk.start_line,
+            end_line=chunk.end_line,
+            metadata=new_metadata,
+        )
+
+    @staticmethod
+    def slugify(text: str) -> str:
+        """
+        Convert text to a consistent slug format.
+
+        This method ensures that identical header texts produce identical
+        section_ids across all chunks.
+
+        Args:
+            text: Text to slugify (typically a header)
+
+        Returns:
+            Slugified text (lowercase, alphanumeric with hyphens)
+        """
+        if not text:
+            return ""
+
+        # Convert to lowercase
+        slug = text.lower()
+
+        # Remove markdown formatting (bold, italic, code)
+        slug = re.sub(r"\*\*([^*]+)\*\*", r"\1", slug)  # bold
+        slug = re.sub(r"\*([^*]+)\*", r"\1", slug)  # italic
+        slug = re.sub(r"`([^`]+)`", r"\1", slug)  # inline code
+        slug = re.sub(r"__([^_]+)__", r"\1", slug)  # bold alt
+        slug = re.sub(r"_([^_]+)_", r"\1", slug)  # italic alt
+
+        # Replace non-alphanumeric characters with hyphens
+        slug = re.sub(r"[^a-z0-9]+", "-", slug)
+
+        # Remove leading/trailing hyphens
+        slug = slug.strip("-")
+
+        # Collapse multiple hyphens
+        slug = re.sub(r"-+", "-", slug)
+
+        return slug
+
+    def generate_section_id(self, header_text: str) -> str:
+        """
+        Generate a consistent section_id from header text.
+
+        Args:
+            header_text: Header text to convert
+
+        Returns:
+            Section ID (slugified header)
+        """
+        return self.slugify(header_text)
+
+    def fix_section_id(self, chunk: Chunk) -> Chunk:
+        """
+        Fix section_id metadata using consistent slugification.
+
+        Ensures that identical headers produce identical section_ids.
+
+        Args:
+            chunk: Chunk to fix
+
+        Returns:
+            Chunk with corrected section_id metadata
+        """
+        headers = self._extract_headers_from_content(chunk.content)
+
+        if not headers:
+            return chunk
+
+        new_metadata = chunk.metadata.copy()
+
+        # Generate section_id from the first (primary) header
+        primary_header = headers[0][1]  # (level, text) -> text
+        section_id = self.generate_section_id(primary_header)
+
+        if section_id:
+            new_metadata["section_id"] = section_id
+
+        # Also generate IDs for all headers in chunk
+        header_ids = [self.generate_section_id(text) for _, text in headers]
+        new_metadata["header_ids"] = header_ids
+
+        return Chunk(
+            content=chunk.content,
+            start_line=chunk.start_line,
+            end_line=chunk.end_line,
+            metadata=new_metadata,
+        )
+
+    def fix_overlap_metadata(self, chunk: Chunk) -> Chunk:
+        """
+        Fix overlap_size metadata to reflect actual overlap size.
+
+        If the chunk has overlap, validates that overlap_size matches
+        the actual overlap content size.
+
+        Args:
+            chunk: Chunk to fix
+
+        Returns:
+            Chunk with corrected overlap_size metadata
+        """
+        has_overlap = chunk.get_metadata("has_overlap", False)
+
+        if not has_overlap:
+            return chunk
+
+        # overlap_size should already be set correctly by OverlapManager
+        # This method validates and ensures consistency
+        overlap_size = chunk.get_metadata("overlap_size", 0)
+
+        new_metadata = chunk.metadata.copy()
+
+        # Ensure overlap_size is an integer
+        if not isinstance(overlap_size, int):
+            new_metadata["overlap_size"] = int(overlap_size) if overlap_size else 0
+
+        # Add overlap ratio for debugging
+        content_size = len(chunk.content)
+        if content_size > 0 and overlap_size > 0:
+            overlap_ratio = overlap_size / content_size
+            new_metadata["overlap_ratio"] = round(overlap_ratio, 3)
+
+        return Chunk(
+            content=chunk.content,
+            start_line=chunk.start_line,
+            end_line=chunk.end_line,
+            metadata=new_metadata,
+        )
+
+    def fix_section_paths(self, chunk: Chunk) -> Chunk:
+        """
+        Record all section paths for multi-section chunks.
+
+        If a chunk contains content from multiple sections (multiple top-level
+        headers), this method records all section paths in metadata.
+
+        Args:
+            chunk: Chunk to fix
+
+        Returns:
+            Chunk with section_paths metadata
+        """
+        headers = self._extract_headers_from_content(chunk.content)
+
+        if not headers:
+            return chunk
+
+        min_level = min(level for level, _ in headers)
+
+        # Build section paths for each top-level header
+        section_paths: List[str] = []
+        current_path_stack: List[Tuple[int, str]] = []
+
+        for level, text in headers:
+            # Update path stack
+            while current_path_stack and current_path_stack[-1][0] >= level:
+                current_path_stack.pop()
+            current_path_stack.append((level, text))
+
+            # If this is a top-level header, record the path
+            if level == min_level:
+                path = "/" + "/".join(t for _, t in current_path_stack)
+                if path not in section_paths:
+                    section_paths.append(path)
+
+        # Update metadata
+        new_metadata = chunk.metadata.copy()
+
+        if len(section_paths) > 1:
+            new_metadata["section_paths"] = section_paths
+            new_metadata["multi_section"] = True
+        elif section_paths:
+            new_metadata["section_paths"] = section_paths
+            new_metadata["multi_section"] = False
+
+        return Chunk(
+            content=chunk.content,
+            start_line=chunk.start_line,
+            end_line=chunk.end_line,
+            metadata=new_metadata,
+        )

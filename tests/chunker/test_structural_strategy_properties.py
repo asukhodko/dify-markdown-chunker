@@ -115,7 +115,7 @@ class TestStructuralStrategyProperties:
 
     @settings(max_examples=50, deadline=5000)
     @given(markdown_text=markdown_with_headers())
-    def test_property_no_data_loss(self, markdown_text):
+    def test_property_no_data_loss(self, markdown_text):  # noqa: C901
         """
         **Property 3b: No Data Loss**
 
@@ -155,6 +155,8 @@ class TestStructuralStrategyProperties:
         all_chunk_content_printable = "".join(
             c for c in all_chunk_content if c.isprintable() or c.isspace()
         )
+        # Also normalize backslashes in chunk content for consistent comparison
+        all_chunk_content_normalized = all_chunk_content_printable.replace("\\", "")
 
         for line in original_lines:
             if len(line) > 10:  # Only check substantial lines
@@ -195,15 +197,16 @@ class TestStructuralStrategyProperties:
                 if words:
                     # Check if at least 50% of significant words appear in chunks
                     # This allows for whitespace/formatting changes and markdown normalization
+                    # Use normalized chunk content for consistent comparison
                     words_found = sum(
-                        1 for w in words if w in all_chunk_content_printable
+                        1 for w in words if w in all_chunk_content_normalized
                     )
                     if words_found >= len(words) * 0.5:
                         lines_found += 1
                 else:
                     # No significant words (e.g., short header like "## 000 00 0")
                     # Check if the normalized line appears in chunks directly
-                    if normalized_line in all_chunk_content_printable:
+                    if normalized_line in all_chunk_content_normalized:
                         lines_found += 1
 
         # At least 65% of NORMAL content lines should be preserved

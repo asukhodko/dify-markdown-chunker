@@ -207,9 +207,10 @@ class TestTableStrategyProperties:
                 len(chunks_with_header) >= 1
             ), f"Table header not preserved: {header[:50]}..."
 
-            # If header appears, separator should follow
-            # Note: We only check if the EXACT header line is followed by separator
-            # Partial matches in data rows should not trigger this check
+            # If header appears, separator should follow AT LEAST ONCE
+            # Note: Header text may also appear as data row in another table,
+            # so we only require that header+separator appears at least once
+            header_with_separator_found = False
             for chunk in chunks_with_header:
                 lines = chunk.content.split("\n")
                 for i, line in enumerate(lines):
@@ -220,9 +221,15 @@ class TestTableStrategyProperties:
                         is_separator = bool(
                             re.match(r"^\|[\s:|-]+\|$", next_line.strip())
                         )
-                        assert (
-                            is_separator
-                        ), "Table separator not found after header in chunk"
+                        if is_separator:
+                            header_with_separator_found = True
+                            break
+                if header_with_separator_found:
+                    break
+
+            assert (
+                header_with_separator_found
+            ), f"Table header '{header[:30]}...' not found with separator in any chunk"
 
     @settings(max_examples=50, deadline=5000)
     @given(markdown_text=markdown_with_tables(min_tables=1, max_tables=2))

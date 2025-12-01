@@ -125,7 +125,7 @@ class SentencesStrategy(BaseStrategy):
 
         return max(0.0, min(1.0, score))
 
-    def apply(
+    def apply(  # noqa: C901
         self, content: str, stage1_results: Stage1Results, config: ChunkConfig
     ) -> List[Chunk]:
         """
@@ -260,7 +260,7 @@ class SentencesStrategy(BaseStrategy):
 
         return self._validate_chunks(chunks, config)
 
-    def _split_into_paragraphs(self, content: str) -> List[str]:
+    def _split_into_paragraphs(self, content: str) -> List[str]:  # noqa: C901
         """
         Split content into paragraphs.
 

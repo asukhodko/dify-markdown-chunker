@@ -98,12 +98,14 @@ class ElementDetector:
             else:
                 if current_list is not None:
                     # End current list
+                    start = int(current_list["start_line"])  # type: ignore
+                    nesting = int(current_list["max_nesting"])  # type: ignore
                     markdown_list = MarkdownList(
                         type=str(current_list["type"]),
                         items=current_items,
-                        start_line=int(current_list["start_line"]),  # type: ignore[arg-type]
+                        start_line=start,
                         end_line=line_num - 1,
-                        max_nesting_level=int(current_list["max_nesting"]),  # type: ignore[arg-type]
+                        max_nesting_level=nesting,
                     )
                     lists.append(markdown_list)
                     current_list = None
@@ -111,12 +113,14 @@ class ElementDetector:
 
         # Handle list at end of file
         if current_list is not None:
+            start = int(current_list["start_line"])  # type: ignore
+            nesting = int(current_list["max_nesting"])  # type: ignore
             markdown_list = MarkdownList(
                 type=str(current_list["type"]),
                 items=current_items,
-                start_line=int(current_list["start_line"]),  # type: ignore[arg-type]
+                start_line=start,
                 end_line=len(lines) - 1,
-                max_nesting_level=int(current_list["max_nesting"]),  # type: ignore[arg-type]
+                max_nesting_level=nesting,
             )
             lists.append(markdown_list)
 

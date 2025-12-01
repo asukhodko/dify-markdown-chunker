@@ -509,7 +509,7 @@ class ContentAnalysis:
         self._normalize_ratios()
         self._calculate_derived_metrics()
 
-    def _validate_required_fields(self):
+    def _validate_required_fields(self):  # noqa: C901
         """Validate required fields."""
         if self.total_chars < 0:
             raise ValueError("total_chars must be >= 0")

@@ -93,8 +93,8 @@ class MixedStrategy(BaseStrategy):
 
     @property
     def priority(self) -> int:
-        """High priority."""
-        return 2
+        """Medium priority - mixed is after structural per Requirement 6.5."""
+        return 3
 
     def can_handle(self, analysis: ContentAnalysis, config: ChunkConfig) -> bool:
         """

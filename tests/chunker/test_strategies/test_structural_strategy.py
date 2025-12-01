@@ -28,7 +28,7 @@ class TestStructuralStrategy:
         strategy = StructuralStrategy()
 
         assert strategy.name == "structural"
-        assert strategy.priority == 5
+        assert strategy.priority == 2  # High priority per Requirement 6.5
 
     def test_can_handle_sufficient_headers(self):
         """Test can_handle with sufficient headers and hierarchy."""

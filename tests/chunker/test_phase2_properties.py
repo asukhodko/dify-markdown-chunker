@@ -79,7 +79,7 @@ class TestPhase2Properties:
 
     @settings(max_examples=100, deadline=10000)
     @given(document=document_with_headers_and_content(min_sections=2, max_sections=5))
-    def test_property_1_header_content_cohesion(self, document):
+    def test_property_1_header_content_cohesion(self, document):  # noqa: C901
         """
         **Property 1: Header-Content Cohesion**
 

@@ -12,7 +12,7 @@ Algorithm Documentation:
 
 from typing import Dict, List, Optional
 
-from .types import ContentAnalysis, ElementCollection, FencedBlock
+from .types import ContentAnalysis, ElementCollection, FencedBlock, PreambleInfo
 
 
 class ContentAnalyzer:
@@ -24,7 +24,7 @@ class ContentAnalyzer:
         self.list_ratio_threshold = 0.6
         self.mixed_content_threshold = 0.3
 
-    def analyze_content(
+    def analyze_content(  # noqa: C901
         self,
         md_text: str,
         fenced_blocks: Optional[List[FencedBlock]] = None,

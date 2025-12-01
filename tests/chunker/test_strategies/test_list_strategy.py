@@ -98,7 +98,7 @@ class TestListStrategy:
         strategy = ListStrategy()
 
         assert strategy.name == "list"
-        assert strategy.priority == 3
+        assert strategy.priority == 4  # Medium priority (excluded from auto anyway)
 
     def test_can_handle_high_list_count(self):
         """Test can_handle with high list count."""

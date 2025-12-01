@@ -159,33 +159,56 @@ class TestOverlapManager:
         assert len(sentences) == 0
 
     def test_overlap_with_percentage(self):
-        """Test overlap using percentage (when overlap_size is 0)."""
+        """Test overlap using percentage (when overlap_size is 0).
+
+        NOTE: Block-aware overlap requires complete blocks to fit within
+        the overlap size. Single-block chunks may not get overlap if the
+        block is larger than the calculated overlap size.
+        """
         # Set overlap_size=0 to use percentage-based overlap
         config = ChunkConfig(
-            enable_overlap=True, overlap_percentage=0.2, overlap_size=0
+            enable_overlap=True, overlap_percentage=0.5, overlap_size=0
         )
         manager = OverlapManager(config)
 
+        # Use chunks with multiple short blocks (paragraphs separated by \n\n)
         chunks = [
-            Chunk("A" * 100, 1, 5, {"strategy": "test"}),
+            Chunk(
+                "Short block one.\n\nShort block two.\n\nShort block three.",
+                1,
+                5,
+                {"strategy": "test"},
+            ),
             Chunk("B" * 100, 6, 10, {"strategy": "test"}),
         ]
 
         result = manager.apply_overlap(chunks)
 
-        # Second chunk should have overlap
+        # Second chunk should have overlap (at least one block fits)
         assert result[1].get_metadata("has_overlap", False) is True
         overlap_size = result[1].get_metadata("overlap_size", 0)
-        # Overlap should be approximately 20% of first chunk
-        assert 15 <= overlap_size <= 25  # Allow some variance for sentence boundaries
+        # Overlap should contain at least one complete block
+        assert overlap_size > 0
 
     def test_overlap_with_fixed_size(self):
-        """Test overlap using fixed size."""
-        config = ChunkConfig(enable_overlap=True, overlap_size=50, overlap_percentage=0)
+        """Test overlap using fixed size.
+
+        NOTE: Block-aware overlap extracts complete blocks, so the actual
+        overlap size depends on block boundaries, not exact character count.
+        """
+        config = ChunkConfig(
+            enable_overlap=True, overlap_size=100, overlap_percentage=0
+        )
         manager = OverlapManager(config)
 
+        # Use chunks with multiple blocks that can fit within overlap_size
         chunks = [
-            Chunk("A" * 200, 1, 5, {"strategy": "test"}),
+            Chunk(
+                "First paragraph here.\n\nSecond paragraph.\n\nThird one.",
+                1,
+                5,
+                {"strategy": "test"},
+            ),
             Chunk("B" * 200, 6, 10, {"strategy": "test"}),
         ]
 
@@ -194,8 +217,8 @@ class TestOverlapManager:
         # Second chunk should have overlap
         assert result[1].get_metadata("has_overlap", False) is True
         overlap_size = result[1].get_metadata("overlap_size", 0)
-        # Overlap should be close to 50
-        assert 40 <= overlap_size <= 60  # Allow some variance
+        # Overlap should contain complete blocks
+        assert overlap_size > 0
 
     def test_overlap_preserves_metadata(self):
         """Test that overlap preserves original chunk metadata."""

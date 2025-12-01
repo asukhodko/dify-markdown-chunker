@@ -97,7 +97,7 @@ class TestMixedStrategy:
         strategy = MixedStrategy()
 
         assert strategy.name == "mixed"
-        assert strategy.priority == 2
+        assert strategy.priority == 3  # Medium priority per Requirement 6.5
 
     def test_can_handle_mixed_content(self):
         """Test can_handle with mixed content."""

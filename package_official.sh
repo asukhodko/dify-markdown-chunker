@@ -4,7 +4,7 @@
 PLUGIN_DIR="$(cd "$(dirname "$0")" && pwd)"
 PLUGIN_DIRNAME="$(basename "$PLUGIN_DIR")"
 PLUGIN_NAME="markdown-chunker"
-PLUGIN_VERSION=$(grep '^version:' "$PLUGIN_DIR/manifest.yaml" | head -1 | sed 's/version: *//' | tr -d '"' | tr -d "'")
+PLUGIN_VERSION=$(grep '^version:' "$PLUGIN_DIR/manifest.yaml" | head -1 | sed 's/version: *//' | tr -d '"' | tr -d "'" | tr -d '\r')
 PARENT_DIR="$(dirname "$PLUGIN_DIR")"
 
 if [ -z "$PLUGIN_VERSION" ]; then

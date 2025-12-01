@@ -115,8 +115,8 @@ class StructuralStrategy(BaseStrategy):
 
     @property
     def priority(self) -> int:
-        """Medium-low priority."""
-        return 5
+        """High priority - structural is preferred over mixed per Requirement 6.5."""
+        return 2
 
     def can_handle(self, analysis: ContentAnalysis, config: ChunkConfig) -> bool:
         """
@@ -809,9 +809,7 @@ class StructuralStrategy(BaseStrategy):
         else:
             if isinstance(analysis.header_count, dict):
                 total_headers = sum(analysis.header_count.values())
-                return (
-                    f"Too few headers ({total_headers}) for structural strategy"
-                )
+                return f"Too few headers ({total_headers}) for structural strategy"
             elif analysis.header_count < 3:
                 return (
                     f"Too few headers ({analysis.header_count}) for structural strategy"
@@ -874,7 +872,7 @@ class StructuralStrategy(BaseStrategy):
         # Validate chunks (add oversize metadata, etc.)
         return self._validate_chunks(chunks, config)
 
-    def _create_chunk_from_section(
+    def _create_chunk_from_section(  # noqa: C901
         self, section, config: ChunkConfig
     ) -> Optional[Chunk]:
         """
@@ -948,8 +946,13 @@ class StructuralStrategy(BaseStrategy):
         """
         Split a large section into multiple chunks (Phase 2 Task 5.1).
 
+        Split priority (Requirements 3.2, 3.3):
+        1. First try to split at sub-header boundaries
+        2. If no sub-headers, split at paragraph/block boundaries
+        3. Add section header to each resulting chunk (Requirement 3.4)
+
         Rules:
-        - Keep header with first chunk
+        - Keep header with each chunk for context
         - Split only at LogicalBlock boundaries
         - Handle oversize atomic blocks (MUST create chunk, no data loss)
         - Add overlap between chunks if enabled
@@ -961,27 +964,119 @@ class StructuralStrategy(BaseStrategy):
         Returns:
             List of chunks from the section
         """
+        # Task 4.2: First try to split at sub-header boundaries
+        content_blocks = getattr(section, "content_blocks", [])
+        sub_headers = [b for b in content_blocks if b.block_type == "header"]
+
+        if sub_headers:
+            # Split at sub-header boundaries
+            chunks = self._split_at_subheaders(section, config)
+            if chunks:
+                return chunks
+
+        # Task 4.3: No sub-headers - split at paragraph/block boundaries
+        return self._split_at_block_boundaries(section, config)
+
+    def _split_at_subheaders(self, section, config: ChunkConfig) -> List[Chunk]:
+        """
+        Split section at sub-header boundaries (Task 4.2).
+
+        Requirements 3.2: Split at sub-header boundaries first.
+        Requirements 3.4: Include section header in each resulting chunk.
+
+        Args:
+            section: Section with sub-headers
+            config: Chunking configuration
+
+        Returns:
+            List of chunks split at sub-header boundaries
+        """
         chunks = []
-        current_blocks = []
-        current_size = 0
-
-        # Always include header in first chunk
-        if section.header:
-            # Handle both Phase 1 HeaderInfo and Phase 2 LogicalBlock
-            if hasattr(section.header, "content"):
-                # Phase 2 LogicalBlock
-                current_blocks.append(section.header)
-                current_size = len(section.header.content)
-            else:
-                # Phase 1 HeaderInfo - convert to LogicalBlock-like structure
-                header_content = f"{'#' * section.header.level} {section.header.text}"
-                current_size = len(header_content)
-                # Don't add to current_blocks for Phase 1 compatibility
-
-        # Handle both Phase 1 and Phase 2 section structures
         content_blocks = getattr(section, "content_blocks", [])
 
+        # Group blocks by sub-headers
+        groups: list = []
+        current_group: list = []
+
         for block in content_blocks:
+            if block.block_type == "header":
+                # Start new group at each sub-header
+                if current_group:
+                    groups.append(current_group)
+                current_group = [block]
+            else:
+                current_group.append(block)
+
+        # Don't forget the last group
+        if current_group:
+            groups.append(current_group)
+
+        if not groups:
+            return []
+
+        # Create chunks from groups, adding section header to each
+        for group in groups:
+            group_size = sum(len(b.content) for b in group)
+
+            # Add section header size
+            header_size = len(section.header.content) if section.header else 0
+            total_size = group_size + header_size
+
+            if total_size <= config.max_chunk_size:
+                # Group fits in one chunk
+                chunk = self._create_chunk_with_section_header(
+                    group, section, config, is_oversize=False
+                )
+                if chunk:
+                    chunks.append(chunk)
+            else:
+                # Group still too large - split at block boundaries
+                sub_chunks = self._split_blocks_with_header(group, section, config)
+                chunks.extend(sub_chunks)
+
+        return chunks
+
+    def _split_at_block_boundaries(self, section, config: ChunkConfig) -> List[Chunk]:
+        """
+        Split section at paragraph/block boundaries (Task 4.3).
+
+        Requirements 3.3: Split at paragraph boundaries if no sub-headers.
+        Requirements 3.4: Include section header in each resulting chunk.
+
+        Args:
+            section: Section without sub-headers
+            config: Chunking configuration
+
+        Returns:
+            List of chunks split at block boundaries
+        """
+        content_blocks = getattr(section, "content_blocks", [])
+        return self._split_blocks_with_header(content_blocks, section, config)
+
+    def _split_blocks_with_header(  # noqa: C901
+        self, blocks, section, config: ChunkConfig
+    ) -> List[Chunk]:
+        """
+        Split blocks into chunks, adding section header to each (Task 4.4).
+
+        Requirements 3.4: Include section header in each resulting chunk.
+
+        Args:
+            blocks: List of LogicalBlock objects to split
+            section: Parent section (for header)
+            config: Chunking configuration
+
+        Returns:
+            List of chunks with section header in each
+        """
+        chunks: list = []
+        current_blocks: list = []
+        current_size = 0
+
+        # Calculate header size (will be added to each chunk)
+        header_size = len(section.header.content) if section.header else 0
+
+        for block in blocks:
             # Handle both Phase 1 and Phase 2 block structures
             if hasattr(block, "content"):
                 block_size = len(block.content)
@@ -993,17 +1088,12 @@ class StructuralStrategy(BaseStrategy):
                 block_size = len(str(block))
 
             # Check if single block exceeds max size (oversize atomic block)
-            if block_size > config.max_chunk_size:
+            # Account for header size that will be added
+            if block_size + header_size > config.max_chunk_size:
                 # Finish current chunk if any
                 if current_blocks:
-                    chunk = self._create_chunk_from_blocks_simple(
-                        current_blocks,
-                        section.header_path,
-                        section.start_line,
-                        config,
-                        is_oversize=False,
-                        header_level=section.header_level,
-                        header_text=section.header_text,
+                    chunk = self._create_chunk_with_section_header(
+                        current_blocks, section, config, is_oversize=False
                     )
                     if chunk:
                         chunks.append(chunk)
@@ -1011,37 +1101,29 @@ class StructuralStrategy(BaseStrategy):
                     current_size = 0
 
                 # MUST create oversize chunk - cannot drop atomic blocks (data loss)
-                # This is required by Requirements 1.5 and 5.5
-                chunk = self._create_chunk_from_blocks_simple(
+                # This is required by Requirements 1.4 and 7.4
+                chunk = self._create_chunk_with_section_header(
                     [block],
-                    section.header_path,
-                    section.start_line,
+                    section,
                     config,
                     is_oversize=True,
                     oversize_reason="atomic_block",
-                    header_level=section.header_level,
-                    header_text=section.header_text,
                 )
                 if chunk:
                     chunks.append(chunk)
                 continue
 
-            # Check if adding block would exceed size
-            if current_size + block_size > config.max_chunk_size and current_blocks:
-                # Create chunk from current blocks
-                chunk = self._create_chunk_from_blocks_simple(
-                    current_blocks,
-                    section.header_path,
-                    section.start_line,
-                    config,
-                    is_oversize=False,
-                    header_level=section.header_level,
-                    header_text=section.header_text,
+            # Check if adding block would exceed size (including header)
+            potential_size = current_size + block_size + header_size
+            if potential_size > config.max_chunk_size and current_blocks:
+                # Create chunk from current blocks with section header
+                chunk = self._create_chunk_with_section_header(
+                    current_blocks, section, config, is_oversize=False
                 )
                 if chunk:
                     chunks.append(chunk)
 
-                # Start new chunk with overlap if enabled (Task 5.2)
+                # Start new chunk with overlap if enabled
                 if config.enable_overlap and chunks:
                     overlap_blocks = self._get_overlap_blocks(
                         current_blocks, config.overlap_size
@@ -1058,25 +1140,136 @@ class StructuralStrategy(BaseStrategy):
 
         # Create final chunk
         if current_blocks:
-            chunk = self._create_chunk_from_blocks_simple(
-                current_blocks,
-                section.header_path,
-                section.start_line,
-                config,
-                is_oversize=False,
-                header_level=section.header_level,
-                header_text=section.header_text,
+            chunk = self._create_chunk_with_section_header(
+                current_blocks, section, config, is_oversize=False
             )
             if chunk:
                 chunks.append(chunk)
 
-        # Mark overlap in chunks (Task 5.3)
+        # Mark overlap in chunks
         if config.enable_overlap and len(chunks) > 1:
             self._mark_overlap_in_chunks(chunks)
 
         return chunks
 
-    def _create_chunk_from_blocks_simple(
+    def _create_chunk_with_section_header(  # noqa: C901
+        self,
+        blocks,
+        section,
+        config: ChunkConfig,
+        is_oversize: bool = False,
+        oversize_reason: str = None,
+    ) -> Optional[Chunk]:
+        """
+        Create chunk with section header prepended (Task 4.4).
+
+        Requirements 3.4: Include section header in each resulting chunk.
+        Requirements 5.4: Indicate section_part in metadata.
+
+        Args:
+            blocks: List of LogicalBlock objects
+            section: Parent section (for header and metadata)
+            config: Chunking configuration
+            is_oversize: Whether chunk exceeds max_chunk_size
+            oversize_reason: Reason for oversize
+
+        Returns:
+            Chunk with section header prepended
+        """
+        if not blocks:
+            return None
+
+        # Build content with section header prepended
+        content_parts = []
+
+        # Task 4.4: Add section header to each split chunk
+        if section.header:
+            content_parts.append(section.header.content)
+
+        # Add block contents
+        for block in blocks:
+            if hasattr(block, "content"):
+                content_parts.append(block.content)
+            elif hasattr(block, "text"):
+                content_parts.append(str(block.text))
+            else:
+                content_parts.append(str(block))
+
+        # Use text normalizer to join content blocks properly
+        try:
+            from ..text_normalizer import join_content_blocks
+
+            content = join_content_blocks(content_parts, separator="\n\n")
+        except (ImportError, ValueError) as e:
+            logger.warning(f"Content block joining failed: {e}. Using simple join.")
+            content = "\n\n".join(content_parts)
+
+        # Calculate line numbers
+        start_line = min(block.start_line for block in blocks)
+        end_line = max(block.end_line for block in blocks)
+
+        # Detect content types
+        has_code = any(getattr(b, "block_type", "") == "code" for b in blocks)
+        has_table = any(getattr(b, "block_type", "") == "table" for b in blocks)
+        has_list = any(getattr(b, "block_type", "") == "list" for b in blocks)
+
+        # Detect links
+        has_links = False
+        try:
+            from ..url_detector import URLDetector
+
+            detector = URLDetector()
+            has_links = detector.has_urls(content)
+        except Exception:
+            has_links = bool(re.search(r"https?://|www\.|\[.+\]\(.+\)", content))
+
+        metadata = {
+            "content_type": "section",
+            "strategy": self.name,
+            "section_path": section.header_path,
+            "start_offset": min(block.start_offset for block in blocks),
+            "end_offset": max(block.end_offset for block in blocks),
+            "block_ids": [block.metadata.get("id") for block in blocks],
+            "has_code": has_code,
+            "has_table": has_table,
+            "has_list": has_list,
+            "has_links": has_links,
+            "is_oversize": is_oversize,
+            "oversize": is_oversize,
+            "allow_oversize": is_oversize,
+            "has_overlap": False,
+            # Task 4.4 / Requirement 5.4: Indicate this is a section part
+            "section_part": True,
+        }
+
+        # Add header metadata
+        if section.header_level > 0:
+            metadata["header_level"] = section.header_level
+        if section.header_text:
+            metadata["header_text"] = section.header_text
+        if section.header_path:
+            filtered_path = [p for p in section.header_path if p and p.strip()]
+            if filtered_path:
+                metadata["header_path"] = "/" + "/".join(filtered_path)
+
+        if is_oversize and oversize_reason:
+            metadata["oversize_reason"] = oversize_reason
+
+        # Generate stable section ID
+        if section.header_path:
+            filtered_path = [p for p in section.header_path if p and p.strip()]
+            if filtered_path:
+                section_id = "-".join(filtered_path).lower()
+                section_id = re.sub(r"[^a-z0-9-]", "-", section_id)
+                section_id = re.sub(r"-+", "-", section_id).strip("-")
+                if section_id:
+                    metadata["section_id"] = section_id
+
+        return Chunk(
+            content=content, start_line=start_line, end_line=end_line, metadata=metadata
+        )
+
+    def _create_chunk_from_blocks_simple(  # noqa: C901
         self,
         blocks,
         section_path,

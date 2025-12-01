@@ -62,7 +62,7 @@ class ChunkingOrchestrator:
         self._fallback_manager = fallback_manager
         self._parser = parser
 
-    def chunk_with_strategy(
+    def chunk_with_strategy(  # noqa: C901
         self, md_text: str, strategy_override: Optional[str] = None
     ) -> ChunkingResult:
         """

@@ -98,7 +98,7 @@ class TestTableStrategy:
         strategy = TableStrategy()
 
         assert strategy.name == "table"
-        assert strategy.priority == 4
+        assert strategy.priority == 5  # Medium-low priority
 
     def test_can_handle_high_table_count(self):
         """Test can_handle with high table count."""

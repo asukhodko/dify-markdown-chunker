@@ -420,7 +420,7 @@ class ErrorSummary:
         )
 
 
-class ErrorCollector:
+class EnhancedErrorCollector:
     """
     Enhanced error collector with structured logging.
 

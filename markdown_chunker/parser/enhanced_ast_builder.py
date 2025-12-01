@@ -532,7 +532,9 @@ class EnhancedASTBuilder:
     def _check_orphaned_nodes(self, ast: MarkdownNode) -> None:
         """Check for orphaned nodes that should have parents."""
 
-        def collect_all_nodes(node: MarkdownNode, all_nodes: set[int], parent_map: dict[int, int]) -> None:
+        def collect_all_nodes(
+            node: MarkdownNode, all_nodes: set[int], parent_map: dict[int, int]
+        ) -> None:
             all_nodes.add(id(node))
             for child in node.children:
                 parent_map[id(child)] = id(node)

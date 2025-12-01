@@ -111,7 +111,7 @@ class TestListStrategyProperties:
 
     @settings(max_examples=50, deadline=5000)
     @given(markdown_text=markdown_with_lists(min_items=5, max_items=20))
-    def test_property_list_structure_preserved(self, markdown_text):
+    def test_property_list_structure_preserved(self, markdown_text):  # noqa: C901
         """
         For any markdown with lists, list structure should be preserved
         in chunks (items not reordered or lost).
