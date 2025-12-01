@@ -83,19 +83,16 @@ class StrategySelector:
         Select strategy using strict priority-based selection.
 
         Returns the first strategy (by priority) that can handle the content.
-        
+
         Note: List strategy is excluded from auto-selection for safety.
         It can still be used via explicit strategy override.
         """
         logger.debug("Using strict strategy selection")
-        
+
         # FIX 2: Filter out list strategy in auto mode for safety
         # List strategy can lose non-list content in mixed documents
-        safe_strategies = [
-            s for s in self.strategies 
-            if s.name != "list"
-        ]
-        
+        safe_strategies = [s for s in self.strategies if s.name != "list"]
+
         logger.info("Auto mode: list strategy excluded for safety (mixed-content risk)")
 
         for strategy in safe_strategies:
@@ -111,12 +108,12 @@ class StrategySelector:
             if strategy.name == "structural":
                 logger.warning("No strategy matched, using structural as fallback")
                 return strategy
-        
+
         # Emergency fallback: return first safe strategy
         if safe_strategies:
             logger.warning(f"Emergency fallback to: {safe_strategies[0].name}")
             return safe_strategies[0]
-        
+
         raise StrategySelectionError("No safe strategy available")
 
     def _select_weighted(
@@ -127,18 +124,15 @@ class StrategySelector:
 
         Evaluates all applicable strategies and selects the one with
         the highest combined score.
-        
+
         Note: List strategy is excluded from auto-selection for safety.
         It can still be used via explicit strategy override.
         """
         logger.debug("Using weighted strategy selection")
-        
+
         # FIX 2: Filter out list strategy in auto mode for safety
-        safe_strategies = [
-            s for s in self.strategies 
-            if s.name != "list"
-        ]
-        
+        safe_strategies = [s for s in self.strategies if s.name != "list"]
+
         logger.info("Auto mode: list strategy excluded for safety (mixed-content risk)")
 
         candidates = []

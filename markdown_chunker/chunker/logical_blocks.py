@@ -14,11 +14,11 @@ from typing import Any, Dict, List, Optional
 class LogicalBlock:
     """
     Represents a semantic unit that should not be split.
-    
+
     A LogicalBlock is an atomic unit of content (paragraph, list item, code block,
     table, or header) that maintains semantic coherence. Blocks are the building
     blocks for section-aware chunking.
-    
+
     Attributes:
         block_type: Type of block ("paragraph", "list_item", "code", "table", "header")
         content: Rendered Markdown content of this block
@@ -29,7 +29,7 @@ class LogicalBlock:
         end_line: Line number where block ends (1-based)
         is_atomic: Whether this block can be split further (default: True)
         metadata: Additional metadata (e.g., block ID, language for code)
-    
+
     Examples:
         >>> block = LogicalBlock(
         ...     block_type="paragraph",
@@ -45,7 +45,7 @@ class LogicalBlock:
         >>> print(block.size)
         20
     """
-    
+
     block_type: str
     content: str
     ast_node: Any
@@ -55,17 +55,17 @@ class LogicalBlock:
     end_line: int
     is_atomic: bool = True
     metadata: Dict[str, Any] = field(default_factory=dict)
-    
+
     @property
     def size(self) -> int:
         """
         Size of block content in characters.
-        
+
         Returns:
             Number of characters in the block content.
         """
         return len(self.content)
-    
+
     def __post_init__(self) -> None:
         """Validate block data after initialization."""
         if self.start_line < 1:
@@ -82,19 +82,19 @@ class LogicalBlock:
 class Section(LogicalBlock):
     """
     A section with header and content blocks.
-    
+
     A Section represents a hierarchical unit in a markdown document, consisting
     of an optional header and a list of content blocks (paragraphs, lists, code,
     tables, sub-headers). Sections are used for section-aware chunking that
     respects document structure.
-    
+
     Attributes:
         header: Optional header block for this section (None for root section)
         header_level: Header level (0 for root, 1-6 for H1-H6)
         header_text: Text content of the header
         header_path: Hierarchical path of headers (e.g., ["Parent", "Child"])
         content_blocks: List of LogicalBlocks in this section
-    
+
     Examples:
         >>> section = Section(
         ...     block_type="section",
@@ -113,20 +113,20 @@ class Section(LogicalBlock):
         >>> print(section.calculate_size())
         >>> print(section.can_split())
     """
-    
+
     header: Optional[LogicalBlock] = None
     header_level: int = 0
     header_text: str = ""
     header_path: List[str] = field(default_factory=list)
     content_blocks: List[LogicalBlock] = field(default_factory=list)
-    
+
     def calculate_size(self) -> int:
         """
         Calculate total size of section including header and all content blocks.
-        
+
         Returns:
             Total size in characters of header + all content blocks.
-        
+
         Examples:
             >>> section = Section(...)
             >>> size = section.calculate_size()
@@ -136,17 +136,17 @@ class Section(LogicalBlock):
         for block in self.content_blocks:
             size += len(block.content)
         return size
-    
+
     def can_split(self) -> bool:
         """
         Check if section can be split into smaller chunks.
-        
+
         A section can be split if it has more than one content block.
         Single-block sections are atomic.
-        
+
         Returns:
             True if section has multiple content blocks, False otherwise.
-        
+
         Examples:
             >>> section = Section(...)
             >>> if section.can_split():

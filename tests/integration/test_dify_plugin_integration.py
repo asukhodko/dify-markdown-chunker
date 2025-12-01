@@ -110,7 +110,13 @@ class TestDifyPluginIntegration:
 
             # Should have semantic fields
             if "content_type" in metadata:
-                assert metadata["content_type"] in ["list", "text", "code", "table", "structural"]
+                assert metadata["content_type"] in [
+                    "list",
+                    "text",
+                    "code",
+                    "table",
+                    "structural",
+                ]
 
     def test_output_format_without_metadata(self, tool_instance):
         """Test that output format is correct when metadata is disabled."""
@@ -182,7 +188,9 @@ class TestDifyPluginIntegration:
     def test_large_document_handling(self, tool_instance):
         """Test handling of large documents."""
         # Create a large document
-        large_text = "\\n\\n".join([f"# Section {i}\\n\\nContent for section {i}." for i in range(50)])
+        large_text = "\\n\\n".join(
+            [f"# Section {i}\\n\\nContent for section {i}." for i in range(50)]
+        )
 
         tool_parameters = {
             "input_text": large_text,
@@ -202,7 +210,7 @@ class TestDifyPluginIntegration:
 
     def test_code_heavy_document(self, tool_instance):
         """Test with code-heavy document."""
-        code_doc = '''# Code Example
+        code_doc = """# Code Example
 
 ```python
 def hello():
@@ -217,7 +225,7 @@ function test() {
     return true;
 }
 ```
-'''
+"""
 
         tool_parameters = {
             "input_text": code_doc,
@@ -233,7 +241,7 @@ function test() {
 
     def test_list_heavy_document(self, tool_instance):
         """Test with list-heavy document."""
-        list_doc = '''# Todo List
+        list_doc = """# Todo List
 
 - Task 1
 - Task 2
@@ -247,7 +255,7 @@ function test() {
 1. First item
 2. Second item
 3. Third item
-'''
+"""
 
         tool_parameters = {
             "input_text": list_doc,
@@ -262,14 +270,14 @@ function test() {
 
     def test_table_document(self, tool_instance):
         """Test with table document."""
-        table_doc = '''# Data Table
+        table_doc = """# Data Table
 
 | Name | Age | City |
 |------|-----|------|
 | Alice | 30 | NYC |
 | Bob | 25 | LA |
 | Charlie | 35 | SF |
-'''
+"""
 
         tool_parameters = {
             "input_text": table_doc,
@@ -284,7 +292,7 @@ function test() {
 
     def test_mixed_content_document(self, tool_instance):
         """Test with mixed content document."""
-        mixed_doc = '''# Mixed Content
+        mixed_doc = """# Mixed Content
 
 ## Code Section
 
@@ -307,7 +315,7 @@ def test():
 ## Text Section
 
 Regular paragraph text here.
-'''
+"""
 
         tool_parameters = {
             "input_text": mixed_doc,
@@ -368,7 +376,9 @@ Regular paragraph text here.
                 # Should NOT have False boolean fields
                 for key, value in metadata.items():
                     if key.startswith("is_") or key.startswith("has_"):
-                        assert value is True, f"Boolean field {key} should be True or excluded"
+                        assert (
+                            value is True
+                        ), f"Boolean field {key} should be True or excluded"
 
     def test_error_handling_invalid_strategy(self, tool_instance):
         """Test error handling with invalid strategy."""

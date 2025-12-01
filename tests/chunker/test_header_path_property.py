@@ -163,15 +163,15 @@ class TestHeaderPathProperty:
             header_path = chunk.metadata.get("header_path", "")
 
             # Property: header_path should be a string (path format like "/Title/Section")
-            assert isinstance(header_path, str), (
-                f"Chunk {i} header_path is not a string: {type(header_path)}"
-            )
+            assert isinstance(
+                header_path, str
+            ), f"Chunk {i} header_path is not a string: {type(header_path)}"
 
             # Property: header_path should start with / if non-empty
             if header_path:
-                assert header_path.startswith("/"), (
-                    f"Chunk {i} header_path should start with '/': {header_path}"
-                )
+                assert header_path.startswith(
+                    "/"
+                ), f"Chunk {i} header_path should start with '/': {header_path}"
 
             # Property: header_path should not be excessively deep
             # Count path segments (split by /)
@@ -212,13 +212,19 @@ class TestHeaderPathProperty:
 
             # Both should be strings
             assert isinstance(curr_path, str), f"Chunk {i} header_path is not a string"
-            assert isinstance(prev_path, str), f"Chunk {i-1} header_path is not a string"
+            assert isinstance(
+                prev_path, str
+            ), f"Chunk {i-1} header_path is not a string"
 
             # If paths exist, they should start with /
             if curr_path:
-                assert curr_path.startswith("/"), f"Chunk {i} header_path should start with '/'"
+                assert curr_path.startswith(
+                    "/"
+                ), f"Chunk {i} header_path should start with '/'"
             if prev_path:
-                assert prev_path.startswith("/"), f"Chunk {i-1} header_path should start with '/'"
+                assert prev_path.startswith(
+                    "/"
+                ), f"Chunk {i-1} header_path should start with '/'"
 
     @settings(max_examples=100, deadline=10000)
     @given(

@@ -25,12 +25,11 @@ Properties tested:
 14. List Chunk Quality - list chunks not micro-chunks
 """
 
-from hypothesis import given, settings, assume
+from hypothesis import assume, given, settings
 from hypothesis import strategies as st
 
 from markdown_chunker.chunker.core import MarkdownChunker
 from markdown_chunker.chunker.types import ChunkConfig
-
 
 # ============================================================================
 # Markdown Document Generators
@@ -151,26 +150,26 @@ def markdown_table(draw, min_rows=2, max_rows=4, min_cols=2, max_cols=3):
 def text_heavy_document(draw, min_sections=2, max_sections=5):
     """Generate a text-heavy document (low list ratio)."""
     elements = []
-    
+
     # Title
     title = draw(markdown_header(min_level=1, max_level=1))
     elements.append(title)
     elements.append("")
-    
+
     # Sections with mostly paragraphs
     num_sections = draw(st.integers(min_value=min_sections, max_value=max_sections))
     for _ in range(num_sections):
         header = draw(markdown_header(min_level=2, max_level=3))
         elements.append(header)
         elements.append("")
-        
+
         # 2-4 paragraphs per section
         num_paras = draw(st.integers(min_value=2, max_value=4))
         for _ in range(num_paras):
             para = draw(markdown_paragraph())
             elements.append(para)
             elements.append("")
-    
+
     return "\n".join(elements)
 
 
@@ -178,20 +177,20 @@ def text_heavy_document(draw, min_sections=2, max_sections=5):
 def mixed_document(draw, min_sections=2, max_sections=4):
     """Generate a document with mixed content types."""
     elements = []
-    
+
     title = draw(markdown_header(min_level=1, max_level=1))
     elements.append(title)
     elements.append("")
-    
+
     num_sections = draw(st.integers(min_value=min_sections, max_value=max_sections))
     for _ in range(num_sections):
         header = draw(markdown_header(min_level=2, max_level=3))
         elements.append(header)
         elements.append("")
-        
+
         # Mix of content types
         content_type = draw(st.sampled_from(["paragraph", "list", "code", "table"]))
-        
+
         if content_type == "paragraph":
             para = draw(markdown_paragraph())
             elements.append(para)
@@ -204,9 +203,9 @@ def mixed_document(draw, min_sections=2, max_sections=4):
         else:
             table = draw(markdown_table())
             elements.append(table)
-        
+
         elements.append("")
-    
+
     return "\n".join(elements)
 
 
@@ -214,10 +213,10 @@ def mixed_document(draw, min_sections=2, max_sections=4):
 def document_with_code_blocks(draw):
     """Generate a document with code blocks."""
     elements = []
-    
+
     elements.append("# Code Documentation")
     elements.append("")
-    
+
     num_blocks = draw(st.integers(min_value=1, max_value=3))
     for i in range(num_blocks):
         elements.append(f"## Example {i + 1}")
@@ -228,7 +227,7 @@ def document_with_code_blocks(draw):
         code = draw(markdown_code_block())
         elements.append(code)
         elements.append("")
-    
+
     return "\n".join(elements)
 
 
@@ -246,22 +245,22 @@ class TestDataPreservation:
         """
         **Property 1: Data Preservation**
         **Validates: Requirements 1.1, 1.4**
-        
+
         For any non-empty markdown document, every user-visible non-whitespace
         token from the input must appear in at least one output chunk.
         """
         assume(markdown_text.strip())
-        
+
         chunker = MarkdownChunker()
-        
+
         try:
             chunks = chunker.chunk(markdown_text)
         except Exception:
             return  # Skip problematic inputs
-        
+
         # Combine all chunk content
         combined = " ".join(c.content for c in chunks)
-        
+
         # Extract words from input (ignoring markdown syntax)
         input_words = set()
         for word in markdown_text.split():
@@ -269,18 +268,18 @@ class TestDataPreservation:
             clean = word.strip("#*`-|[]()>")
             if clean and len(clean) > 2:  # Skip very short tokens
                 input_words.add(clean.lower())
-        
+
         # Extract words from output
         output_words = set()
         for word in combined.split():
             clean = word.strip("#*`-|[]()>")
             if clean:
                 output_words.add(clean.lower())
-        
+
         # Check coverage (allow some tolerance for markdown processing)
         missing = input_words - output_words
         coverage = 1 - (len(missing) / len(input_words)) if input_words else 1
-        
+
         assert coverage >= 0.95, (
             f"Data loss detected: {len(missing)} words missing out of {len(input_words)}. "
             f"Coverage: {coverage:.1%}. Missing: {list(missing)[:10]}"
@@ -296,27 +295,27 @@ class TestChunkOrdering:
         """
         **Property 2: Chunk Ordering**
         **Validates: Requirements 2.1, 2.2, 6.4, 9.3**
-        
+
         For any chunked document, chunks must have monotonically non-decreasing
         start_line values.
         """
         assume(markdown_text.strip())
-        
+
         chunker = MarkdownChunker()
-        
+
         try:
             chunks = chunker.chunk(markdown_text)
         except Exception:
             return
-        
+
         if len(chunks) < 2:
             return  # Nothing to check
-        
+
         # Verify monotonic ordering
         for i in range(1, len(chunks)):
             prev_start = chunks[i - 1].start_line
             curr_start = chunks[i].start_line
-            
+
             assert curr_start >= prev_start, (
                 f"Chunk ordering violated: chunk {i} starts at line {curr_start} "
                 f"but chunk {i-1} starts at line {prev_start}. "
@@ -325,27 +324,26 @@ class TestChunkOrdering:
 
     @settings(max_examples=50, deadline=10000)
     @given(
-        mixed_document(),
-        st.sampled_from(["structural", "sentences", "mixed", "list"])
+        mixed_document(), st.sampled_from(["structural", "sentences", "mixed", "list"])
     )
     def test_property_ordering_all_strategies(self, markdown_text, strategy):
         """Verify ordering holds for all strategies."""
         assume(markdown_text.strip())
-        
+
         chunker = MarkdownChunker()
-        
+
         try:
             chunks = chunker.chunk(markdown_text, strategy=strategy)
         except Exception:
             return
-        
+
         if len(chunks) < 2:
             return
-        
+
         for i in range(1, len(chunks)):
-            assert chunks[i].start_line >= chunks[i - 1].start_line, (
-                f"Strategy '{strategy}' violated ordering at chunk {i}"
-            )
+            assert (
+                chunks[i].start_line >= chunks[i - 1].start_line
+            ), f"Strategy '{strategy}' violated ordering at chunk {i}"
 
 
 class TestIdempotence:
@@ -357,32 +355,32 @@ class TestIdempotence:
         """
         **Property 3: Idempotence**
         **Validates: Requirements 2.3, 2.4**
-        
+
         For any markdown document, chunking the same input twice must produce
         identical results.
         """
         assume(markdown_text.strip())
-        
+
         chunker = MarkdownChunker()
-        
+
         try:
             chunks1 = chunker.chunk(markdown_text)
             chunks2 = chunker.chunk(markdown_text)
         except Exception:
             return
-        
+
         assert len(chunks1) == len(chunks2), (
             f"Idempotence violated: first run produced {len(chunks1)} chunks, "
             f"second run produced {len(chunks2)} chunks."
         )
-        
+
         for i, (c1, c2) in enumerate(zip(chunks1, chunks2)):
-            assert c1.content == c2.content, (
-                f"Idempotence violated at chunk {i}: content differs between runs."
-            )
-            assert c1.start_line == c2.start_line, (
-                f"Idempotence violated at chunk {i}: start_line differs."
-            )
+            assert (
+                c1.content == c2.content
+            ), f"Idempotence violated at chunk {i}: content differs between runs."
+            assert (
+                c1.start_line == c2.start_line
+            ), f"Idempotence violated at chunk {i}: start_line differs."
 
 
 class TestMetadataToggle:
@@ -394,33 +392,39 @@ class TestMetadataToggle:
         """
         **Property 4: Metadata Toggle Equivalence**
         **Validates: Requirements 1.2, 7.2, 7.3, 7.4**
-        
+
         Chunking with include_metadata=true and false must produce the same
         number of chunks with identical content.
         """
         assume(markdown_text.strip())
-        
+
         chunker = MarkdownChunker()
-        
+
         try:
             result_with = chunker.chunk(markdown_text, include_analysis=True)
             result_without = chunker.chunk(markdown_text, include_analysis=False)
         except Exception:
             return
-        
+
         # Get chunks from both results
-        chunks_with = result_with.chunks if hasattr(result_with, 'chunks') else result_with
-        chunks_without = result_without if isinstance(result_without, list) else result_without.chunks
-        
+        chunks_with = (
+            result_with.chunks if hasattr(result_with, "chunks") else result_with
+        )
+        chunks_without = (
+            result_without
+            if isinstance(result_without, list)
+            else result_without.chunks
+        )
+
         assert len(chunks_with) == len(chunks_without), (
             f"Metadata toggle changed chunk count: "
             f"with={len(chunks_with)}, without={len(chunks_without)}"
         )
-        
+
         for i, (cw, cwo) in enumerate(zip(chunks_with, chunks_without)):
-            assert cw.content == cwo.content, (
-                f"Metadata toggle changed content at chunk {i}"
-            )
+            assert (
+                cw.content == cwo.content
+            ), f"Metadata toggle changed content at chunk {i}"
 
 
 class TestNoEmptyOutput:
@@ -432,28 +436,26 @@ class TestNoEmptyOutput:
         """
         **Property 5: No Empty Output**
         **Validates: Requirements 3.5**
-        
+
         For any non-empty markdown document, the chunker must produce at least
         one non-empty chunk.
         """
         assume(markdown_text.strip())
-        
+
         chunker = MarkdownChunker()
-        
+
         try:
             chunks = chunker.chunk(markdown_text)
         except Exception:
             return
-        
-        assert len(chunks) > 0, (
-            f"Non-empty input produced no chunks. Input length: {len(markdown_text)}"
-        )
-        
+
+        assert (
+            len(chunks) > 0
+        ), f"Non-empty input produced no chunks. Input length: {len(markdown_text)}"
+
         # All chunks should have content
         for i, chunk in enumerate(chunks):
-            assert chunk.content.strip(), (
-                f"Chunk {i} is empty or whitespace-only"
-            )
+            assert chunk.content.strip(), f"Chunk {i} is empty or whitespace-only"
 
 
 class TestFallbackChain:
@@ -465,23 +467,25 @@ class TestFallbackChain:
         """
         **Property 6: Fallback Chain Correctness**
         **Validates: Requirements 3.1, 3.2, 9.1, 9.2**
-        
+
         When code strategy is used on text-only document, fallback must produce
         non-empty result.
         """
         assume(markdown_text.strip())
         # Ensure no code blocks
         assume("```" not in markdown_text)
-        
+
         chunker = MarkdownChunker()
-        
+
         try:
-            result = chunker.chunk(markdown_text, strategy="code", include_analysis=True)
+            result = chunker.chunk(
+                markdown_text, strategy="code", include_analysis=True
+            )
         except Exception:
             return
-        
-        chunks = result.chunks if hasattr(result, 'chunks') else result
-        
+
+        chunks = result.chunks if hasattr(result, "chunks") else result
+
         assert len(chunks) > 0, (
             f"Code strategy on text-only document returned empty. "
             f"Fallback should have produced chunks."
@@ -497,30 +501,32 @@ class TestNoWordSplitting:
         """
         **Property 7: No Word Splitting**
         **Validates: Requirements 4.3, 9.5**
-        
+
         For any chunk boundary, the boundary must not occur in the middle of
         a word.
         """
         assume(markdown_text.strip())
-        
+
         # Use small chunk size to force splitting
         config = ChunkConfig(max_chunk_size=200, min_chunk_size=50)
         chunker = MarkdownChunker(config=config)
-        
+
         try:
             chunks = chunker.chunk(markdown_text)
         except Exception:
             return
-        
+
         for i, chunk in enumerate(chunks):
             content = chunk.content
-            
+
             # Check start of chunk (except first)
             if i > 0 and content:
                 first_char = content[0]
                 # Should not start with lowercase letter (mid-word)
                 # unless it's the start of a sentence
-                if first_char.islower() and not content.startswith(('a ', 'an ', 'the ')):
+                if first_char.islower() and not content.startswith(
+                    ("a ", "an ", "the ")
+                ):
                     # Check if previous chunk ended mid-word
                     prev_content = chunks[i - 1].content
                     if prev_content and prev_content[-1].isalpha():
@@ -538,26 +544,26 @@ class TestAtomicElements:
         """
         **Property 8: Atomic Elements Preserved**
         **Validates: Requirements 4.4, 4.6**
-        
+
         Code blocks must never be split across chunks.
         """
         assume(markdown_text.strip())
         assume("```" in markdown_text)
-        
+
         chunker = MarkdownChunker()
-        
+
         try:
             chunks = chunker.chunk(markdown_text)
         except Exception:
             return
-        
+
         # Check that no chunk contains partial code block
         for i, chunk in enumerate(chunks):
             content = chunk.content
-            
+
             # Count opening and closing fences
             open_fences = content.count("```")
-            
+
             # If there are fences, they should be balanced (even number)
             # or the chunk should be marked as containing code
             if open_fences % 2 != 0:
@@ -577,32 +583,32 @@ class TestOverlapExactness:
         """
         **Property 9: Overlap Exactness**
         **Validates: Requirements 5.1, 5.4**
-        
+
         Overlap content must be exact substring from previous chunk.
         """
         assume(markdown_text.strip())
-        
+
         config = ChunkConfig(
             max_chunk_size=500,
             min_chunk_size=100,
             enable_overlap=True,
-            overlap_size=100
+            overlap_size=100,
         )
         chunker = MarkdownChunker(config=config)
-        
+
         try:
             chunks = chunker.chunk(markdown_text)
         except Exception:
             return
-        
+
         if len(chunks) < 2:
             return
-        
+
         # Check overlap between adjacent chunks
         for i in range(1, len(chunks)):
             curr = chunks[i]
             prev = chunks[i - 1]
-            
+
             if curr.get_metadata("has_overlap", False):
                 overlap_size = curr.get_metadata("overlap_size", 0)
                 if overlap_size > 0:
@@ -620,33 +626,33 @@ class TestOverlapSizeLimits:
         """
         **Property 10: Overlap Size Limits**
         **Validates: Requirements 5.2, 5.5**
-        
+
         Overlap must not exceed 50% of chunk size.
         """
         assume(markdown_text.strip())
-        
+
         config = ChunkConfig(
             max_chunk_size=500,
             enable_overlap=True,
-            overlap_size=200  # Large overlap to test limits
+            overlap_size=200,  # Large overlap to test limits
         )
         chunker = MarkdownChunker(config=config)
-        
+
         try:
             chunks = chunker.chunk(markdown_text)
         except Exception:
             return
-        
+
         for i, chunk in enumerate(chunks):
             if chunk.get_metadata("has_overlap", False):
                 overlap_size = chunk.get_metadata("overlap_size", 0)
                 chunk_size = len(chunk.content)
-                
+
                 if chunk_size > 0:
                     overlap_ratio = overlap_size / chunk_size
-                    assert overlap_ratio <= 0.5, (
-                        f"Chunk {i} has {overlap_ratio:.1%} overlap, exceeds 50% limit"
-                    )
+                    assert (
+                        overlap_ratio <= 0.5
+                    ), f"Chunk {i} has {overlap_ratio:.1%} overlap, exceeds 50% limit"
 
 
 class TestSizeCompliance:
@@ -658,23 +664,23 @@ class TestSizeCompliance:
         """
         **Property 11: Size Compliance**
         **Validates: Requirements 8.1, 8.2, 8.3**
-        
+
         Chunks must respect size limits (except oversize-marked).
         """
         assume(markdown_text.strip())
-        
+
         config = ChunkConfig(max_chunk_size=max_size, min_chunk_size=50)
         chunker = MarkdownChunker(config=config)
-        
+
         try:
             chunks = chunker.chunk(markdown_text)
         except Exception:
             return
-        
+
         for i, chunk in enumerate(chunks):
             chunk_size = len(chunk.content)
             is_oversize = chunk.get_metadata("allow_oversize", False)
-            
+
             if not is_oversize:
                 assert chunk_size <= max_size, (
                     f"Chunk {i} size {chunk_size} exceeds max {max_size} "
@@ -691,26 +697,30 @@ class TestAutoStrategyAppropriateness:
         """
         **Property 12: Auto Strategy Appropriateness**
         **Validates: Requirements 6.1, 6.2, 6.3, 6.5**
-        
+
         For text-heavy documents, auto must not select List or Mixed strategy.
         """
         assume(markdown_text.strip())
         # Ensure low list ratio
-        list_lines = sum(1 for line in markdown_text.split('\n') if line.strip().startswith('-'))
-        total_lines = len(markdown_text.split('\n'))
+        list_lines = sum(
+            1 for line in markdown_text.split("\n") if line.strip().startswith("-")
+        )
+        total_lines = len(markdown_text.split("\n"))
         assume(total_lines > 0)
         list_ratio = list_lines / total_lines
         assume(list_ratio < 0.3)  # Text-heavy
-        
+
         chunker = MarkdownChunker()
-        
+
         try:
             result = chunker.chunk(markdown_text, include_analysis=True)
         except Exception:
             return
-        
-        strategy_used = result.strategy_used if hasattr(result, 'strategy_used') else None
-        
+
+        strategy_used = (
+            result.strategy_used if hasattr(result, "strategy_used") else None
+        )
+
         if strategy_used:
             assert strategy_used not in ["list", "mixed"], (
                 f"Auto selected '{strategy_used}' for text-heavy document "
@@ -727,77 +737,85 @@ class TestCleanChunkText:
         """
         **Property 13: Clean Chunk Text**
         **Validates: Requirements 7.1, 7.5**
-        
+
         Chunk content must not contain metadata tags or JSON.
         """
         assume(markdown_text.strip())
-        
+
         chunker = MarkdownChunker()
-        
+
         try:
             chunks = chunker.chunk(markdown_text)
         except Exception:
             return
-        
+
         for i, chunk in enumerate(chunks):
             content = chunk.content
-            
-            assert "<metadata>" not in content, (
-                f"Chunk {i} contains <metadata> tag in content"
-            )
-            assert "</metadata>" not in content, (
-                f"Chunk {i} contains </metadata> tag in content"
-            )
+
+            assert (
+                "<metadata>" not in content
+            ), f"Chunk {i} contains <metadata> tag in content"
+            assert (
+                "</metadata>" not in content
+            ), f"Chunk {i} contains </metadata> tag in content"
             # Check for JSON-like patterns that shouldn't be in content
             # (allowing for code blocks that might contain JSON)
             if "```" not in content:
-                assert '{"' not in content or '"content_type"' not in content, (
-                    f"Chunk {i} may contain embedded metadata JSON"
-                )
+                assert (
+                    '{"' not in content or '"content_type"' not in content
+                ), f"Chunk {i} may contain embedded metadata JSON"
 
 
 class TestListChunkQuality:
     """Property 14: List Chunk Quality."""
 
     @settings(max_examples=50, deadline=10000)
-    @given(st.lists(
-        st.text(
-            alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd")),
+    @given(
+        st.lists(
+            st.text(
+                alphabet=st.characters(whitelist_categories=("Lu", "Ll", "Nd")),
+                min_size=5,
+                max_size=30,
+            ).filter(lambda x: x.strip()),
             min_size=5,
-            max_size=30,
-        ).filter(lambda x: x.strip()),
-        min_size=5,
-        max_size=20,
-    ))
+            max_size=20,
+        )
+    )
     def test_property_list_chunk_quality(self, list_items):
         """
         **Property 14: List Chunk Quality**
         **Validates: Requirements 9.4**
-        
+
         List chunks should contain multiple items when possible.
         """
-        markdown_text = "# List Document\n\n" + "\n".join(f"- {item}" for item in list_items)
-        
+        markdown_text = "# List Document\n\n" + "\n".join(
+            f"- {item}" for item in list_items
+        )
+
         config = ChunkConfig(max_chunk_size=1000)  # Large enough for multiple items
         chunker = MarkdownChunker(config=config)
-        
+
         try:
-            result = chunker.chunk(markdown_text, strategy="list", include_analysis=True)
+            result = chunker.chunk(
+                markdown_text, strategy="list", include_analysis=True
+            )
         except Exception:
             return
-        
-        chunks = result.chunks if hasattr(result, 'chunks') else result
-        
+
+        chunks = result.chunks if hasattr(result, "chunks") else result
+
         if not chunks:
             return
-        
+
         # Count single-item chunks
         single_item_chunks = 0
         for chunk in chunks:
-            item_count = chunk.content.count("\n- ") + (1 if chunk.content.strip().startswith("-") else 0)
+            item_count = chunk.content.count("\n- ") + (
+                1 if chunk.content.strip().startswith("-") else 0
+            )
             if item_count == 1 and len(list_items) > 1:
                 single_item_chunks += 1
-        
+
         # Most chunks should have multiple items
         if len(chunks) > 1:
             single_ratio = single_item_chunks / len(chunks)

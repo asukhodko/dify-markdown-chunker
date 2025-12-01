@@ -12,8 +12,8 @@ Tests verify complete chunking pipeline with real documents:
 """
 
 import pytest
-from markdown_chunker import MarkdownChunker, ChunkConfig
 
+from markdown_chunker import ChunkConfig, MarkdownChunker
 
 # Test documents
 README_DOC = """# Project Title
@@ -92,17 +92,18 @@ Average score: 84.7
 
 # Integration Tests
 
+
 def test_end_to_end_readme_document():
     """Test complete pipeline with README-style document."""
     chunker = MarkdownChunker()
-    
+
     chunks = chunker.chunk(README_DOC)
-    
+
     # Verify chunks created
     assert len(chunks) > 0, "Should create chunks"
-    
+
     # Verify no data loss
-    combined = ''.join(c.content for c in chunks)
+    combined = "".join(c.content for c in chunks)
     # Check key content is preserved
     assert "Project Title" in combined
     assert "Installation" in combined
@@ -113,14 +114,14 @@ def test_end_to_end_readme_document():
 def test_end_to_end_code_heavy_document():
     """Test complete pipeline with code-heavy document."""
     chunker = MarkdownChunker()
-    
+
     chunks = chunker.chunk(CODE_HEAVY_DOC)
-    
+
     # Verify chunks created
     assert len(chunks) > 0, "Should create chunks"
-    
+
     # Verify code blocks preserved
-    combined = ''.join(c.content for c in chunks)
+    combined = "".join(c.content for c in chunks)
     assert "def authenticate" in combined
     assert "def get_data" in combined
     assert "try:" in combined
@@ -129,14 +130,14 @@ def test_end_to_end_code_heavy_document():
 def test_end_to_end_table_document():
     """Test complete pipeline with table document."""
     chunker = MarkdownChunker()
-    
+
     chunks = chunker.chunk(TABLE_DOC)
-    
+
     # Verify chunks created
     assert len(chunks) > 0, "Should create chunks"
-    
+
     # Verify table preserved
-    combined = ''.join(c.content for c in chunks)
+    combined = "".join(c.content for c in chunks)
     assert "| Name | Score | Status |" in combined
     assert "Alice" in combined
     assert "Bob" in combined
@@ -144,15 +145,11 @@ def test_end_to_end_table_document():
 
 def test_end_to_end_with_custom_config():
     """Test pipeline with custom configuration."""
-    config = ChunkConfig(
-        max_chunk_size=1000,
-        enable_overlap=True,
-        overlap_size=100
-    )
+    config = ChunkConfig(max_chunk_size=1000, enable_overlap=True, overlap_size=100)
     chunker = MarkdownChunker(config)
-    
+
     chunks = chunker.chunk(README_DOC)
-    
+
     # Verify configuration applied
     assert len(chunks) > 0
     for chunk in chunks:
@@ -163,11 +160,11 @@ def test_end_to_end_with_custom_config():
 def test_end_to_end_metadata_present():
     """Test that all chunks have required metadata."""
     chunker = MarkdownChunker()
-    
+
     chunks = chunker.chunk(README_DOC)
-    
+
     required_fields = ["strategy", "content_type"]
-    
+
     for chunk in chunks:
         for field in required_fields:
             assert field in chunk.metadata, f"Missing metadata: {field}"
@@ -176,9 +173,9 @@ def test_end_to_end_metadata_present():
 def test_end_to_end_empty_input():
     """Test pipeline handles empty input gracefully."""
     chunker = MarkdownChunker()
-    
+
     chunks = chunker.chunk("")
-    
+
     # Should handle gracefully (may return empty or single chunk)
     assert isinstance(chunks, list)
 
@@ -186,11 +183,11 @@ def test_end_to_end_empty_input():
 def test_end_to_end_minimal_input():
     """Test pipeline with minimal valid input."""
     chunker = MarkdownChunker()
-    
+
     chunks = chunker.chunk("# Title\n\nContent")
-    
+
     assert len(chunks) > 0
-    combined = ''.join(c.content for c in chunks)
+    combined = "".join(c.content for c in chunks)
     assert "Title" in combined
     assert "Content" in combined
 
@@ -203,15 +200,15 @@ def test_end_to_end_large_document():
         large_doc += f"## Section {i}\n\n"
         large_doc += f"This is content for section {i}. " * 10
         large_doc += "\n\n"
-    
+
     chunker = MarkdownChunker()
     chunks = chunker.chunk(large_doc)
-    
+
     # Should create multiple chunks
     assert len(chunks) > 1, "Large document should create multiple chunks"
-    
+
     # Verify no data loss
-    combined = ''.join(c.content for c in chunks)
+    combined = "".join(c.content for c in chunks)
     for i in range(20):
         assert f"Section {i}" in combined, f"Section {i} lost"
 
@@ -243,14 +240,14 @@ def hello():
 |---|---|
 | 1 | 2 |
 """
-    
+
     chunker = MarkdownChunker()
     chunks = chunker.chunk(mixed_doc)
-    
+
     assert len(chunks) > 0
-    
+
     # Verify all content types preserved
-    combined = ''.join(c.content for c in chunks)
+    combined = "".join(c.content for c in chunks)
     assert "Text Section" in combined
     assert "def hello" in combined
     assert "Item 1" in combined
@@ -260,13 +257,13 @@ def hello():
 def test_end_to_end_performance():
     """Test that chunking completes in reasonable time."""
     import time
-    
+
     chunker = MarkdownChunker()
-    
+
     start = time.time()
     chunks = chunker.chunk(README_DOC)
     elapsed = time.time() - start
-    
+
     # Should complete quickly (< 1 second for small doc)
     assert elapsed < 1.0, f"Chunking took too long: {elapsed:.2f}s"
     assert len(chunks) > 0

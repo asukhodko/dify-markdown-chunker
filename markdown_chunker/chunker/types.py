@@ -217,7 +217,10 @@ class Chunk:
             Empty list if no section path available.
 
         Examples:
-            >>> chunk=Chunk("content", 1, 1, {"section_path": ["Chapter 1", "Introduction"]})
+            >>> chunk=Chunk(
+            ...     "content", 1, 1,
+            ...     {"section_path": ["Chapter 1", "Introduction"]}
+            ... )
             >>> print(chunk.get_section_path())
             ['Chapter 1', 'Introduction']
         """
@@ -239,7 +242,7 @@ class Chunk:
         """
         return (
             self.metadata.get("start_offset", 0),
-            self.metadata.get("end_offset", 0)
+            self.metadata.get("end_offset", 0),
         )
 
     def get_section_id(self) -> str:
@@ -601,7 +604,7 @@ class ChunkConfig:
     enable_fallback: bool = True
     fallback_strategy: str = "sentences"
     max_fallback_level: int = 4
-    
+
     # Content validation settings (Phase 1 Fix 3)
     enable_content_validation: bool = True  # Validate no content loss
 

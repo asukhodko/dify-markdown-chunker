@@ -196,7 +196,9 @@ Final subsection content.""",
                 ), f"Test case {i+1}: Expected {test_case['expected_strategy']}, got {result.strategy_used}"
             elif test_case["expected_strategy"] == "list":
                 # List strategy should NOT be selected in auto mode (Fix 2)
-                assert result.strategy_used != "list", f"Test case {i+1}: List strategy should not be selected in auto mode"
+                assert (
+                    result.strategy_used != "list"
+                ), f"Test case {i+1}: List strategy should not be selected in auto mode"
 
     def test_performance_benchmarks_integration(self):
         """Test performance benchmarks with complete pipeline."""

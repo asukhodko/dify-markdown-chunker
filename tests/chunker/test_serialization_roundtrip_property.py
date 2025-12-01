@@ -10,6 +10,7 @@ that chunks can be serialized and deserialized without data loss.
 """
 
 import json
+
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -120,29 +121,29 @@ class TestSerializationRoundTripProperty:
             assert False, f"Serialization failed: {e}"
 
         # Property: Same number of chunks after round-trip
-        assert len(deserialized) == len(chunks), (
-            f"Round-trip changed number of chunks: {len(chunks)} -> {len(deserialized)}"
-        )
+        assert len(deserialized) == len(
+            chunks
+        ), f"Round-trip changed number of chunks: {len(chunks)} -> {len(deserialized)}"
 
         # Property: All chunk data preserved
         for i, (original, restored) in enumerate(zip(chunks, deserialized)):
             # Content preserved
-            assert restored["content"] == original.content, (
-                f"Chunk {i} content not preserved in round-trip"
-            )
+            assert (
+                restored["content"] == original.content
+            ), f"Chunk {i} content not preserved in round-trip"
 
             # Line numbers preserved
-            assert restored["start_line"] == original.start_line, (
-                f"Chunk {i} start_line not preserved in round-trip"
-            )
-            assert restored["end_line"] == original.end_line, (
-                f"Chunk {i} end_line not preserved in round-trip"
-            )
+            assert (
+                restored["start_line"] == original.start_line
+            ), f"Chunk {i} start_line not preserved in round-trip"
+            assert (
+                restored["end_line"] == original.end_line
+            ), f"Chunk {i} end_line not preserved in round-trip"
 
             # Strategy preserved
-            assert restored["strategy"] == original.strategy, (
-                f"Chunk {i} strategy not preserved in round-trip"
-            )
+            assert (
+                restored["strategy"] == original.strategy
+            ), f"Chunk {i} strategy not preserved in round-trip"
 
     @settings(max_examples=500, deadline=10000)
     @given(
@@ -347,13 +348,13 @@ class TestSerializationEdgeCases:
         # Verify metadata preserved
         for i, (original, restored) in enumerate(zip(chunks, deserialized)):
             if hasattr(original, "metadata") and original.metadata:
-                assert restored["metadata"] is not None, (
-                    f"Chunk {i} metadata lost in round-trip"
-                )
+                assert (
+                    restored["metadata"] is not None
+                ), f"Chunk {i} metadata lost in round-trip"
                 # Metadata should be a dict
-                assert isinstance(restored["metadata"], dict), (
-                    f"Chunk {i} metadata is not a dict after round-trip"
-                )
+                assert isinstance(
+                    restored["metadata"], dict
+                ), f"Chunk {i} metadata is not a dict after round-trip"
 
     def test_special_characters_serialization(self):
         """Test serialization with special characters."""

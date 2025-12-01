@@ -9,6 +9,7 @@ Algorithm Documentation:
     - Strategy Selection: docs/markdown-extractor/02-algorithm-core/strategy-selection.md  # noqa: E501
 """
 
+import logging
 import re
 from dataclasses import dataclass
 from typing import List, Optional
@@ -17,6 +18,9 @@ from markdown_chunker.parser.types import ContentAnalysis, Stage1Results
 
 from ..types import Chunk, ChunkConfig
 from .base import BaseStrategy
+
+# Set up logger for this module
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -79,21 +83,25 @@ class StructuralStrategy(BaseStrategy):
         # Phase 2: Import section builder for semantic quality improvements
         try:
             from markdown_chunker.chunker.section_builder import SectionBuilder
+
             self.section_builder = SectionBuilder()
             self._phase2_available = True
         except ImportError:
             try:
                 # Try relative import as fallback
                 from ..section_builder import SectionBuilder
+
                 self.section_builder = SectionBuilder()
                 self._phase2_available = True
             except ImportError:
                 try:
                     # Try direct import for testing
-                    import sys
                     import os
-                    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+                    import sys
+
+                    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
                     from section_builder import SectionBuilder
+
                     self.section_builder = SectionBuilder()
                     self._phase2_available = True
                 except ImportError:
@@ -214,13 +222,16 @@ class StructuralStrategy(BaseStrategy):
 
         # Phase 2: Use section-aware chunking if available and enabled
         # Always try Phase 2 if available to test the implementation
-        if (self._phase2_available and hasattr(stage1_results, 'ast')):
+        if self._phase2_available and hasattr(stage1_results, "ast"):
             try:
                 return self._apply_section_aware(content, stage1_results, config)
             except Exception as e:
                 # Log the error and fallback to Phase 1 implementation
                 import logging
-                logging.warning(f"Phase 2 chunking failed, falling back to Phase 1: {e}")
+
+                logging.warning(
+                    f"Phase 2 chunking failed, falling back to Phase 1: {e}"
+                )
                 pass
 
         # Phase 1: Original implementation
@@ -559,9 +570,7 @@ class StructuralStrategy(BaseStrategy):
             is_code_block = block.startswith("```") and block.count("```") >= 2
 
             # Check if adding this block would exceed size
-            potential_content = self._build_potential_content(
-                current_content, block
-            )
+            potential_content = self._build_potential_content(current_content, block)
 
             if len(potential_content) > config.max_chunk_size and current_content:
                 # Create chunk with current content
@@ -582,7 +591,7 @@ class StructuralStrategy(BaseStrategy):
                         section, current_content, current_start_line, config
                     )
                     chunks.append(chunk)
-                
+
                 # Add code block as separate chunk (may be oversize)
                 chunk = self._create_section_chunk_part(
                     section, block, current_start_line, config
@@ -590,16 +599,14 @@ class StructuralStrategy(BaseStrategy):
                 chunk.add_metadata("allow_oversize", True)
                 chunk.add_metadata("atomic_element", "code_block")
                 chunks.append(chunk)
-                
+
                 current_content = ""
                 current_start_line = self._estimate_line_number(
                     section.content, len(block)
                 )
             else:
                 # Add block to current chunk
-                current_content = self._build_potential_content(
-                    current_content, block
-                )
+                current_content = self._build_potential_content(current_content, block)
 
         # Add final chunk if there's remaining content
         if current_content:
@@ -613,17 +620,17 @@ class StructuralStrategy(BaseStrategy):
     def _split_preserving_code_blocks(self, content: str) -> List[str]:
         """
         Split content into blocks, keeping code blocks intact.
-        
+
         Args:
             content: Content to split
-            
+
         Returns:
             List of content blocks (code blocks kept whole)
         """
         blocks = []
         current_block = ""
         in_code_block = False
-        
+
         for line in content.split("\n"):
             if line.strip().startswith("```"):
                 if in_code_block:
@@ -642,7 +649,7 @@ class StructuralStrategy(BaseStrategy):
                     in_code_block = True
             else:
                 current_block += line + "\n"
-        
+
         # Handle remaining content
         if current_block.strip():
             if in_code_block:
@@ -652,7 +659,7 @@ class StructuralStrategy(BaseStrategy):
                 # Split remaining non-code content by paragraphs
                 paragraphs = re.split(r"\n\s*\n", current_block)
                 blocks.extend([p.strip() for p in paragraphs if p.strip()])
-        
+
         return blocks
 
     def _build_potential_content(self, current: str, paragraph: str) -> str:
@@ -809,39 +816,37 @@ class StructuralStrategy(BaseStrategy):
             else:
                 return "Document structure not suitable for structural strategy"
 
-
     def _apply_section_aware(
         self, content: str, stage1_results: Stage1Results, config: ChunkConfig
     ) -> List[Chunk]:
         """
         Apply Phase 2 section-aware chunking (semantic quality improvements).
-        
+
         This method uses the SectionBuilder to create logical sections that
         respect document structure and preserve semantic coherence.
-        
+
         Args:
             content: Original markdown content
             stage1_results: Results from Stage 1 processing
             config: Chunking configuration
-        
+
         Returns:
             List of chunks with enhanced metadata and structure preservation
         """
         # Build sections from AST
         sections = self.section_builder.build_sections(
-            stage1_results.ast,
-            boundary_level=config.section_boundary_level
+            stage1_results.ast, boundary_level=config.section_boundary_level
         )
-        
+
         if not sections:
             return []
-        
+
         chunks = []
-        
+
         for section in sections:
             # Check if section fits in one chunk
             section_size = section.calculate_size()
-            
+
             if section_size <= config.max_chunk_size:
                 # Create single chunk from section
                 chunk = self._create_chunk_from_section(section, config)
@@ -857,42 +862,42 @@ class StructuralStrategy(BaseStrategy):
                 # Section too large - split it (Tasks 5.1-5.3)
                 section_chunks = self._split_large_section_phase2(section, config)
                 chunks.extend(section_chunks)
-        
+
         # Merge chunks with insufficient content (Task 8)
         chunks = self._merge_small_chunks(chunks, config)
-        
+
         # Validate chunks (add oversize metadata, etc.)
         return self._validate_chunks(chunks, config)
-    
+
     def _create_chunk_from_section(
         self, section, config: ChunkConfig
     ) -> Optional[Chunk]:
         """
         Create a single chunk from a section.
-        
+
         Args:
             section: Section object from SectionBuilder
             config: Chunking configuration
-        
+
         Returns:
             Chunk object or None if section is empty
         """
         # Collect content from section
         content_parts = []
-        
+
         # Add header if present
         if section.header:
             content_parts.append(section.header.content)
-        
+
         # Add content blocks
         for block in section.content_blocks:
             content_parts.append(block.content)
-        
+
         if not content_parts:
             return None
-        
+
         content = "\n\n".join(content_parts)
-        
+
         # Build metadata
         metadata = {
             "content_type": "section",
@@ -905,7 +910,7 @@ class StructuralStrategy(BaseStrategy):
             "has_table": any(b.block_type == "table" for b in section.content_blocks),
             "has_list": any(b.block_type == "list" for b in section.content_blocks),
         }
-        
+
         # Add header metadata for test compatibility
         if section.header_level > 0:
             metadata["header_level"] = section.header_level
@@ -916,49 +921,49 @@ class StructuralStrategy(BaseStrategy):
             filtered_path = [p for p in section.header_path if p and p.strip()]
             if filtered_path:
                 metadata["header_path"] = "/" + "/".join(filtered_path)
-        
+
         # Generate section ID
         if section.header_path:
             filtered_path = [p for p in section.header_path if p and p.strip()]
             if filtered_path:
                 section_id = "-".join(filtered_path).lower()
-                section_id = re.sub(r'[^a-z0-9-]', '-', section_id)
-                section_id = re.sub(r'-+', '-', section_id).strip('-')
+                section_id = re.sub(r"[^a-z0-9-]", "-", section_id)
+                section_id = re.sub(r"-+", "-", section_id).strip("-")
                 if section_id:
                     metadata["section_id"] = section_id
-        
+
         return Chunk(
             content=content,
             start_line=section.start_line,
             end_line=section.end_line,
-            metadata=metadata
+            metadata=metadata,
         )
-    
+
     def _split_large_section_phase2(self, section, config: ChunkConfig) -> List[Chunk]:
         """
         Split a large section into multiple chunks (Phase 2 Task 5.1).
-        
+
         Rules:
         - Keep header with first chunk
         - Split only at LogicalBlock boundaries
         - Handle oversize atomic blocks (MUST create chunk, no data loss)
         - Add overlap between chunks if enabled
-        
+
         Args:
             section: Section object that's too large
             config: Chunking configuration
-        
+
         Returns:
             List of chunks from the section
         """
         chunks = []
         current_blocks = []
         current_size = 0
-        
+
         # Always include header in first chunk
         if section.header:
             # Handle both Phase 1 HeaderInfo and Phase 2 LogicalBlock
-            if hasattr(section.header, 'content'):
+            if hasattr(section.header, "content"):
                 # Phase 2 LogicalBlock
                 current_blocks.append(section.header)
                 current_size = len(section.header.content)
@@ -967,21 +972,21 @@ class StructuralStrategy(BaseStrategy):
                 header_content = f"{'#' * section.header.level} {section.header.text}"
                 current_size = len(header_content)
                 # Don't add to current_blocks for Phase 1 compatibility
-        
+
         # Handle both Phase 1 and Phase 2 section structures
-        content_blocks = getattr(section, 'content_blocks', [])
-        
+        content_blocks = getattr(section, "content_blocks", [])
+
         for block in content_blocks:
             # Handle both Phase 1 and Phase 2 block structures
-            if hasattr(block, 'content'):
+            if hasattr(block, "content"):
                 block_size = len(block.content)
-            elif hasattr(block, 'text'):
+            elif hasattr(block, "text"):
                 # Phase 1 compatibility
                 block_size = len(str(block.text))
             else:
                 # Fallback
                 block_size = len(str(block))
-            
+
             # Check if single block exceeds max size (oversize atomic block)
             if block_size > config.max_chunk_size:
                 # Finish current chunk if any
@@ -993,13 +998,13 @@ class StructuralStrategy(BaseStrategy):
                         config,
                         is_oversize=False,
                         header_level=section.header_level,
-                        header_text=section.header_text
+                        header_text=section.header_text,
                     )
                     if chunk:
                         chunks.append(chunk)
                     current_blocks = []
                     current_size = 0
-                
+
                 # MUST create oversize chunk - cannot drop atomic blocks (data loss)
                 # This is required by Requirements 1.5 and 5.5
                 chunk = self._create_chunk_from_blocks_simple(
@@ -1010,12 +1015,12 @@ class StructuralStrategy(BaseStrategy):
                     is_oversize=True,
                     oversize_reason="atomic_block",
                     header_level=section.header_level,
-                    header_text=section.header_text
+                    header_text=section.header_text,
                 )
                 if chunk:
                     chunks.append(chunk)
                 continue
-            
+
             # Check if adding block would exceed size
             if current_size + block_size > config.max_chunk_size and current_blocks:
                 # Create chunk from current blocks
@@ -1026,16 +1031,15 @@ class StructuralStrategy(BaseStrategy):
                     config,
                     is_oversize=False,
                     header_level=section.header_level,
-                    header_text=section.header_text
+                    header_text=section.header_text,
                 )
                 if chunk:
                     chunks.append(chunk)
-                
+
                 # Start new chunk with overlap if enabled (Task 5.2)
                 if config.enable_overlap and chunks:
                     overlap_blocks = self._get_overlap_blocks(
-                        current_blocks,
-                        config.overlap_size
+                        current_blocks, config.overlap_size
                     )
                     current_blocks = overlap_blocks + [block]
                     current_size = sum(len(b.content) for b in current_blocks)
@@ -1046,7 +1050,7 @@ class StructuralStrategy(BaseStrategy):
                 # Add block to current chunk
                 current_blocks.append(block)
                 current_size += block_size
-        
+
         # Create final chunk
         if current_blocks:
             chunk = self._create_chunk_from_blocks_simple(
@@ -1056,31 +1060,31 @@ class StructuralStrategy(BaseStrategy):
                 config,
                 is_oversize=False,
                 header_level=section.header_level,
-                header_text=section.header_text
+                header_text=section.header_text,
             )
             if chunk:
                 chunks.append(chunk)
-        
+
         # Mark overlap in chunks (Task 5.3)
         if config.enable_overlap and len(chunks) > 1:
             self._mark_overlap_in_chunks(chunks)
-        
+
         return chunks
-    
+
     def _create_chunk_from_blocks_simple(
-        self, 
-        blocks, 
-        section_path, 
-        base_line, 
+        self,
+        blocks,
+        section_path,
+        base_line,
         config,
         is_oversize: bool = False,
         oversize_reason: str = None,
         header_level: int = None,
-        header_text: str = None
+        header_text: str = None,
     ) -> Optional[Chunk]:
         """
         Create chunk from list of blocks (Phase 2 Task 5.1).
-        
+
         Args:
             blocks: List of LogicalBlock objects
             section_path: Section path for metadata
@@ -1090,34 +1094,45 @@ class StructuralStrategy(BaseStrategy):
             oversize_reason: Reason for oversize (e.g., "atomic_block")
             header_level: Header level for compatibility with Phase 1 tests
             header_text: Header text for compatibility with Phase 1 tests
-        
+
         Returns:
             Chunk object or None if no content
         """
         if not blocks:
             return None
-        
+
+        # Use text normalizer to join content blocks properly
+        from ..text_normalizer import join_content_blocks
+
         content_parts = [block.content for block in blocks]
-        content = "\n\n".join(content_parts)
-        
+        try:
+            content = join_content_blocks(content_parts, separator="\n\n")
+        except ValueError as e:
+            # Fallback to simple join if validation fails
+            logger.warning(
+                f"Content block joining validation failed: {e}. Using simple join."
+            )
+            content = "\n\n".join(content_parts)
+
         start_line = min(block.start_line for block in blocks)
         end_line = max(block.end_line for block in blocks)
-        
+
         # Detect content types
         has_code = any(b.block_type == "code" for b in blocks)
         has_table = any(b.block_type == "table" for b in blocks)
         has_list = any(b.block_type == "list" for b in blocks)
-        
+
         # Detect links using URLDetector
         has_links = False
         try:
             from ..url_detector import URLDetector
+
             detector = URLDetector()
             has_links = detector.has_urls(content)
         except Exception:
             # Fallback to simple detection
-            has_links = bool(re.search(r'https?://|www\.|\[.+\]\(.+\)', content))
-        
+            has_links = bool(re.search(r"https?://|www\.|\[.+\]\(.+\)", content))
+
         metadata = {
             "content_type": "section",
             "strategy": self.name,
@@ -1134,7 +1149,7 @@ class StructuralStrategy(BaseStrategy):
             "allow_oversize": is_oversize,  # For test compatibility
             "has_overlap": False,  # Will be set later if needed
         }
-        
+
         # Add header metadata for Phase 1 test compatibility
         if header_level is not None:
             metadata["header_level"] = header_level
@@ -1145,44 +1160,40 @@ class StructuralStrategy(BaseStrategy):
             filtered_path = [p for p in section_path if p and p.strip()]
             if filtered_path:
                 metadata["header_path"] = "/" + "/".join(filtered_path)
-        
+
         if is_oversize and oversize_reason:
             metadata["oversize_reason"] = oversize_reason
-        
+
         # Generate stable section ID
         if section_path:
             filtered_path = [p for p in section_path if p and p.strip()]
             if filtered_path:
                 section_id = "-".join(filtered_path).lower()
-                section_id = re.sub(r'[^a-z0-9-]', '-', section_id)
-                section_id = re.sub(r'-+', '-', section_id).strip('-')
+                section_id = re.sub(r"[^a-z0-9-]", "-", section_id)
+                section_id = re.sub(r"-+", "-", section_id).strip("-")
                 if section_id:
                     metadata["section_id"] = section_id
-        
-        return Chunk(
-            content=content,
-            start_line=start_line,
-            end_line=end_line,
-            metadata=metadata
-        )
 
+        return Chunk(
+            content=content, start_line=start_line, end_line=end_line, metadata=metadata
+        )
 
     def _get_overlap_blocks(self, previous_blocks, overlap_size: int):
         """
         Get blocks from end of previous chunk for overlap (Phase 2 Task 5.2).
-        
+
         Returns complete blocks that fit within overlap_size.
-        
+
         Args:
             previous_blocks: List of blocks from previous chunk
             overlap_size: Maximum size for overlap in characters
-        
+
         Returns:
             List of blocks to use as overlap
         """
         overlap_blocks = []
         current_size = 0
-        
+
         # Take blocks from end until we reach overlap_size
         for block in reversed(previous_blocks):
             block_size = len(block.content)
@@ -1191,77 +1202,84 @@ class StructuralStrategy(BaseStrategy):
                 current_size += block_size
             else:
                 break
-        
+
         return overlap_blocks
-    
+
     def _mark_overlap_in_chunks(self, chunks: List[Chunk]):
         """
         Mark which parts of chunks are overlap (Phase 2 Task 5.3).
-        
+
         Requirement 7.5: Metadata SHALL indicate which part is overlap vs new content.
-        
+
         Args:
             chunks: List of chunks to mark
         """
         for i in range(1, len(chunks)):
             current_chunk = chunks[i]
             prev_chunk = chunks[i - 1]
-            
+
             # Get block IDs to identify overlap
             current_block_ids = current_chunk.metadata.get("block_ids", [])
             prev_block_ids = prev_chunk.metadata.get("block_ids", [])
-            
+
             # Find overlapping block IDs
             overlap_block_ids = []
             for block_id in current_block_ids:
                 if block_id in prev_block_ids:
                     overlap_block_ids.append(block_id)
-            
+
             if overlap_block_ids:
                 current_chunk.metadata["has_overlap"] = True
                 current_chunk.metadata["overlap_block_ids"] = overlap_block_ids
-                
+
                 # Calculate overlap_start_offset
                 # This is the offset where new (non-overlap) content begins
                 # For simplicity, we estimate based on number of overlap blocks
-                overlap_ratio = len(overlap_block_ids) / len(current_block_ids) if current_block_ids else 0
+                overlap_ratio = (
+                    len(overlap_block_ids) / len(current_block_ids)
+                    if current_block_ids
+                    else 0
+                )
                 content_length = len(current_chunk.content)
                 estimated_overlap_size = int(content_length * overlap_ratio)
-                
+
                 current_chunk.metadata["overlap_start_offset"] = 0
-                current_chunk.metadata["new_content_start_offset"] = estimated_overlap_size
+                current_chunk.metadata["new_content_start_offset"] = (
+                    estimated_overlap_size
+                )
             else:
                 current_chunk.metadata["has_overlap"] = False
 
-
-    def _merge_small_chunks(self, chunks: List[Chunk], config: ChunkConfig) -> List[Chunk]:
+    def _merge_small_chunks(
+        self, chunks: List[Chunk], config: ChunkConfig
+    ) -> List[Chunk]:
         """
         Merge chunks that don't meet minimum content threshold (Phase 2 Task 8.1).
-        
+
         Requirements 6.3, 6.4: Ensure chunks have meaningful content.
-        
+
         Args:
             chunks: List of chunks to process
             config: Chunking configuration
-        
+
         Returns:
             List of chunks with small chunks merged
         """
         if not chunks or config.min_content_per_chunk <= 0:
             return chunks
-        
+
         merged = []
         i = 0
-        
+
         while i < len(chunks):
             current = chunks[i]
             content_size = self._calculate_content_size(current.content)
-            
+
             # Check if chunk meets minimum content threshold
             if content_size < config.min_content_per_chunk and i + 1 < len(chunks):
                 # Try to merge with next chunk if they're in same section
                 next_chunk = chunks[i + 1]
-                
+
                 if self._can_merge_chunks(current, next_chunk, config):
                     # Merge current and next
                     merged_chunk = self._merge_two_chunks(current, next_chunk)
@@ -1275,42 +1293,39 @@ class StructuralStrategy(BaseStrategy):
                 # Chunk is large enough
                 merged.append(current)
                 i += 1
-        
+
         return merged
-    
+
     def _calculate_content_size(self, content: str) -> int:
         """
         Calculate actual content size excluding headers and markup (Phase 2 Task 8.2).
-        
+
         This counts only meaningful text, not structural elements.
-        
+
         Args:
             content: Chunk content
-        
+
         Returns:
             Size of actual content in characters
         """
-        lines = content.split('\n')
+        lines = content.split("\n")
         content_lines = [
-            line for line in lines
-            if line.strip() and not line.strip().startswith('#')
+            line for line in lines if line.strip() and not line.strip().startswith("#")
         ]
         return sum(len(line) for line in content_lines)
-    
+
     def _can_merge_chunks(
-        self,
-        chunk1: Chunk,
-        chunk2: Chunk,
-        config: ChunkConfig
+        self, chunk1: Chunk, chunk2: Chunk, config: ChunkConfig
     ) -> bool:
         """
-        Check if two chunks can be merged without violating constraints (Phase 2 Task 8.3).
-        
+        Check if two chunks can be merged without violating constraints.
+        (Phase 2 Task 8.3)
+
         Args:
             chunk1: First chunk
             chunk2: Second chunk
             config: Chunking configuration
-        
+
         Returns:
             True if chunks can be merged, False otherwise
         """
@@ -1319,62 +1334,58 @@ class StructuralStrategy(BaseStrategy):
         path2 = chunk2.get_section_path()
         if path1 != path2:
             return False
-        
+
         # Combined size must not exceed max (unless already oversize)
         is_oversize1 = chunk1.get_metadata("is_oversize", False)
         is_oversize2 = chunk2.get_metadata("is_oversize", False)
-        
+
         if not (is_oversize1 or is_oversize2):
             combined_size = len(chunk1.content) + len(chunk2.content)
             if combined_size > config.max_chunk_size * 1.5:  # Allow some flexibility
                 return False
-        
+
         return True
-    
+
     def _merge_two_chunks(self, chunk1: Chunk, chunk2: Chunk) -> Chunk:
         """
         Merge two chunks into one (Phase 2 Task 8.3).
-        
+
         Args:
             chunk1: First chunk
             chunk2: Second chunk
-        
+
         Returns:
             Merged chunk
         """
         # Combine content
         combined_content = chunk1.content + "\n\n" + chunk2.content
-        
+
         # Merge metadata
         merged_metadata = chunk1.metadata.copy()
         merged_metadata["end_offset"] = chunk2.get_metadata("end_offset")
-        
+
         # Merge block IDs
         block_ids1 = chunk1.get_metadata("block_ids", [])
         block_ids2 = chunk2.get_metadata("block_ids", [])
         merged_metadata["block_ids"] = block_ids1 + block_ids2
-        
+
         # Update boolean flags (OR operation)
-        merged_metadata["has_code"] = (
-            chunk1.get_metadata("has_code", False) or 
-            chunk2.get_metadata("has_code", False)
-        )
-        merged_metadata["has_table"] = (
-            chunk1.get_metadata("has_table", False) or 
-            chunk2.get_metadata("has_table", False)
-        )
-        merged_metadata["has_list"] = (
-            chunk1.get_metadata("has_list", False) or 
-            chunk2.get_metadata("has_list", False)
-        )
-        merged_metadata["has_links"] = (
-            chunk1.get_metadata("has_links", False) or 
-            chunk2.get_metadata("has_links", False)
-        )
-        
+        merged_metadata["has_code"] = chunk1.get_metadata(
+            "has_code", False
+        ) or chunk2.get_metadata("has_code", False)
+        merged_metadata["has_table"] = chunk1.get_metadata(
+            "has_table", False
+        ) or chunk2.get_metadata("has_table", False)
+        merged_metadata["has_list"] = chunk1.get_metadata(
+            "has_list", False
+        ) or chunk2.get_metadata("has_list", False)
+        merged_metadata["has_links"] = chunk1.get_metadata(
+            "has_links", False
+        ) or chunk2.get_metadata("has_links", False)
+
         return Chunk(
             content=combined_content,
             start_line=chunk1.start_line,
             end_line=chunk2.end_line,
-            metadata=merged_metadata
+            metadata=merged_metadata,
         )

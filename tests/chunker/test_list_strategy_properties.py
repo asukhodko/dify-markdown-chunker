@@ -132,6 +132,7 @@ class TestListStrategyProperties:
 
         # Count list items in original
         import re
+
         original_items = []
         for line in markdown_text.split("\n"):
             stripped = line.strip()
@@ -141,7 +142,7 @@ class TestListStrategyProperties:
             if stripped.startswith("-") or stripped.startswith("*"):
                 original_items.append(line)
             # Ordered list: starts with digit(s) followed by . or )
-            elif re.match(r'^\d+[.)]', stripped):
+            elif re.match(r"^\d+[.)]", stripped):
                 original_items.append(line)
 
         # Count list items in chunks
@@ -155,7 +156,7 @@ class TestListStrategyProperties:
                 if stripped.startswith("-") or stripped.startswith("*"):
                     chunk_items.append(line)
                 # Ordered list: starts with digit(s) followed by . or )
-                elif re.match(r'^\d+[.)]', stripped):
+                elif re.match(r"^\d+[.)]", stripped):
                     chunk_items.append(line)
 
         # Should have at least as many items (may have more due to overlap)

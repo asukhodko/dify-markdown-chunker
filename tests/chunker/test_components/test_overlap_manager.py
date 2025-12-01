@@ -161,7 +161,9 @@ class TestOverlapManager:
     def test_overlap_with_percentage(self):
         """Test overlap using percentage (when overlap_size is 0)."""
         # Set overlap_size=0 to use percentage-based overlap
-        config = ChunkConfig(enable_overlap=True, overlap_percentage=0.2, overlap_size=0)
+        config = ChunkConfig(
+            enable_overlap=True, overlap_percentage=0.2, overlap_size=0
+        )
         manager = OverlapManager(config)
 
         chunks = [

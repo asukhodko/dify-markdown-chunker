@@ -159,20 +159,18 @@ class TestStructuralStrategyProperties:
         for line in original_lines:
             if len(line) > 10:  # Only check substantial lines
                 # Skip headers - they are markdown syntax, not content
-                if line.strip().startswith('#'):
+                if line.strip().startswith("#"):
                     continue
-                
+
                 # Skip lines containing ANY control characters
                 # Parser may not handle them correctly - this is a known limitation
-                has_control_chars = any(
-                    ord(c) < 32 and c not in '\n\r\t' for c in line
-                )
+                has_control_chars = any(ord(c) < 32 and c not in "\n\r\t" for c in line)
                 if has_control_chars:
                     continue
-                
+
                 # Skip blockquotes - parser may not fully support them
                 # This is a known limitation, not a bug in chunking
-                if line.strip().startswith('>'):
+                if line.strip().startswith(">"):
                     continue
 
                 lines_checked += 1
@@ -184,7 +182,7 @@ class TestStructuralStrategyProperties:
 
                 # Normalize markdown escaping (remove backslashes before special chars)
                 # This handles cases like "\:" -> ":" during markdown processing
-                normalized_line = printable_line.replace('\\', '')
+                normalized_line = printable_line.replace("\\", "")
 
                 # Extract significant words (>3 chars, alphanumeric)
                 # This is more flexible than exact string matching

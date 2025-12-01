@@ -22,10 +22,10 @@ logger = logging.getLogger(__name__)
 class FallbackLevel(Enum):
     """Fallback levels in the error recovery chain."""
 
-    PRIMARY = 0      # Selected strategy (no fallback)
-    STRUCTURAL = 1   # Structural fallback
-    SENTENCES = 2    # Final fallback (sentences)
-    FALLBACK = 1     # Alias for backward compatibility (maps to STRUCTURAL)
+    PRIMARY = 0  # Selected strategy (no fallback)
+    STRUCTURAL = 1  # Structural fallback
+    SENTENCES = 2  # Final fallback (sentences)
+    FALLBACK = 1  # Alias for backward compatibility (maps to STRUCTURAL)
 
 
 class FallbackManager:
@@ -111,7 +111,8 @@ class FallbackManager:
         # Level 1: Try structural fallback (skip if primary was structural)
         if primary_strategy.name != self._structural_strategy.name:
             try:
-                logger.info(f"Using structural fallback: {self._structural_strategy.name}")
+                strategy_name = self._structural_strategy.name
+                logger.info(f"Using structural fallback: {strategy_name}")
                 chunks = self._structural_strategy.apply(
                     content, stage1_results, self.config
                 )
@@ -138,7 +139,8 @@ class FallbackManager:
         # Level 2: Final fallback to sentences (skip if primary was sentences)
         if primary_strategy.name != self._sentences_strategy.name:
             try:
-                logger.info(f"Using sentences fallback: {self._sentences_strategy.name}")
+                strategy_name = self._sentences_strategy.name
+                logger.info(f"Using sentences fallback: {strategy_name}")
                 chunks = self._sentences_strategy.apply(
                     content, stage1_results, self.config
                 )

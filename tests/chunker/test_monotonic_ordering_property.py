@@ -130,9 +130,9 @@ class TestMonotonicOrderingProperty:
             return
 
         for i in range(1, len(chunks)):
-            assert chunks[i].start_line >= chunks[i - 1].start_line, (
-                f"Plain text monotonic ordering violated at chunk {i}"
-            )
+            assert (
+                chunks[i].start_line >= chunks[i - 1].start_line
+            ), f"Plain text monotonic ordering violated at chunk {i}"
 
     @settings(max_examples=300, deadline=10000)
     @given(
@@ -167,9 +167,9 @@ class TestMonotonicOrderingProperty:
             return
 
         for i in range(1, len(chunks)):
-            assert chunks[i].start_line >= chunks[i - 1].start_line, (
-                f"List monotonic ordering violated at chunk {i}"
-            )
+            assert (
+                chunks[i].start_line >= chunks[i - 1].start_line
+            ), f"List monotonic ordering violated at chunk {i}"
 
     @settings(max_examples=200, deadline=10000)
     @given(
@@ -198,9 +198,9 @@ class TestMonotonicOrderingProperty:
             return
 
         for i in range(1, len(chunks)):
-            assert chunks[i].start_line >= chunks[i - 1].start_line, (
-                f"Code block monotonic ordering violated at chunk {i}"
-            )
+            assert (
+                chunks[i].start_line >= chunks[i - 1].start_line
+            ), f"Code block monotonic ordering violated at chunk {i}"
 
 
 class TestMonotonicOrderingWithStrategies:
@@ -227,9 +227,9 @@ class TestMonotonicOrderingWithStrategies:
             return
 
         for i in range(1, len(chunks)):
-            assert chunks[i].start_line >= chunks[i - 1].start_line, (
-                f"Strategy '{strategy}' monotonic ordering violated at chunk {i}"
-            )
+            assert (
+                chunks[i].start_line >= chunks[i - 1].start_line
+            ), f"Strategy '{strategy}' monotonic ordering violated at chunk {i}"
 
     @settings(max_examples=200, deadline=10000)
     @given(
@@ -263,9 +263,9 @@ class TestMonotonicOrderingWithStrategies:
             return
 
         for i in range(1, len(chunks)):
-            assert chunks[i].start_line >= chunks[i - 1].start_line, (
-                f"Chunk size config monotonic ordering violated at chunk {i}"
-            )
+            assert (
+                chunks[i].start_line >= chunks[i - 1].start_line
+            ), f"Chunk size config monotonic ordering violated at chunk {i}"
 
 
 class TestMonotonicOrderingEdgeCases:
@@ -298,9 +298,9 @@ class TestMonotonicOrderingEdgeCases:
             return
 
         for i in range(1, len(chunks)):
-            assert chunks[i].start_line >= chunks[i - 1].start_line, (
-                f"Multiple paragraphs monotonic ordering violated at chunk {i}"
-            )
+            assert (
+                chunks[i].start_line >= chunks[i - 1].start_line
+            ), f"Multiple paragraphs monotonic ordering violated at chunk {i}"
 
     @settings(max_examples=100, deadline=5000)
     @given(random_markdown())

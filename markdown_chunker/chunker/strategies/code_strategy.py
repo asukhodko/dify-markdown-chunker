@@ -252,7 +252,7 @@ class CodeStrategy(BaseStrategy):
             # Get the actual code block content with fences
             # Ensure we capture the complete code block including closing fence
             raw_content = code_block.raw_content
-            
+
             # Verify the raw_content has balanced fences
             fence_count = raw_content.count("```")
             if fence_count < 2:
@@ -260,14 +260,14 @@ class CodeStrategy(BaseStrategy):
                 raw_content = self._extract_complete_code_block(
                     content, code_block.start_offset
                 )
-            
+
             # Calculate actual end offset based on raw_content
             # Add 1 to include the newline after closing fence
             actual_end_offset = code_block.start_offset + len(raw_content)
             # Check if there's a newline after the code block and include it
-            if actual_end_offset < len(content) and content[actual_end_offset] == '\n':
+            if actual_end_offset < len(content) and content[actual_end_offset] == "\n":
                 actual_end_offset += 1
-            
+
             # Text before code block
             if code_block.start_offset > current_pos:
                 text_content = content[current_pos : code_block.start_offset].strip()
@@ -326,29 +326,29 @@ class CodeStrategy(BaseStrategy):
     def _extract_complete_code_block(self, content: str, start_offset: int) -> str:
         """
         Extract complete code block from content starting at offset.
-        
+
         Ensures both opening and closing fences are included.
-        
+
         Args:
             content: Full content
             start_offset: Starting position of code block
-            
+
         Returns:
             Complete code block with both fences
         """
         # Find the opening fence
         remaining = content[start_offset:]
-        
+
         # Find opening fence
         if not remaining.lstrip().startswith("```"):
             # Not a valid code block start
             return remaining.split("\n\n")[0]  # Return first paragraph
-        
+
         # Find closing fence
         lines = remaining.split("\n")
         in_block = False
         block_lines = []
-        
+
         for line in lines:
             stripped = line.strip()
             if stripped.startswith("```"):
@@ -362,7 +362,7 @@ class CodeStrategy(BaseStrategy):
                     break
             elif in_block:
                 block_lines.append(line)
-        
+
         return "\n".join(block_lines)
 
     def _process_segments(

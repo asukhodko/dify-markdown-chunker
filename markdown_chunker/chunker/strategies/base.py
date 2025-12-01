@@ -202,8 +202,10 @@ class BaseStrategy(ABC):
                     chunk.add_metadata("allow_oversize", True)
                     chunk.add_metadata(
                         "size_warning",
-                        f"Chunk size {chunk.size} exceeds limit {config.max_chunk_size}",
+                        f"Chunk size {chunk.size} exceeds "
+                        f"limit {config.max_chunk_size}",
                     )
+                    validated_chunks.append(chunk)
                 else:
                     # Try to split the chunk if it contains atomic elements
                     if self._contains_atomic_element(chunk.content):
@@ -211,40 +213,44 @@ class BaseStrategy(ABC):
                         chunk.add_metadata("allow_oversize", True)
                         chunk.add_metadata(
                             "size_warning",
-                            f"Chunk contains atomic element, size {chunk.size} exceeds limit {config.max_chunk_size}",
+                            f"Chunk contains atomic element, "
+                            f"size {chunk.size} exceeds limit "
+                            f"{config.max_chunk_size}",
                         )
+                        validated_chunks.append(chunk)
                     else:
-                        # Log warning but don't mark as oversize
-                        chunk.add_metadata(
-                            "size_warning",
-                            f"Chunk size {chunk.size} exceeds limit {config.max_chunk_size}",
-                        )
+                        # Non-atomic oversized chunk - enforce split (CRIT-1 fix)
+                        from ..size_enforcer import split_oversized_chunk
 
-            # Ensure required metadata is present
+                        split_chunks = split_oversized_chunk(chunk, config)
+                        validated_chunks.extend(split_chunks)
+            else:
+                validated_chunks.append(chunk)
+
+        # Ensure required metadata is present
+        for chunk in validated_chunks:
             if "strategy" not in chunk.metadata:
                 chunk.add_metadata("strategy", self.name)
             if "content_type" not in chunk.metadata:
                 chunk.add_metadata("content_type", "text")
-
-            validated_chunks.append(chunk)
 
         return validated_chunks
 
     def _contains_atomic_element(self, content: str) -> bool:
         """
         Check if content contains atomic elements (code blocks, tables).
-        
+
         Args:
             content: Content to check
-            
+
         Returns:
             True if content contains atomic elements
         """
         # Check for code blocks
-        if '```' in content:
+        if "```" in content:
             return True
         # Check for tables (simple heuristic)
-        if '|' in content and '---' in content:
+        if "|" in content and "---" in content:
             return True
         return False
 
@@ -255,78 +261,79 @@ class BaseStrategy(ABC):
     def _split_at_boundary(self, content: str, max_size: int) -> List[str]:
         """
         Split content at semantic boundaries (paragraph > sentence > word).
-        
-        IMPORTANT: Strategies MUST NOT pass content slices to this method that 
-        cut through atomic elements; splitting at semantic boundaries applies 
+
+        IMPORTANT: Strategies MUST NOT pass content slices to this method that
+        cut through atomic elements; splitting at semantic boundaries applies
         only within non-atomic blocks.
-        
+
         Args:
             content: Content to split
             max_size: Maximum size for each part
-            
+
         Returns:
             List of content parts split at semantic boundaries
         """
         if len(content) <= max_size:
             return [content]
-        
+
         parts = []
         remaining = content
-        
+
         while remaining:
             if len(remaining) <= max_size:
                 parts.append(remaining)
                 break
-            
+
             # Try to find paragraph boundary
             split_pos = self._find_paragraph_boundary(remaining, max_size)
-            
+
             # Fall back to sentence boundary
             if split_pos <= 0:
                 split_pos = self._find_sentence_boundary(remaining, max_size)
-            
+
             # Fall back to word boundary
             if split_pos <= 0:
                 split_pos = self._find_word_boundary(remaining, max_size)
-            
+
             # Last resort: hard split (should never happen)
             if split_pos <= 0:
                 split_pos = max_size
-            
+
             parts.append(remaining[:split_pos].rstrip())
             remaining = remaining[split_pos:].lstrip()
-        
+
         return parts
 
     def _find_paragraph_boundary(self, content: str, max_pos: int) -> int:
         """
         Find last paragraph boundary before max_pos.
-        
+
         Args:
             content: Content to search
             max_pos: Maximum position to search up to
-            
+
         Returns:
             Position of paragraph boundary, or -1 if not found
         """
         # Look for double newline
-        pos = content.rfind('\n\n', 0, max_pos)
+        pos = content.rfind("\n\n", 0, max_pos)
         return pos + 2 if pos > 0 else -1
 
     def _find_sentence_boundary(self, content: str, max_pos: int) -> int:
         """
         Find last sentence boundary before max_pos.
-        
+
         Args:
             content: Content to search
             max_pos: Maximum position to search up to
-            
+
         Returns:
             Position of sentence boundary, or -1 if not found
         """
         # Look for sentence-ending punctuation followed by space
         import re
-        matches = list(re.finditer(r'[.!?]+\s+', content[:max_pos]))
+
+        matches = list(re.finditer(r"[.!?]+\s+", content[:max_pos]))
         if matches:
             return matches[-1].end()
         return -1
@@ -334,16 +341,16 @@ class BaseStrategy(ABC):
     def _find_word_boundary(self, content: str, max_pos: int) -> int:
         """
         Find last word boundary before max_pos.
-        
+
         Args:
             content: Content to search
             max_pos: Maximum position to search up to
-            
+
         Returns:
             Position of word boundary, or -1 if not found
         """
         # Look for whitespace
-        pos = content.rfind(' ', 0, max_pos)
+        pos = content.rfind(" ", 0, max_pos)
         return pos + 1 if pos > 0 else -1
 
     def __str__(self) -> str:

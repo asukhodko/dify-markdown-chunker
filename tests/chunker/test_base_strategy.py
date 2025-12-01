@@ -162,21 +162,43 @@ class TestBaseStrategy:
         assert validated[1].content == "another valid"
 
     def test_validate_chunks_oversize_warning(self):
-        """Test chunk validation adds oversize warnings."""
+        """Test chunk validation handles oversized atomic chunks."""
         strategy = MockStrategy()
         config = ChunkConfig(
             max_chunk_size=100, min_chunk_size=10, allow_oversize=False
         )
 
-        # Create oversized chunk
-        large_content = "x" * 150  # Larger than max_chunk_size
+        # Create oversized chunk with atomic element (code block)
+        # This should NOT be split because it contains atomic element
+        large_content = "```python\n" + "x" * 150 + "\n```"  # Atomic element
         chunk = strategy._create_chunk(large_content, 1, 1)
 
         validated = strategy._validate_chunks([chunk], config)
 
+        # Should remain as 1 chunk because it contains atomic element
         assert len(validated) == 1
         assert "size_warning" in validated[0].metadata
         assert "exceeds limit" in validated[0].metadata["size_warning"]
+
+    def test_validate_chunks_splits_non_atomic_oversize(self):
+        """Test chunk validation splits non-atomic oversized chunks."""
+        strategy = MockStrategy()
+        config = ChunkConfig(
+            max_chunk_size=100, min_chunk_size=10, allow_oversize=False
+        )
+
+        # Create oversized chunk WITHOUT atomic elements
+        # This SHOULD be split because it's non-atomic
+        large_content = "x" * 150  # No code blocks or tables
+        chunk = strategy._create_chunk(large_content, 1, 1)
+
+        validated = strategy._validate_chunks([chunk], config)
+
+        # Should be split into multiple chunks
+        assert len(validated) > 1
+        # All chunks should be within size limit (or close to it)
+        for c in validated:
+            assert c.size <= config.max_chunk_size + 10  # Allow small tolerance
 
     def test_validate_chunks_adds_missing_metadata(self):
         """Test chunk validation adds missing required metadata."""

@@ -76,11 +76,20 @@ def chunks_are_identical(chunks1, chunks2):
         if chunk1.content != chunk2.content:
             return False, f"Chunk {i} content differs"
         if chunk1.start_line != chunk2.start_line:
-            return False, f"Chunk {i} start_line differs: {chunk1.start_line} vs {chunk2.start_line}"
+            return (
+                False,
+                f"Chunk {i} start_line differs: {chunk1.start_line} vs {chunk2.start_line}",
+            )
         if chunk1.end_line != chunk2.end_line:
-            return False, f"Chunk {i} end_line differs: {chunk1.end_line} vs {chunk2.end_line}"
+            return (
+                False,
+                f"Chunk {i} end_line differs: {chunk1.end_line} vs {chunk2.end_line}",
+            )
         if chunk1.strategy != chunk2.strategy:
-            return False, f"Chunk {i} strategy differs: {chunk1.strategy} vs {chunk2.strategy}"
+            return (
+                False,
+                f"Chunk {i} strategy differs: {chunk1.strategy} vs {chunk2.strategy}",
+            )
 
     return True, "Chunks are identical"
 
@@ -221,9 +230,7 @@ class TestIdempotenceWithStrategies:
             return
 
         identical, message = chunks_are_identical(chunks1, chunks2)
-        assert identical, (
-            f"Strategy '{strategy}' idempotence failed: {message}"
-        )
+        assert identical, f"Strategy '{strategy}' idempotence failed: {message}"
 
     @settings(max_examples=200, deadline=10000)
     @given(
@@ -255,9 +262,7 @@ class TestIdempotenceWithStrategies:
             return
 
         identical, message = chunks_are_identical(chunks1, chunks2)
-        assert identical, (
-            f"Chunk size config idempotence failed: {message}"
-        )
+        assert identical, f"Chunk size config idempotence failed: {message}"
 
 
 class TestIdempotenceEdgeCases:

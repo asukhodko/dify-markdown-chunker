@@ -157,7 +157,7 @@ class SentencesStrategy(BaseStrategy):
 
             # FIX: Check if this is structured content (header, list, table)
             is_structured = self._is_structured_content(paragraph)
-            
+
             if is_structured:
                 # Keep structured content intact, don't split into sentences
                 # Check if adding this paragraph would exceed chunk size
@@ -263,7 +263,7 @@ class SentencesStrategy(BaseStrategy):
     def _split_into_paragraphs(self, content: str) -> List[str]:
         """
         Split content into paragraphs.
-        
+
         FIX: Preserves markdown structure (headers, lists, tables)
         instead of merging everything into sentences.
 
@@ -279,19 +279,19 @@ class SentencesStrategy(BaseStrategy):
         current_para = []
         in_list = False
         in_table = False
-        
+
         for line in lines:
             stripped = line.strip()
-            
+
             # Check if this is a header
-            is_header = bool(re.match(r'^#{1,6}\s+', stripped))
-            
+            is_header = bool(re.match(r"^#{1,6}\s+", stripped))
+
             # Check if this is a list item
-            is_list = bool(re.match(r'^(\s*)([-*+]|\d+\.)\s+', stripped))
-            
+            is_list = bool(re.match(r"^(\s*)([-*+]|\d+\.)\s+", stripped))
+
             # Check if this is a table row
-            is_table = bool(re.match(r'^\|.*\|$', stripped))
-            
+            is_table = bool(re.match(r"^\|.*\|$", stripped))
+
             # Empty line - might be paragraph boundary
             if not stripped:
                 if current_para and not in_list and not in_table:
@@ -302,7 +302,7 @@ class SentencesStrategy(BaseStrategy):
                     # Keep empty line in structured content
                     current_para.append(line)
                 continue
-            
+
             # Header - always starts new paragraph
             if is_header:
                 if current_para:
@@ -315,7 +315,7 @@ class SentencesStrategy(BaseStrategy):
                 paragraphs.append("\n".join(current_para))
                 current_para = []
                 continue
-            
+
             # List item
             if is_list:
                 if not in_list and current_para:
@@ -326,7 +326,7 @@ class SentencesStrategy(BaseStrategy):
                 in_list = True
                 in_table = False
                 continue
-            
+
             # Table row
             if is_table:
                 if not in_table and current_para:
@@ -337,7 +337,7 @@ class SentencesStrategy(BaseStrategy):
                 in_table = True
                 in_list = False
                 continue
-            
+
             # Regular text
             if in_list or in_table:
                 # End structured content
@@ -346,19 +346,19 @@ class SentencesStrategy(BaseStrategy):
                     current_para = []
                 in_list = False
                 in_table = False
-            
+
             current_para.append(line)
-        
+
         # Add final paragraph
         if current_para:
             paragraphs.append("\n".join(current_para))
-        
+
         return [p.strip() for p in paragraphs if p.strip()]
 
     def _is_structured_content(self, text: str) -> bool:
         """
         Check if text is structured content (header, list, table).
-        
+
         FIX: Helps preserve markdown structure instead of breaking it.
 
         Args:
@@ -368,24 +368,24 @@ class SentencesStrategy(BaseStrategy):
             True if text contains structured markdown elements
         """
         lines = text.split("\n")
-        
+
         for line in lines:
             stripped = line.strip()
             if not stripped:
                 continue
-            
+
             # Check for headers
-            if re.match(r'^#{1,6}\s+', stripped):
+            if re.match(r"^#{1,6}\s+", stripped):
                 return True
-            
+
             # Check for list items
-            if re.match(r'^(\s*)([-*+]|\d+\.)\s+', stripped):
+            if re.match(r"^(\s*)([-*+]|\d+\.)\s+", stripped):
                 return True
-            
+
             # Check for tables
-            if re.match(r'^\|.*\|$', stripped):
+            if re.match(r"^\|.*\|$", stripped):
                 return True
-        
+
         return False
 
     def _split_into_sentences(self, text: str) -> List[str]:  # noqa: C901

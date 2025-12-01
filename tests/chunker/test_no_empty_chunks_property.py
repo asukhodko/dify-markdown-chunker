@@ -121,9 +121,9 @@ class TestNoEmptyChunksProperty:
 
         # All chunks must have content
         for i, chunk in enumerate(chunks):
-            assert chunk.content.strip(), (
-                f"Chunk {i} is empty. Plain text should never produce empty chunks."
-            )
+            assert (
+                chunk.content.strip()
+            ), f"Chunk {i} is empty. Plain text should never produce empty chunks."
 
     @settings(max_examples=300, deadline=10000)
     @given(
@@ -157,9 +157,9 @@ class TestNoEmptyChunksProperty:
 
         # All chunks must have content
         for i, chunk in enumerate(chunks):
-            assert chunk.content.strip(), (
-                f"Chunk {i} is empty. List content should never produce empty chunks."
-            )
+            assert (
+                chunk.content.strip()
+            ), f"Chunk {i} is empty. List content should never produce empty chunks."
 
     @settings(max_examples=200, deadline=10000)
     @given(
@@ -186,9 +186,9 @@ class TestNoEmptyChunksProperty:
 
         # All chunks must have content
         for i, chunk in enumerate(chunks):
-            assert chunk.content.strip(), (
-                f"Chunk {i} is empty. Code blocks should never produce empty chunks."
-            )
+            assert (
+                chunk.content.strip()
+            ), f"Chunk {i} is empty. Code blocks should never produce empty chunks."
 
 
 class TestNoEmptyChunksWithStrategies:
@@ -278,9 +278,7 @@ class TestNoEmptyChunksEdgeCases:
 
         # All chunks must have content
         for i, chunk in enumerate(chunks):
-            assert chunk.content.strip(), (
-                f"Single line input produced empty chunk {i}."
-            )
+            assert chunk.content.strip(), f"Single line input produced empty chunk {i}."
 
     @settings(max_examples=100, deadline=5000)
     @given(
@@ -307,9 +305,9 @@ class TestNoEmptyChunksEdgeCases:
 
         # All chunks must have content
         for i, chunk in enumerate(chunks):
-            assert chunk.content.strip(), (
-                f"Multiple paragraphs produced empty chunk {i}."
-            )
+            assert (
+                chunk.content.strip()
+            ), f"Multiple paragraphs produced empty chunk {i}."
 
     @settings(max_examples=100, deadline=5000)
     @given(
@@ -337,6 +335,6 @@ class TestNoEmptyChunksEdgeCases:
 
         # All chunks must have content
         for i, chunk in enumerate(chunks):
-            assert chunk.content.strip(), (
-                f"Header-only document produced empty chunk {i}."
-            )
+            assert (
+                chunk.content.strip()
+            ), f"Header-only document produced empty chunk {i}."

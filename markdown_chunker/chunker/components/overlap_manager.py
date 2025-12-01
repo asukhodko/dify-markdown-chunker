@@ -7,6 +7,7 @@ and improve readability when chunks are processed independently.
 import re
 from typing import List
 
+from ..text_normalizer import truncate_at_word_boundary, validate_no_word_fragments
 from ..types import Chunk, ChunkConfig
 
 
@@ -61,7 +62,7 @@ class OverlapManager:
             else:
                 # Add overlap from previous chunk
                 previous_chunk = chunks[i - 1]
-                
+
                 overlap_text = self._extract_overlap(previous_chunk, is_suffix=True)
 
                 if overlap_text:
@@ -81,10 +82,10 @@ class OverlapManager:
     def _is_code_chunk(self, chunk: Chunk) -> bool:
         """
         Check if chunk contains code block content.
-        
+
         Args:
             chunk: Chunk to check
-            
+
         Returns:
             True if chunk contains code blocks
         """
@@ -97,10 +98,10 @@ class OverlapManager:
     def _has_unbalanced_fences(self, text: str) -> bool:
         """
         Check if text has unbalanced code fences.
-        
+
         Args:
             text: Text to check
-            
+
         Returns:
             True if fences are unbalanced
         """
@@ -122,7 +123,8 @@ class OverlapManager:
         if not content.strip():
             return ""
 
-        # Calculate overlap size - prefer fixed size if specified, otherwise use percentage
+        # Calculate overlap size - prefer fixed size if specified,
+        # otherwise use percentage
         if self.config.overlap_size > 0:
             # Fixed-size overlap takes priority
             overlap_size = self.config.overlap_size
@@ -170,9 +172,8 @@ class OverlapManager:
         sentences = self._split_into_sentences(content)
 
         if not sentences:
-            # No sentences found, use character-based extraction
-            # But still respect the target_size limit
-            return content[-target_size:]
+            # No sentences found, use word boundary extraction from end
+            return truncate_at_word_boundary(content, target_size, from_end=True)
 
         # Collect sentences from end until we reach target size
         overlap_sentences = []
@@ -195,11 +196,11 @@ class OverlapManager:
                 break
 
         result = "".join(overlap_sentences).strip()
-        
-        # Final safety check: truncate if still too large
+
+        # Final safety check: truncate if still too large using word boundary
         if len(result) > target_size * 1.5:
-            result = result[-target_size:]
-            
+            result = truncate_at_word_boundary(result, target_size, from_end=True)
+
         return result
 
     def _extract_prefix_overlap(self, content: str, target_size: int) -> str:
@@ -220,8 +221,8 @@ class OverlapManager:
         sentences = self._split_into_sentences(content)
 
         if not sentences:
-            # No sentences found, use character-based extraction
-            return content[:target_size]
+            # No sentences found, use word boundary extraction
+            return truncate_at_word_boundary(content, target_size, from_end=False)
 
         # Collect sentences from beginning until we reach target size
         overlap_sentences = []
@@ -241,47 +242,49 @@ class OverlapManager:
     def _truncate_preserving_sentences(self, text: str, max_size: int) -> str:
         """
         Truncate text while trying to preserve sentence boundaries.
-        
+
         Args:
             text: Text to truncate
             max_size: Maximum size
-            
+
         Returns:
             Truncated text, preferably ending at sentence boundary
         """
         text = text.strip()
-        
+
         if len(text) <= max_size:
             return text
-        
+
         # If text already ends with sentence punctuation and is close to max_size,
         # allow a tolerance to preserve the sentence boundary (up to 50% over)
-        if text[-1] in '.!?' and len(text) <= max_size * 1.5:
+        if text[-1] in ".!?" and len(text) <= max_size * 1.5:
             return text
-        
+
         # Try to find a sentence boundary within the text
         # Search the entire text for sentence boundaries
         best_boundary = -1
         for i in range(len(text) - 1, -1, -1):
-            if text[i] in '.!?':
+            if text[i] in ".!?":
                 # Found a sentence boundary
                 candidate_len = i + 1
                 # Prefer boundaries closer to max_size but allow up to 50% over
                 if candidate_len <= max_size * 1.5:
                     best_boundary = i
                     break
-        
+
         if best_boundary >= 0:
-            return text[:best_boundary + 1].strip()
-        
-        # No good sentence boundary found, truncate at word boundary
-        truncated = text[:max_size]
-        last_space = truncated.rfind(' ')
-        if last_space > 0:
-            return truncated[:last_space].strip()
-        
-        # No good boundary, just truncate
-        return truncated.strip()
+            return text[: best_boundary + 1].strip()
+
+        # No good sentence boundary found, use word boundary truncation
+        # This prevents BLOCK-2 (word splitting at chunk boundaries)
+        result = truncate_at_word_boundary(text, max_size, from_end=False)
+
+        # Validate no word fragments remain
+        if not validate_no_word_fragments(result):
+            # If validation fails, try from the opposite end
+            result = truncate_at_word_boundary(text, max_size, from_end=True)
+
+        return result
 
     def _split_into_sentences(self, content: str) -> List[str]:
         """
@@ -328,58 +331,62 @@ class OverlapManager:
             New chunk with overlap prefix
         """
         chunk_content_size = len(chunk.content)
-        
+
         # CRITICAL: Ensure overlap doesn't exceed 50% of the resulting chunk
         # If overlap = X and content = Y, then ratio = X / (X + Y + 2)
         # We want X / (X + Y + 2) <= 0.5
-        # Solving: X <= 0.5 * (X + Y + 2) => X <= 0.5X + 0.5Y + 1 => 0.5X <= 0.5Y + 1 => X <= Y + 2
+        # Solving: X <= 0.5 * (X + Y + 2) => X <= 0.5X + 0.5Y + 1
+        # => 0.5X <= 0.5Y + 1 => X <= Y + 2
         # But to be safe and account for "\n\n", we use X <= 0.45 * Y
         max_overlap_for_ratio = int(chunk_content_size * 0.45)
-        
+
         if len(overlap_text) > max_overlap_for_ratio:
             # Truncate but try to preserve sentence boundaries
             overlap_text = self._truncate_preserving_sentences(
                 overlap_text, max_overlap_for_ratio
             )
-            
+
         if not overlap_text:
             return chunk
-        
+
         # CRITICAL: Strict size compliance check
         # Calculate potential size AFTER applying overlap
         potential_size = len(overlap_text) + 2 + chunk_content_size  # +2 for "\n\n"
-        
+
         if potential_size > self.config.max_chunk_size:
             # Calculate how much overlap we can add without exceeding max_chunk_size
             available_space = self.config.max_chunk_size - chunk_content_size - 2
-            
+
             if available_space <= 0:
                 # No space for overlap - return original chunk
                 return chunk
-            
+
             # Truncate overlap to fit within available space
             # Also respect the 50% ratio limit
             max_allowed = min(available_space, max_overlap_for_ratio)
-            
+
             # Ensure we don't exceed available space even after sentence truncation
             if max_allowed > 0:
                 overlap_text = self._truncate_preserving_sentences(
                     overlap_text, max_allowed
                 )
-                
-                # Final safety check - if truncated overlap still too big, hard truncate
+
+                # Final safety check - if truncated overlap still too big,
+                # use word boundary truncation
                 if len(overlap_text) > available_space:
-                    overlap_text = overlap_text[:available_space].strip()
+                    overlap_text = truncate_at_word_boundary(
+                        overlap_text, available_space, from_end=False
+                    )
             else:
                 overlap_text = ""
-            
+
             if not overlap_text:
                 # No meaningful overlap left - return original chunk
                 return chunk
-        
+
         # Create new content with overlap
         new_content = overlap_text + "\n\n" + chunk.content
-        
+
         # CRITICAL: Check if adding overlap creates unbalanced code fences
         # This can happen when overlap contains part of a code block
         if self._has_unbalanced_fences(new_content):

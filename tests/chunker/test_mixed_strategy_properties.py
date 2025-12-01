@@ -279,6 +279,7 @@ class TestMixedStrategyProperties:
         def filter_content_words(text):
             """Extract actual content words, excluding markdown syntax."""
             import re
+
             words = text.split()
             # Remove pure markdown syntax and very short tokens
             content_words = []
@@ -290,7 +291,7 @@ class TestMixedStrategyProperties:
                 if w.startswith("```"):
                     continue
                 # Skip ordered list markers (1., 2., 3., etc.)
-                if re.match(r'^\d+\.$', w):
+                if re.match(r"^\d+\.$", w):
                     continue
                 # Skip very short tokens
                 if len(w) <= 1:
@@ -305,19 +306,19 @@ class TestMixedStrategyProperties:
         assume(len(input_words) >= 5)
 
         missing_words = input_words - output_words
-        
+
         # Check if missing words are only headers (known limitation of list strategy)
         # List strategy focuses on list content and may drop headers
         header_words = set()
-        for line in document.split('\n'):
-            if line.strip().startswith('#'):
+        for line in document.split("\n"):
+            if line.strip().startswith("#"):
                 # Extract words from header line (excluding # symbols)
-                header_text = line.strip().lstrip('#').strip()
+                header_text = line.strip().lstrip("#").strip()
                 header_words.update(w for w in header_text.split() if len(w) > 1)
-        
+
         # Words that are missing but NOT headers (actual content loss)
         non_header_missing = missing_words - header_words
-        
+
         # Allow small tolerance for markdown processing
         # Use higher tolerance (50%) if all missing words are headers
         if missing_words and missing_words <= header_words:
@@ -325,7 +326,7 @@ class TestMixedStrategyProperties:
             tolerance = 0.50  # 50% tolerance when only headers are missing
         else:
             tolerance = 0.10  # 10% tolerance for actual content loss
-        
+
         missing_ratio = len(missing_words) / len(input_words) if input_words else 0
 
         assert missing_ratio < tolerance, (
@@ -395,7 +396,7 @@ class TestMixedStrategyProperties:
         # At least 30% of substantial headers should be preserved
         # (Some strategies like list/table may drop headers when they focus on structured content)
         # This is a known limitation - specialized strategies focus on their content type
-        # 
+        #
         # Note: List strategy in particular may drop headers entirely when processing
         # list-heavy documents, as it focuses on preserving list structure.
         # We accept this tradeoff for better list handling.
@@ -404,14 +405,14 @@ class TestMixedStrategyProperties:
             assume(headers_checked >= 4)
 
             preservation_rate = headers_found / headers_checked
-            
+
             # If preservation is very low (< 10%), check if this is a list-heavy document
             # where header loss is expected behavior
             if preservation_rate < 0.1:
                 # Count list items in document
                 list_item_count = document.count("\n- ") + document.count("\n* ")
                 list_item_count += len(re.findall(r"\n\d+\. ", document))
-                
+
                 # If document is list-heavy (more list items than headers),
                 # accept lower preservation rate
                 if list_item_count > len(headers) * 2:
@@ -421,7 +422,7 @@ class TestMixedStrategyProperties:
                         f"headers preserved ({preservation_rate:.1%})"
                     )
                     return  # Skip further checks for list-heavy docs
-            
+
             # For normal documents, require at least 30% preservation
             assert preservation_rate >= 0.3, (
                 f"Too many headers lost: only {headers_found}/{headers_checked} "

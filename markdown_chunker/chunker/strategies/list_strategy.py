@@ -411,7 +411,7 @@ class ListStrategy(BaseStrategy):
     ) -> List[Chunk]:
         """
         Create chunks from list hierarchy.
-        
+
         FIX: Groups multiple root items together to avoid single-item chunks
         (Requirement 9.4)
 
@@ -424,14 +424,14 @@ class ListStrategy(BaseStrategy):
             List of chunks
         """
         chunks = []
-        
+
         # FIX: Group multiple root items together when they fit
         current_items = []
         current_size = 0
-        
+
         for root_item in list_hierarchy:
             item_size = self._calculate_item_size(root_item)
-            
+
             # Check if we can add this item to current group
             if current_size + item_size <= config.max_chunk_size:
                 current_items.append(root_item)
@@ -440,35 +440,35 @@ class ListStrategy(BaseStrategy):
                 # Current group is full, create chunk(s) from it
                 if current_items:
                     chunks.extend(self._create_chunks_from_items(current_items, config))
-                
+
                 # Start new group with current item
                 current_items = [root_item]
                 current_size = item_size
-        
+
         # Process remaining items
         if current_items:
             chunks.extend(self._create_chunks_from_items(current_items, config))
 
         return chunks
-    
+
     def _create_chunks_from_items(
         self, items: List[ListItemInfo], config: ChunkConfig
     ) -> List[Chunk]:
         """
         Create chunks from a group of list items.
-        
+
         Args:
             items: List items to chunk
             config: Chunking configuration
-            
+
         Returns:
             List of chunks
         """
         chunks = []
-        
+
         # If all items fit together, create single chunk
         total_size = sum(self._calculate_item_size(item) for item in items)
-        
+
         if total_size <= config.max_chunk_size:
             # Create single chunk with all items
             chunk = self._create_multi_item_chunk(items, config)
@@ -477,7 +477,7 @@ class ListStrategy(BaseStrategy):
             # Need to process items individually with potential splitting
             for root_item in items:
                 item_size = self._calculate_item_size(root_item)
-                
+
                 if item_size <= config.max_chunk_size:
                     chunk = self._create_list_chunk(
                         root_item, config, is_continuation=False
@@ -490,11 +490,13 @@ class ListStrategy(BaseStrategy):
                     for i, group in enumerate(groups):
                         group.is_continuation = i > 0
                         if group.is_continuation:
-                            group.parent_context = self._generate_parent_context(root_item)
+                            group.parent_context = self._generate_parent_context(
+                                root_item
+                            )
 
                         chunk = self._create_group_chunk(group, config)
                         chunks.append(chunk)
-        
+
         return chunks
 
     def _calculate_item_size(self, item: ListItemInfo) -> int:
@@ -520,7 +522,7 @@ class ListStrategy(BaseStrategy):
     ) -> List[ListGroup]:
         """
         Group list items into chunks that fit within size constraints.
-        
+
         FIX: Groups multiple items together to avoid single-item micro-chunks
         (Requirement 9.4)
 
@@ -550,18 +552,18 @@ class ListStrategy(BaseStrategy):
 
         # Group children - try to include multiple items per chunk
         min_items_per_chunk = 2  # Avoid single-item chunks when possible
-        
+
         for i, child in enumerate(root_item.children):
             child_size = self._calculate_item_size(child)
 
             # Check if we can add this child to current group
             can_add = current_group.size + child_size <= max_chunk_size
-            
+
             # If this is the last child and current group has only 1 item,
             # try to add it even if slightly over size (to avoid single-item chunk)
             is_last = i == len(root_item.children) - 1
             has_few_items = len(current_group.items) < min_items_per_chunk
-            
+
             if can_add or (is_last and has_few_items and child_size < max_chunk_size):
                 # Add to current group
                 current_group.items.append(child)
@@ -645,7 +647,7 @@ class ListStrategy(BaseStrategy):
     ) -> Chunk:
         """
         Create a chunk from multiple list items.
-        
+
         FIX: Groups multiple items to avoid single-item chunks (Requirement 9.4)
 
         Args:
@@ -659,16 +661,18 @@ class ListStrategy(BaseStrategy):
         content_parts = []
         for item in items:
             content_parts.append(self._format_list_item(item))
-        
+
         content = "\n".join(content_parts)
-        
+
         # Calculate metadata
         total_items = sum(self._count_items(item) for item in items)
-        max_nesting = max((self._calculate_max_nesting(item) for item in items), default=0)
-        
+        max_nesting = max(
+            (self._calculate_max_nesting(item) for item in items), default=0
+        )
+
         start_line = min(item.start_line for item in items)
         end_line = max(item.end_line for item in items)
-        
+
         metadata = {
             "list_type": items[0].list_type if items else "unordered",
             "item_count": total_items,

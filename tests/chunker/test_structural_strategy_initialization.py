@@ -32,8 +32,12 @@ class TestStructuralStrategyInitialization:
         """Test that the fallback strategies are of correct types."""
         chunker = MarkdownChunker()
 
-        assert isinstance(chunker._fallback_manager._sentences_strategy, SentencesStrategy)
-        assert isinstance(chunker._fallback_manager._structural_strategy, StructuralStrategy)
+        assert isinstance(
+            chunker._fallback_manager._sentences_strategy, SentencesStrategy
+        )
+        assert isinstance(
+            chunker._fallback_manager._structural_strategy, StructuralStrategy
+        )
 
     def test_fallback_manager_has_3_level_chain(self):
         """Test that FallbackManager has 3-level fallback chain."""
@@ -46,7 +50,9 @@ class TestStructuralStrategyInitialization:
 
         # Verify statistics reflect 3-level system
         stats = fallback_manager.get_fallback_statistics()
-        assert stats["max_fallback_level"] == 2  # 0 (primary), 1 (structural), 2 (sentences)
+        assert (
+            stats["max_fallback_level"] == 2
+        )  # 0 (primary), 1 (structural), 2 (sentences)
 
     def test_fallback_chain_execution_through_levels(self):
         """Test that fallback chain can execute through all levels."""

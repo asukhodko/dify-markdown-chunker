@@ -356,8 +356,9 @@ class TestDataPreservationEdgeCases:
         def normalize_text(text):
             """Normalize text by replacing all whitespace/control chars with single space."""
             import re
+
             # Replace all whitespace and control characters with single space
-            normalized = re.sub(r'\s+', ' ', text)
+            normalized = re.sub(r"\s+", " ", text)
             return normalized.strip()
 
         normalized_output = normalize_text(combined_output)
