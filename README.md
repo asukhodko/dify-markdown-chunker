@@ -108,7 +108,7 @@ The chunker supports two modes for handling overlap between chunks:
 
 #### Metadata Mode (include_metadata=True, default)
 
-Overlap is stored in metadata fields, keeping chunk content clean:
+Neighbor context is stored in metadata fields, keeping chunk content clean:
 
 ```python
 config = ChunkConfig(
@@ -127,23 +127,32 @@ result = chunker.chunk(
 for chunk in result:
     print(chunk.content)  # Pure chunk content
     
-    # Overlap is in metadata
-    if 'overlap_prefix' in chunk.metadata:
-        print(f"Overlap with previous: {chunk.metadata['overlap_prefix']}")
-    if 'overlap_suffix' in chunk.metadata:
-        print(f"Overlap with next: {chunk.metadata['overlap_suffix']}")
+    # Neighbor context is in metadata
+    if 'previous_content' in chunk.metadata:
+        print(f"Context from previous chunk: {chunk.metadata['previous_content']}")
+        print(f"Previous chunk index: {chunk.metadata.get('previous_chunk_index')}")
+    
+    if 'next_content' in chunk.metadata:
+        print(f"Context from next chunk: {chunk.metadata['next_content']}")
+        print(f"Next chunk index: {chunk.metadata.get('next_chunk_index')}")
 ```
 
 **Benefits:**
 - Clean, focused chunk content
-- Explicit separation for different handling strategies
+- Explicit neighbor context tracking
 - Applications can compose embedding text as needed
-- Both prefix and suffix overlap available in metadata
+- Traceability through chunk index references
 - Better for RAG systems that need semantic clarity
+
+**Context Fields:**
+- `previous_content`: Text fragment from the end of the preceding chunk
+- `next_content`: Text fragment from the beginning of the following chunk
+- `previous_chunk_index`: Index of the source chunk for `previous_content`
+- `next_chunk_index`: Index of the source chunk for `next_content`
 
 #### Legacy Mode (include_metadata=False)
 
-Overlap is merged directly into chunk content (backward compatible):
+Neighbor context is merged directly into chunk content (backward compatible):
 
 ```python
 result = chunker.chunk(
@@ -151,19 +160,17 @@ result = chunker.chunk(
     include_metadata=False  # Legacy mode
 )
 
-# Chunk content includes overlap
+# Chunk content includes neighbor context
 for chunk in result:
-    print(chunk.content)  # Content with overlap merged
-    
-    # Legacy metadata
-    if chunk.metadata.get('has_overlap'):
-        print(f"Overlap size: {chunk.metadata['overlap_size']}")
+    print(chunk.content)  # Content with context merged
 ```
 
 **Benefits:**
 - Full backward compatibility
 - Simpler output structure
-- Overlap automatically included in embeddings
+- Context automatically included in embeddings
+
+**Note**: In legacy mode, `start_offset` and `end_offset` describe the core content range, not the merged content.
 
 ### Configuration Profiles
 
