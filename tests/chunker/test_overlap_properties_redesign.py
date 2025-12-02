@@ -1,12 +1,11 @@
-"""
-Property-based tests for the redesigned overlap model.
+"""Property-based tests for the redesigned overlap model.
 
 Uses Hypothesis for property-based testing to validate invariants
 that should hold across all possible inputs.
 """
 
-import pytest
-from hypothesis import given, settings, strategies as st
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from markdown_chunker.chunker.components import OverlapManager
 from markdown_chunker.chunker.types import Chunk, ChunkConfig
@@ -45,49 +44,56 @@ class TestOverlapPropertiesRedesign:
     @settings(max_examples=50, deadline=None)
     def test_property_context_size_constraint(self, chunks):
         """
-        Property: Context sizes respect effective_overlap limit.
-        
+        Property: Context sizes respect effective_overlap limit with tolerance.
+
         For all chunks where context fields are present:
-        len(previous_content) <= effective_overlap
-        len(next_content) <= effective_overlap
+        len(previous_content) <= effective_overlap * 1.2  (tolerance for block alignment)
+        len(next_content) <= effective_overlap * 1.2
         """
         overlap_size = 40
         config = ChunkConfig(enable_overlap=True, overlap_size=overlap_size)
         manager = OverlapManager(config)
-        
+
         result = manager.apply_overlap(chunks, include_metadata=True)
-        
+
+        # Block-aligned extraction allows 1.2x tolerance for first block
+        max_size_with_tolerance = int(overlap_size * 1.2)
+
         for chunk in result:
             if "previous_content" in chunk.metadata:
-                assert len(chunk.metadata["previous_content"]) <= overlap_size
-            
+                assert (
+                    len(chunk.metadata["previous_content"]) <= max_size_with_tolerance
+                ), f"previous_content too large: {len(chunk.metadata['previous_content'])} > {max_size_with_tolerance}"
+
             if "next_content" in chunk.metadata:
-                assert len(chunk.metadata["next_content"]) <= overlap_size
+                assert (
+                    len(chunk.metadata["next_content"]) <= max_size_with_tolerance
+                ), f"next_content too large: {len(chunk.metadata['next_content'])} > {max_size_with_tolerance}"
 
     @given(chunks=chunk_list_strategy())
     @settings(max_examples=50, deadline=None)
     def test_property_context_source_correctness_metadata(self, chunks):
         """
         Property: In metadata mode, contexts are substrings of neighbors.
-        
+
         previous_content[i] is a suffix of chunks[i-1].content
         next_content[i] is a prefix of chunks[i+1].content
         """
         config = ChunkConfig(enable_overlap=True, overlap_size=30)
         manager = OverlapManager(config)
-        
+
         result = manager.apply_overlap(chunks, include_metadata=True)
-        
+
         for i in range(len(result)):
             chunk = result[i]
-            
+
             # Check previous_content
             if "previous_content" in chunk.metadata and i > 0:
                 prev_content = chunk.metadata["previous_content"]
                 prev_chunk = chunks[i - 1]
                 # Should be substring of previous chunk
                 assert prev_content in prev_chunk.content
-            
+
             # Check next_content
             if "next_content" in chunk.metadata and i < len(result) - 1:
                 next_content = chunk.metadata["next_content"]
@@ -100,21 +106,23 @@ class TestOverlapPropertiesRedesign:
     def test_property_context_source_independence(self, chunks):
         """
         Property: Contexts are independent extractions.
-        
+
         No requirement that next_content[i] == previous_content[i+1]
         They are independently extracted and may differ.
         """
         config = ChunkConfig(enable_overlap=True, overlap_size=30)
         manager = OverlapManager(config)
-        
+
         result = manager.apply_overlap(chunks, include_metadata=True)
-        
+
         # This property just documents that we don't enforce equality
         # We verify they CAN be different
         for i in range(len(result) - 1):
             # Both might exist
-            if "next_content" in result[i].metadata and \
-               "previous_content" in result[i + 1].metadata:
+            if (
+                "next_content" in result[i].metadata
+                and "previous_content" in result[i + 1].metadata
+            ):
                 # They may or may not be equal - both are valid
                 # Just verify both are non-empty
                 assert result[i].metadata["next_content"]
@@ -125,37 +133,37 @@ class TestOverlapPropertiesRedesign:
     def test_property_mode_equivalence(self, chunks):
         """
         Property: Mode equivalence holds.
-        
+
         For same input:
-        chunk_no_meta[i].content == 
+        chunk_no_meta[i].content ==
         chunk_meta[i].previous_content + chunk_meta[i].content + chunk_meta[i].next_content
         """
         config = ChunkConfig(enable_overlap=True, overlap_size=30)
         manager = OverlapManager(config)
-        
+
         meta_result = manager.apply_overlap(chunks, include_metadata=True)
         legacy_result = manager.apply_overlap(chunks, include_metadata=False)
-        
+
         assert len(meta_result) == len(legacy_result)
-        
+
         for i in range(len(meta_result)):
             meta = meta_result[i]
             legacy = legacy_result[i]
-            
+
             # Compose from metadata mode
             prev = meta.metadata.get("previous_content", "")
             content = meta.content
             next_ctx = meta.metadata.get("next_content", "")
-            
+
             parts = []
             if prev:
                 parts.append(prev)
             parts.append(content)
             if next_ctx:
                 parts.append(next_ctx)
-            
+
             composed = "\n\n".join(parts)
-            
+
             # Should match legacy
             assert composed == legacy.content
 
@@ -164,24 +172,24 @@ class TestOverlapPropertiesRedesign:
     def test_property_index_consistency(self, chunks):
         """
         Property: Chunk index references are consistent.
-        
+
         When present, previous_chunk_index and next_chunk_index
         correctly reference neighbor indices.
         """
         config = ChunkConfig(enable_overlap=True, overlap_size=30)
         manager = OverlapManager(config)
-        
+
         result = manager.apply_overlap(chunks, include_metadata=True)
-        
+
         for i in range(len(result)):
             chunk = result[i]
-            
+
             # Check previous_chunk_index
             if "previous_chunk_index" in chunk.metadata:
                 assert chunk.metadata["previous_chunk_index"] == i - 1
                 # Must have previous_content too
                 assert "previous_content" in chunk.metadata
-            
+
             # Check next_chunk_index
             if "next_chunk_index" in chunk.metadata:
                 assert chunk.metadata["next_chunk_index"] == i + 1
@@ -196,9 +204,9 @@ class TestOverlapPropertiesRedesign:
         """
         config = ChunkConfig(enable_overlap=False, overlap_size=50)
         manager = OverlapManager(config)
-        
+
         result = manager.apply_overlap(chunks, include_metadata=True)
-        
+
         for chunk in result:
             assert "previous_content" not in chunk.metadata
             assert "next_content" not in chunk.metadata
@@ -213,11 +221,11 @@ class TestOverlapPropertiesRedesign:
         """
         config = ChunkConfig(enable_overlap=True, overlap_size=30)
         manager = OverlapManager(config)
-        
+
         # Test both modes
         for include_metadata in [True, False]:
             result = manager.apply_overlap(chunks, include_metadata=include_metadata)
-            
+
             for chunk in result:
                 assert "overlap_prefix" not in chunk.metadata
                 assert "overlap_suffix" not in chunk.metadata
@@ -233,12 +241,12 @@ class TestOverlapPropertiesRedesign:
         """
         config = ChunkConfig(enable_overlap=True, overlap_size=30)
         manager = OverlapManager(config)
-        
+
         result = manager.apply_overlap(chunks, include_metadata=True)
-        
+
         # First chunk
         assert "previous_content" not in result[0].metadata
-        
+
         # Last chunk
         assert "next_content" not in result[-1].metadata
 
@@ -250,9 +258,9 @@ class TestOverlapPropertiesRedesign:
         """
         config = ChunkConfig(enable_overlap=True, overlap_size=30)
         manager = OverlapManager(config)
-        
+
         result = manager.apply_overlap(chunks, include_metadata=True)
-        
+
         # Content should match original
         for i in range(len(result)):
             assert result[i].content == chunks[i].content
@@ -265,9 +273,9 @@ class TestOverlapPropertiesRedesign:
         """
         config = ChunkConfig(enable_overlap=True, overlap_size=30)
         manager = OverlapManager(config)
-        
+
         result = manager.apply_overlap(chunks, include_metadata=True)
-        
+
         for i in range(len(result)):
             # Line numbers should be unchanged
             assert result[i].start_line == chunks[i].start_line
@@ -283,17 +291,17 @@ class TestOverlapPropertiesRedesign:
         config = ChunkConfig(
             enable_overlap=True if overlap_size > 0 else False,
             overlap_size=0,
-            overlap_percentage=0
+            overlap_percentage=0,
         )
         manager = OverlapManager(config)
-        
+
         chunks = [
             Chunk("First chunk.", 1, 1, {}),
             Chunk("Second chunk.", 2, 2, {}),
         ]
-        
+
         result = manager.apply_overlap(chunks, include_metadata=True)
-        
+
         for chunk in result:
             assert "previous_content" not in chunk.metadata
             assert "next_content" not in chunk.metadata
@@ -306,9 +314,9 @@ class TestOverlapPropertiesRedesign:
         """
         config = ChunkConfig(enable_overlap=True, overlap_size=50)
         manager = OverlapManager(config)
-        
+
         result = manager.apply_overlap(chunks, include_metadata=True)
-        
+
         assert len(result) == 1
         assert "previous_content" not in result[0].metadata
         assert "next_content" not in result[0].metadata
@@ -321,14 +329,14 @@ class TestOverlapPropertiesRedesign:
         """
         config = ChunkConfig(enable_overlap=True, overlap_size=30)
         manager = OverlapManager(config)
-        
+
         result = manager.apply_overlap(chunks, include_metadata=True)
-        
+
         for chunk in result:
             if "previous_content" in chunk.metadata:
                 assert chunk.metadata["previous_content"] != ""
                 assert len(chunk.metadata["previous_content"]) > 0
-            
+
             if "next_content" in chunk.metadata:
                 assert chunk.metadata["next_content"] != ""
                 assert len(chunk.metadata["next_content"]) > 0
@@ -341,9 +349,9 @@ class TestOverlapPropertiesRedesign:
         """
         config = ChunkConfig(enable_overlap=True, overlap_size=30)
         manager = OverlapManager(config)
-        
+
         result = manager.apply_overlap(chunks, include_metadata=False)
-        
+
         for chunk in result:
             assert "previous_content" not in chunk.metadata
             assert "next_content" not in chunk.metadata

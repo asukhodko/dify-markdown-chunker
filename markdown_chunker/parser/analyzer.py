@@ -148,7 +148,10 @@ class ContentAnalyzer:
                 }
             )
         # Sort by start_line to maintain document order
-        block_elements.sort(key=lambda x: x.get("start_line", 0))
+        from typing import cast
+        block_elements.sort(
+            key=lambda x: cast(int, x.get("start_line", 0))
+        )
 
         # Mixed content detection
         has_mixed_content = self._detect_mixed_content(

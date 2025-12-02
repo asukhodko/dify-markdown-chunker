@@ -14,7 +14,7 @@ import re
 from dataclasses import dataclass
 from typing import List, Optional
 
-from ..text_normalizer import truncate_at_word_boundary, validate_no_word_fragments
+from ..text_normalizer import truncate_at_word_boundary
 from ..types import Chunk, ChunkConfig
 
 logger = logging.getLogger(__name__)
@@ -59,7 +59,9 @@ class OverlapManager:
         """
         self.config = config
 
-    def apply_overlap(self, chunks: List[Chunk], include_metadata: bool = False) -> List[Chunk]:
+    def apply_overlap(
+        self, chunks: List[Chunk], include_metadata: bool = False
+    ) -> List[Chunk]:
         """
         Apply overlap to a list of chunks using the new neighbor context model.
 
@@ -85,14 +87,14 @@ class OverlapManager:
 
         # Calculate effective overlap size
         effective_overlap = self._calculate_effective_overlap(chunks)
-        
+
         if effective_overlap == 0:
             # No overlap - no-op
             return chunks
 
         # Extract contexts from all chunks (single pass over core chunks)
         result_chunks = []
-        
+
         for i, chunk in enumerate(chunks):
             # Extract previous_content from previous chunk (if exists)
             previous_content = ""
@@ -103,7 +105,7 @@ class OverlapManager:
                 )
                 if previous_content:
                     previous_chunk_index = i - 1
-            
+
             # Extract next_content from next chunk (if exists)
             next_content = ""
             next_chunk_index = None
@@ -113,31 +115,34 @@ class OverlapManager:
                 )
                 if next_content:
                     next_chunk_index = i + 1
-            
+
             # Apply mode-specific logic
             if include_metadata:
                 # Metadata mode: store in metadata, keep content clean
                 new_chunk = self._add_context_to_metadata(
-                    chunk, previous_content, next_content,
-                    previous_chunk_index, next_chunk_index
+                    chunk,
+                    previous_content,
+                    next_content,
+                    previous_chunk_index,
+                    next_chunk_index,
                 )
             else:
                 # Legacy mode: merge into content
                 new_chunk = self._merge_context_into_content(
                     chunk, previous_content, next_content
                 )
-            
+
             result_chunks.append(new_chunk)
-        
+
         return result_chunks
 
     def _calculate_effective_overlap(self, chunks: List[Chunk]) -> int:
         """
         Calculate effective overlap size based on configuration.
-        
+
         Args:
             chunks: List of chunks (for percentage calculation)
-        
+
         Returns:
             Effective overlap size in characters
         """
@@ -150,35 +155,37 @@ class OverlapManager:
             return int(avg_chunk_size * self.config.overlap_percentage)
         else:
             return 0
-    
+
     def _extract_suffix_context(self, chunk: Chunk, target_size: int) -> str:
         """
-        Extract context from the END of a core chunk for use as previous_content.
-        
+        Extract context from the END of a core chunk for
+        use as previous_content.
+
         Uses block-aligned extraction to preserve structural integrity.
-        
+
         Args:
             chunk: Core chunk to extract from
             target_size: Target context size (effective_overlap)
-        
+
         Returns:
-            Context string (suffix of chunk.content), or empty string if extraction fails
+            Context string (suffix of chunk.content),
+            or empty string if extraction fails
         """
         content = chunk.content
-        
+
         if not content.strip():
             return ""
-        
+
         # Apply 40% maximum ratio relative to source chunk size
         max_overlap = max(50, int(len(content) * 0.40))
         actual_target = min(target_size, max_overlap)
-        
+
         if actual_target <= 0:
             return ""
-        
+
         # Use block-aligned extraction
         overlap_text = self._extract_block_aligned_overlap(chunk, actual_target)
-        
+
         if overlap_text is None:
             # No blocks fit - return empty
             logger.debug(
@@ -186,51 +193,53 @@ class OverlapManager:
                 f"no complete blocks fit within {actual_target} chars"
             )
             return ""
-        
+
         # Verify no unbalanced code fences
         if self._has_unbalanced_fences(overlap_text):
             logger.debug("Suffix context has unbalanced code fences, skipping")
             return ""
-        
+
         return overlap_text
-    
+
     def _extract_prefix_context(self, chunk: Chunk, target_size: int) -> str:
         """
-        Extract context from the BEGINNING of a core chunk for use as next_content.
-        
+        Extract context from the BEGINNING of a core chunk
+        for use as next_content.
+
         Uses block-aligned extraction to preserve structural integrity.
-        
+
         Args:
             chunk: Core chunk to extract from
             target_size: Target context size (effective_overlap)
-        
+
         Returns:
-            Context string (prefix of chunk.content), or empty string if extraction fails
+            Context string (prefix of chunk.content),
+            or empty string if extraction fails
         """
         content = chunk.content
-        
+
         if not content.strip():
             return ""
-        
+
         # Apply 40% maximum ratio relative to source chunk size
         max_overlap = max(50, int(len(content) * 0.40))
         actual_target = min(target_size, max_overlap)
-        
+
         if actual_target <= 0:
             return ""
-        
+
         # Extract blocks from beginning
         blocks = self._extract_blocks_from_content(content)
         if not blocks:
             return ""
-        
+
         # Collect blocks from beginning until we reach target size
         selected_blocks: List[ContentBlock] = []
         total_size = 0
-        
+
         for block in blocks:
             block_size = block.size
-            
+
             # Check if adding this block would exceed target
             if total_size == 0:
                 # Allow first block with tolerance
@@ -239,7 +248,8 @@ class OverlapManager:
                     total_size += block_size
                 else:
                     logger.debug(
-                        f"First block too large for prefix context: {block_size} > {actual_target * 1.2}"
+                        f"First block too large for prefix context: "
+                        f"{block_size} > {actual_target * 1.2}"
                     )
                     break
             elif total_size + block_size + 2 <= actual_target:
@@ -247,57 +257,57 @@ class OverlapManager:
                 total_size += block_size + 2
             else:
                 break
-        
+
         if not selected_blocks:
             logger.debug("No blocks fit within prefix context target size")
             return ""
-        
+
         # Join selected blocks
         overlap_text = "\n\n".join(b.content for b in selected_blocks).strip()
-        
+
         # Verify no unbalanced code fences
         if self._has_unbalanced_fences(overlap_text):
             logger.debug("Prefix context has unbalanced code fences, skipping")
             return ""
-        
+
         return overlap_text
-    
+
     def _add_context_to_metadata(
-        self, 
-        chunk: Chunk, 
-        previous_content: str, 
+        self,
+        chunk: Chunk,
+        previous_content: str,
         next_content: str,
         previous_chunk_index: Optional[int],
-        next_chunk_index: Optional[int]
+        next_chunk_index: Optional[int],
     ) -> Chunk:
         """
         Add neighbor context to chunk metadata (metadata mode).
-        
+
         Only adds fields when context is non-empty.
-        
+
         Args:
             chunk: Original core chunk
             previous_content: Context from previous chunk (may be empty)
             next_content: Context from next chunk (may be empty)
             previous_chunk_index: Index of previous chunk (None if no context)
             next_chunk_index: Index of next chunk (None if no context)
-        
+
         Returns:
             New chunk with context in metadata, content unchanged
         """
         new_metadata = chunk.metadata.copy()
-        
+
         # Only add fields when non-empty
         if previous_content:
             new_metadata["previous_content"] = previous_content
             if previous_chunk_index is not None:
                 new_metadata["previous_chunk_index"] = previous_chunk_index
-        
+
         if next_content:
             new_metadata["next_content"] = next_content
             if next_chunk_index is not None:
                 new_metadata["next_chunk_index"] = next_chunk_index
-        
+
         # Create new chunk with original content and updated metadata
         return Chunk(
             content=chunk.content,  # Unchanged - stays as content_core
@@ -305,23 +315,20 @@ class OverlapManager:
             end_line=chunk.end_line,
             metadata=new_metadata,
         )
-    
+
     def _merge_context_into_content(
-        self, 
-        chunk: Chunk, 
-        previous_content: str, 
-        next_content: str
+        self, chunk: Chunk, previous_content: str, next_content: str
     ) -> Chunk:
         """
         Merge neighbor context into chunk content (legacy mode).
-        
+
         Creates: content = previous_content + content_core + next_content
-        
+
         Args:
             chunk: Original core chunk
             previous_content: Context from previous chunk (may be empty)
             next_content: Context from next chunk (may be empty)
-        
+
         Returns:
             New chunk with merged content
         """
@@ -332,9 +339,9 @@ class OverlapManager:
         parts.append(chunk.content)  # content_core
         if next_content:
             parts.append(next_content)
-        
+
         merged_content = "\n\n".join(parts)
-        
+
         # Verify no unbalanced code fences in final content
         if self._has_unbalanced_fences(merged_content):
             # Skip merging to preserve code block integrity
@@ -343,30 +350,32 @@ class OverlapManager:
                 "returning original chunk"
             )
             return chunk
-        
+
         # Check if merged content exceeds max_chunk_size
         if len(merged_content) > self.config.max_chunk_size:
             # Truncate contexts to fit
-            available_space = self.config.max_chunk_size - len(chunk.content) - 4  # -4 for separators
-            
+            available_space = (
+                self.config.max_chunk_size - len(chunk.content) - 4
+            )  # -4 for separators
+
             if available_space <= 0:
                 # No space for context - return original
                 return chunk
-            
+
             # Distribute space between previous and next
             prev_space = available_space // 2
             next_space = available_space - prev_space
-            
+
             if previous_content and len(previous_content) > prev_space:
                 previous_content = truncate_at_word_boundary(
                     previous_content, prev_space, from_end=True
                 )
-            
+
             if next_content and len(next_content) > next_space:
                 next_content = truncate_at_word_boundary(
                     next_content, next_space, from_end=False
                 )
-            
+
             # Rebuild merged content
             parts = []
             if previous_content:
@@ -375,16 +384,18 @@ class OverlapManager:
             if next_content:
                 parts.append(next_content)
             merged_content = "\n\n".join(parts)
-        
+
         # Create new chunk with merged content
-        # Note: metadata does NOT include previous_content/next_content fields in legacy mode
+        # Note: metadata does NOT include previous_content/next_content
+        # fields in legacy mode
         return Chunk(
             content=merged_content,
             start_line=chunk.start_line,
             end_line=chunk.end_line,
-            metadata=chunk.metadata.copy(),  # Keep original metadata, don't add context fields
+            # Keep original metadata, don't add context fields
+            metadata=chunk.metadata.copy(),
         )
-    
+
     def _is_code_chunk(self, chunk: Chunk) -> bool:
         """
         Check if chunk contains code block content.
@@ -620,7 +631,7 @@ class OverlapManager:
     def calculate_overlap_statistics(self, chunks: List[Chunk]) -> dict:
         """
         Calculate statistics about overlap in chunks.
-        
+
         Note: This method is retained for backward compatibility but statistics
         are now based on presence of previous_content/next_content fields.
 
@@ -641,11 +652,11 @@ class OverlapManager:
         # Count chunks with context (either previous or next)
         chunks_with_context = 0
         overlap_sizes = []
-        
+
         for chunk in chunks:
             prev = chunk.get_metadata("previous_content", "")
             next_ctx = chunk.get_metadata("next_content", "")
-            
+
             if prev or next_ctx:
                 chunks_with_context += 1
                 # Sum both context sizes for this chunk

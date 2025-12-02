@@ -57,9 +57,7 @@ class FenceInfo:
 class FenceHandler:
     """Enhanced fence handler with proper Markdown specification compliance."""
 
-    def __init__(
-        self, error_collector: Optional[ErrorCollector] = None
-    ):
+    def __init__(self, error_collector: Optional[ErrorCollector] = None):
         """Initialize fence handler."""
         self.error_collector = error_collector or ErrorCollector()
         self.logger = logging.getLogger(__name__)
