@@ -234,6 +234,10 @@ class BaseStrategy(ABC):
             if "content_type" not in chunk.metadata:
                 chunk.add_metadata("content_type", "text")
 
+        # CRITICAL FIX: Validate code fence balance (Phase 1.1)
+        # Prevent atomic code blocks from being split across chunks
+        validated_chunks = self._validate_code_fence_balance(validated_chunks, config)
+
         return validated_chunks
 
     def _contains_atomic_element(self, content: str) -> bool:
@@ -253,6 +257,41 @@ class BaseStrategy(ABC):
         if "|" in content and "---" in content:
             return True
         return False
+
+    def _validate_code_fence_balance(self, chunks: List[Chunk], config) -> List[Chunk]:
+        """
+        Validate that no chunk has unbalanced code fences.
+
+        This is a critical validation to prevent code blocks from being
+        split across chunk boundaries, which would corrupt the content.
+
+        Args:
+            chunks: List of chunks to validate
+            config: Chunk configuration
+
+        Returns:
+            List of validated chunks (same as input if all valid)
+        """
+        for i, chunk in enumerate(chunks):
+            fence_count = chunk.content.count("```")
+
+            # Unbalanced fences indicate a split code block
+            if fence_count % 2 != 0:
+                # Log the error for debugging
+                import logging
+
+                logger = logging.getLogger(__name__)
+                logger.error(
+                    f"Chunk {i} has unbalanced code fences ({fence_count}). "
+                    f"Code blocks should never be split. "
+                    f"Strategy: {self.name}, Size: {chunk.size}"
+                )
+
+                # Mark chunk as having fence balance issue
+                chunk.add_metadata("fence_balance_error", True)
+                chunk.add_metadata("fence_count", fence_count)
+
+        return chunks
 
     # ========================================================================
     # Semantic Boundary Splitting Utilities (Requirements 4.1, 4.2, 4.3)

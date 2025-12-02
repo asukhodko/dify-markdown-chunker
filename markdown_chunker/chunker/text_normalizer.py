@@ -303,17 +303,58 @@ def truncate_at_word_boundary(
         # Find first word boundary
         match = re.search(r"\s", truncated)
         if match:
-            return truncated[match.end() :].lstrip()
-        return truncated
+            # CRITICAL FIX (Phase 2.1): Use strip() for symmetric behavior
+            return truncated[match.end() :].strip()
+        return truncated.strip()
     else:
         # Truncate from end, keep beginning
         truncated = text[:max_length]
         # Find last word boundary
         match = re.search(r"\s\S+$", truncated)
         if match:
-            result = truncated[: match.start()].rstrip()
+            # CRITICAL FIX (Phase 2.1): Use strip() for symmetric behavior
+            result = truncated[: match.start()].strip()
             return result
-        return truncated.rstrip()
+        return truncated.strip()
+
+
+def normalize_line_breaks(text: str) -> str:
+    """
+    Normalize excessive line breaks in chunk content.
+
+    This function addresses the issue of excessive blank lines accumulating
+    in chunks due to overlap and block concatenation.
+
+    Normalization rules:
+    - 3+ consecutive blank lines → 2 blank lines (preserve paragraph separation)
+    - Trailing blank lines → removed entirely
+    - Leading blank lines → removed entirely
+
+    Args:
+        text: Text content to normalize
+
+    Returns:
+        Text with normalized line breaks
+
+    Examples:
+        >>> normalize_line_breaks("Content\n\n\n\n\n\nMore")
+        'Content\n\nMore'
+        >>> normalize_line_breaks("Text\n\n\n")
+        'Text'
+        >>> normalize_line_breaks("\n\n\nHeader\n\nSection")
+        'Header\n\nSection'
+    """
+    if not text:
+        return text
+
+    # Replace 3+ consecutive newlines with exactly 2 newlines
+    # This preserves paragraph breaks while removing excessive spacing
+    text = re.sub(r"\n\n\n+", "\n\n", text)
+
+    # Trim leading and trailing whitespace/newlines
+    text = text.strip()
+
+    return text
 
 
 def validate_no_word_fragments(text: str) -> bool:

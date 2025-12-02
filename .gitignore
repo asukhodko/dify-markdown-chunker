@@ -43,3 +43,5 @@ htmlcov/
 !.qoder/repowiki/
 
 manual_testing/
+
+*.out

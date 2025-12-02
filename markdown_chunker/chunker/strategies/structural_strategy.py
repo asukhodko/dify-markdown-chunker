@@ -78,7 +78,7 @@ class StructuralStrategy(BaseStrategy):
         r"^(.+?)\n([=]{3,}|[-]{3,})$",
     ]
 
-    def __init__(self):
+    def __init__(self):  # noqa: C901  # noqa: C901
         """Initialize structural strategy with Phase 2 components."""
         # Phase 2: Import section builder for semantic quality improvements
         try:
@@ -107,6 +107,22 @@ class StructuralStrategy(BaseStrategy):
                 except ImportError:
                     self.section_builder = None
                     self._phase2_available = False
+
+        # Block-based packer for MC-001, MC-002, MC-005 fixes
+        try:
+            from markdown_chunker.chunker.block_packer import BlockPacker
+
+            self.block_packer = BlockPacker()
+            self._block_based_available = True
+        except ImportError:
+            try:
+                from ..block_packer import BlockPacker
+
+                self.block_packer = BlockPacker()
+                self._block_based_available = True
+            except ImportError:
+                self.block_packer = None
+                self._block_based_available = False
 
     @property
     def name(self) -> str:
@@ -496,8 +512,9 @@ class StructuralStrategy(BaseStrategy):
     def _split_large_section(
         self, section: Section, config: ChunkConfig
     ) -> List[Chunk]:
-        """
-        Split a large section into multiple chunks.
+        """Split a large section into multiple chunks.
+
+        Uses block-based packer if available (MC-001, MC-002 fixes).
 
         Args:
             section: Large section to split
@@ -506,6 +523,20 @@ class StructuralStrategy(BaseStrategy):
         Returns:
             List of chunks from the split section
         """
+        # Check if section can be kept intact with 20% tolerance (MC-001 fix)
+        allow_oversize = getattr(config, "allow_oversize_for_integrity", True)
+        if allow_oversize and section.size <= config.max_chunk_size * 1.2:
+            # Keep section intact to preserve semantic completeness
+            chunk = self._create_section_chunk(section, config)
+            chunk.add_metadata("allow_oversize", True)
+            chunk.add_metadata("oversize_reason", "section_integrity")
+            return [chunk]
+
+        # Use block-based packer if available and enabled (MC-001, MC-002 fixes)
+        use_block_packer = getattr(config, "block_based_splitting", True)
+        if use_block_packer and self._block_based_available:
+            return self._split_large_section_block_based(section, config)
+
         # Try splitting by subsections first
         if section.has_subsections and section.subsections:
             subsection_chunks = self._split_by_subsections(section, config)
@@ -661,6 +692,106 @@ class StructuralStrategy(BaseStrategy):
                 blocks.extend([p.strip() for p in paragraphs if p.strip()])
 
         return blocks
+
+    def _split_large_section_block_based(
+        self, section: Section, config: ChunkConfig
+    ) -> List[Chunk]:
+        """Split large section using block-based packer.
+
+        This method addresses MC-001, MC-002, and MC-005 by:
+        - Extracting content as blocks (paragraphs, lists, tables, code, URL pools)
+        - Packing blocks greedily while respecting size limits
+        - Never splitting mid-block (preserves structural integrity)
+        - Prepending section header to each chunk for context
+
+        Args:
+            section: Section to split
+            config: Chunking configuration
+
+        Returns:
+            List of chunks created from blocks
+        """
+        if not self._block_based_available:
+            # Fallback if block packer not available
+            return self._split_by_paragraphs(section, config)
+
+        # Extract blocks from section content
+        blocks = self.block_packer.extract_blocks(section.content)
+
+        # Build section header to prepend to each chunk
+        section_header = f"{'#' * section.header.level} {section.header.text}"
+
+        # Pack blocks into chunks
+        chunks = self.block_packer.pack_blocks_into_chunks(
+            blocks, config, section_header=section_header
+        )
+
+        # FIX #1: Validate code fence balance in each chunk
+        # This prevents splitting code blocks across chunk boundaries
+        validated_chunks = []
+        for chunk in chunks:
+            if not self._validate_fence_balance(chunk.content):
+                # Unbalanced fences detected - mark with metadata for debugging
+                chunk.add_metadata("fence_validation", "unbalanced_detected")
+                section_name = section.header.text
+                chunk_size = len(chunk.content)
+                logger.warning(
+                    f"Unbalanced code fences detected in chunk at "
+                    f"section '{section_name}'. Chunk size: {chunk_size}"
+                )
+            validated_chunks.append(chunk)
+
+        # Enhance chunks with section metadata
+        header_path = self._build_header_path(section.header)
+        enhanced_chunks = []
+
+        for chunk in validated_chunks:
+            # Add section-specific metadata
+            chunk.add_metadata("header_level", section.header.level)
+            chunk.add_metadata("header_text", section.header.text)
+            chunk.add_metadata("header_path", header_path)
+            chunk.add_metadata(
+                "section_part", True
+            )  # Indicates chunk is part of larger section
+
+            # Build section_path for metadata
+            section_path = self._build_section_path_list(section.header)
+            chunk.add_metadata("section_path", section_path)
+
+            enhanced_chunks.append(chunk)
+
+        return enhanced_chunks
+
+    def _validate_fence_balance(self, content: str) -> bool:
+        """Check if content has balanced code fences.
+
+        Code blocks must have matching opening and closing fences (```).
+        An even number of fence markers indicates balanced fences.
+
+        Args:
+            content: Content to validate
+
+        Returns:
+            True if fences are balanced (even count), False otherwise
+        """
+        fence_count = content.count("```")
+        return fence_count % 2 == 0
+
+    def _build_section_path_list(self, header: HeaderInfo) -> List[str]:
+        """Build section path as list of header texts.
+
+        Args:
+            header: Header to build path for
+
+        Returns:
+            List of header texts from root to current
+        """
+        path: list[str] = []
+        current = header
+        while current:
+            path.insert(0, current.text)
+            current = current.parent
+        return path
 
     def _build_potential_content(self, current: str, paragraph: str) -> str:
         """

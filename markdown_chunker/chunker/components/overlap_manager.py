@@ -295,6 +295,11 @@ class OverlapManager:
         Returns:
             New chunk with context in metadata, content unchanged
         """
+        # CRITICAL FIX (Phase 2.2): Enforce 50% total overlap limit
+        previous_content, next_content = self._enforce_overlap_size_limit(
+            chunk, previous_content, next_content
+        )
+
         new_metadata = chunk.metadata.copy()
 
         # Only add fields when non-empty
@@ -316,7 +321,7 @@ class OverlapManager:
             metadata=new_metadata,
         )
 
-    def _merge_context_into_content(
+    def _merge_context_into_content(  # noqa: C901
         self, chunk: Chunk, previous_content: str, next_content: str
     ) -> Chunk:
         """
@@ -332,6 +337,33 @@ class OverlapManager:
         Returns:
             New chunk with merged content
         """
+        # FIX #2: Enforce 50% overlap limit for legacy mode
+        # Calculate total overlap size
+        total_overlap = len(previous_content) + len(next_content)
+        core_size = len(chunk.content)
+
+        # If total overlap would exceed 50% of final chunk, trim it
+        # Final chunk = previous + core + next
+        # We want: overlap / final_chunk <= 0.5
+        # Which means: overlap <= 0.5 * (overlap + core)
+        # Solving: overlap <= core (for 50% limit)
+        if total_overlap > core_size:
+            # Trim to 50% limit
+            max_overlap = core_size
+            trim_ratio = max_overlap / total_overlap if total_overlap > 0 else 1.0
+
+            if previous_content:
+                prev_target = int(len(previous_content) * trim_ratio)
+                previous_content = truncate_at_word_boundary(
+                    previous_content, prev_target, from_end=True
+                )
+
+            if next_content:
+                next_target = int(len(next_content) * trim_ratio)
+                next_content = truncate_at_word_boundary(
+                    next_content, next_target, from_end=False
+                )
+
         # Build merged content
         parts = []
         if previous_content:
@@ -626,6 +658,30 @@ class OverlapManager:
 
         # Join selected blocks
         overlap_text = "\n\n".join(b.content for b in selected_blocks)
+
+        # CRITICAL: Verify code block integrity - no unbalanced fences
+        if overlap_text.count("```") % 2 != 0:
+            logger.debug(
+                f"Block selection created unbalanced code fences "
+                f"({overlap_text.count('```')} fences)"
+            )
+            # Try again without last (earliest) block
+            if len(selected_blocks) > 1:
+                selected_blocks.pop()  # Remove last block
+                overlap_text = "\n\n".join(b.content for b in selected_blocks)
+                # Re-check after removal
+                if overlap_text.count("```") % 2 != 0:
+                    logger.warning(
+                        "Cannot create balanced code fence overlap, skipping overlap"
+                    )
+                    return None
+            else:
+                # Only one block and it's unbalanced - skip overlap
+                logger.warning(
+                    "Single block has unbalanced code fences, skipping overlap"
+                )
+                return None
+
         return overlap_text.strip()
 
     def calculate_overlap_statistics(self, chunks: List[Chunk]) -> dict:
@@ -681,3 +737,75 @@ class OverlapManager:
             "total_overlap_size": total_overlap,
             "overlap_percentage": (chunks_with_context / len(chunks)) * 100,
         }
+
+    def _enforce_overlap_size_limit(
+        self, chunk: Chunk, previous_content: str, next_content: str
+    ) -> tuple[str, str]:
+        """
+        Enforce 50% overlap size limit relative to FINAL chunk size.
+
+        This is a critical fix to prevent excessive overlap that wastes
+        storage and token budget. Total overlap (previous + next) must not
+        exceed 50% of the FINAL merged chunk size (including separators).
+
+        Args:
+            chunk: Core chunk
+            previous_content: Context from previous chunk
+            next_content: Context from next chunk
+
+        Returns:
+            Tuple of (previous_content, next_content) potentially truncated
+        """
+        chunk_size = len(chunk.content)
+        if chunk_size == 0:
+            return "", ""
+
+        # Calculate total overlap
+        total_overlap = len(previous_content) + len(next_content)
+
+        # Calculate final chunk size with separators
+        # Account for "\n\n" separators (4 chars total if both contexts present)
+        separator_overhead = 0
+        if previous_content and next_content:
+            separator_overhead = 4  # Two "\n\n" separators
+        elif previous_content or next_content:
+            separator_overhead = 2  # One "\n\n" separator
+
+        final_chunk_size = total_overlap + chunk_size + separator_overhead
+
+        # Check 50% constraint: overlap / final_size <= 0.5
+        overlap_ratio = total_overlap / final_chunk_size if final_chunk_size > 0 else 0
+
+        if overlap_ratio <= 0.5:
+            # Within limit - no truncation needed
+            return previous_content, next_content
+
+        # Exceeds limit - need to trim
+        # Target: overlap should be exactly 50% of final size
+        # Let x = target_overlap
+        # x / (x + chunk_size + separator_overhead) = 0.5
+        # Solving: x = chunk_size + separator_overhead
+        target_overlap = chunk_size + separator_overhead
+
+        # Distribute available space proportionally
+        if total_overlap > 0:
+            prev_ratio = len(previous_content) / total_overlap
+            next_ratio = len(next_content) / total_overlap
+
+            prev_max = int(target_overlap * prev_ratio)
+            next_max = int(target_overlap * next_ratio)
+
+            # Truncate at word boundaries
+            from ..text_normalizer import truncate_at_word_boundary
+
+            if len(previous_content) > prev_max:
+                previous_content = truncate_at_word_boundary(
+                    previous_content, prev_max, from_end=True
+                )
+
+            if len(next_content) > next_max:
+                next_content = truncate_at_word_boundary(
+                    next_content, next_max, from_end=False
+                )
+
+        return previous_content, next_content

@@ -143,7 +143,7 @@ class TestNestingConsistencyProperties:
         # Check no overlaps within each level
         for level, level_blocks in levels.items():
             for i, block1 in enumerate(level_blocks):
-                for block2 in level_blocks[i + 1:]:
+                for block2 in level_blocks[i + 1 :]:
                     # Blocks should not overlap
                     assert not block1.overlaps(block2), (
                         f"Blocks at level {level} overlap: "

@@ -285,7 +285,13 @@ class MarkdownChunker:
         chunks = result.chunks
 
         # Stage 3: Apply overlap if enabled
-        if self.config.enable_overlap and chunks:
+        # Skip legacy overlap if block-based overlap is enabled
+        # (will be applied in orchestrator)
+        if (
+            self.config.enable_overlap
+            and chunks
+            and not getattr(self.config, "block_based_overlap", False)
+        ):
             try:
                 chunks = self._overlap_manager.apply_overlap(chunks, include_metadata)
             except Exception as e:

@@ -624,6 +624,15 @@ class ChunkConfig:
     # Note: Oversize chunks are ALWAYS created for atomic blocks > max_chunk_size
     # This is required behavior per Phase 2 Requirements 1.5 and 5.5 (no data loss)
 
+    # Block-based chunking improvements (MC-001 through MC-006)
+    block_based_splitting: bool = True  # Use block-based packer for splitting
+    allow_oversize_for_integrity: bool = (
+        True  # Allow 20% oversize to preserve section integrity
+    )
+    min_effective_chunk_size: int = 0  # Minimum target size (0 = 40% of max)
+    block_based_overlap: bool = True  # Use block-based overlap calculation
+    detect_url_pools: bool = True  # Detect and preserve URL pool blocks
+
     def __post_init__(self) -> None:  # noqa: C901
         """Validate and auto-adjust configuration after initialization."""
         # Complexity justified: Comprehensive validation of all config parameters
@@ -663,6 +672,10 @@ class ChunkConfig:
             raise ValueError("section_boundary_level must be between 1 and 6")
         if self.min_content_per_chunk < 0:
             raise ValueError("min_content_per_chunk must be non-negative")
+
+        # Auto-adjust min_effective_chunk_size if not set
+        if self.min_effective_chunk_size == 0:
+            self.min_effective_chunk_size = int(self.max_chunk_size * 0.4)
 
         # Final invariant check
         assert (
