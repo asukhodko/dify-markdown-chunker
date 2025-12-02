@@ -9,7 +9,7 @@ from typing import Optional
 from markdown_chunker.api.types import APIRequest, APIResponse
 from markdown_chunker.api.validator import APIValidator
 from markdown_chunker.chunker.core import MarkdownChunker
-from markdown_chunker.chunker.types import ChunkConfig
+from markdown_chunker.chunker.types import ChunkConfig, ChunkingResult
 
 
 class APIAdapter:
@@ -63,7 +63,12 @@ class APIAdapter:
                 request.content, strategy=strategy, include_analysis=True
             )
             # With include_analysis=True, result is ChunkingResult
-            result = raw_result  # type: ignore[assignment]
+            # Type narrowing for union type
+            if not isinstance(raw_result, ChunkingResult):
+                return APIResponse.error_response(
+                    errors=["Unexpected result type from chunker"]
+                )
+            result = raw_result
 
             # Convert to API response
             chunks = [chunk.to_dict() for chunk in result.chunks]

@@ -23,7 +23,6 @@ __version__ = "1.0.0"
 # Import directly from provider module to avoid circular imports
 import importlib.util
 from pathlib import Path
-
 from typing import Optional
 
 # Main chunking interface
@@ -92,7 +91,10 @@ def chunk_text(text: str, config: ChunkConfig = None) -> list:
     """
     chunker = MarkdownChunker(config)
     raw_result = chunker.chunk(text, include_analysis=True)
-    result = raw_result  # type: ignore[assignment]
+    # Type narrowing for union type
+    if not isinstance(raw_result, ChunkingResult):
+        raise TypeError("Unexpected result type from chunker")
+    result = raw_result
     return result.chunks
 
 

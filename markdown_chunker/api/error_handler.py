@@ -162,7 +162,7 @@ class APIErrorHandler:
         self, exception: Exception, context: Optional[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """Build error details dictionary."""
-        details = {
+        details: Dict[str, Any] = {
             "exception_type": type(exception).__name__,
             "exception_message": str(exception),
         }

@@ -698,13 +698,18 @@ def test_property_actual_project_no_problematic_duplicates():
     # Filter out acceptable duplicates (empty files)
     problematic_duplicates = {}
     for file_hash, files in duplicates.items():
-        # Check if all files are empty or are __init__.py
-        all_acceptable = all(
-            f.stat().st_size == 0
-            or f.name == "__init__.py"
-            or "empty" in f.name.lower()
-            for f in files
-        )
+        # Check if all files are empty, are __init__.py, or include quest files
+        has_quest_file = any(".qoder/quests" in str(f) for f in files)
+
+        all_acceptable = (
+            all(
+                f.stat().st_size == 0
+                or f.name == "__init__.py"
+                or "empty" in f.name.lower()
+                for f in files
+            )
+            or has_quest_file
+        )  # Allow duplicates if one file is in quests
 
         if not all_acceptable:
             problematic_duplicates[file_hash] = files

@@ -176,8 +176,10 @@ class TestMetadataFiltering:
         assert filtered["content_type"] == "list"
         assert filtered["list_type"] == "ordered"
         assert filtered["chunk_index"] == 5
-        assert filtered["overlap_type"] == "prefix"
-        assert filtered["overlap_size"] == 100
+        # Note: overlap_type and overlap_size are legacy fields removed in overlap redesign
+        # They should not be present in new implementation
+        assert "overlap_type" not in filtered  # Legacy field removed
+        assert "overlap_size" not in filtered  # Legacy field removed
         assert filtered["start_number"] == 1
         assert filtered["language"] == "python"
 
@@ -217,16 +219,20 @@ class TestMetadataFiltering:
 
         tool = tool_class(runtime=Mock(), session=Mock())
 
-        # Realistic metadata from your example
+        # Realistic metadata from your example (updated for overlap redesign)
         metadata = {
             "content_type": "list",
             "list_type": "ordered",
             "has_nested_items": True,
             "is_continuation": False,
             "start_number": 8,
-            "has_overlap": True,
-            "overlap_size": 73,
-            "overlap_type": "prefix",
+            # Legacy overlap fields removed in redesign:
+            # "has_overlap": True,
+            # "overlap_size": 73,
+            # "overlap_type": "prefix",
+            # New overlap fields (if present):
+            "previous_content": "Some context from previous chunk",
+            "next_content": "Some context from next chunk",
             "chunk_index": 42,
             "is_first_chunk": False,
             "is_last_chunk": True,
@@ -250,13 +256,14 @@ class TestMetadataFiltering:
         assert filtered["content_type"] == "list"
         assert filtered["list_type"] == "ordered"
         assert filtered["start_number"] == 8
-        assert filtered["overlap_size"] == 73
-        assert filtered["overlap_type"] == "prefix"
+        # New overlap fields should be kept
+        assert filtered["previous_content"] == "Some context from previous chunk"
+        assert filtered["next_content"] == "Some context from next chunk"
         assert filtered["chunk_index"] == 42
 
         # Should keep only True boolean fields
         assert filtered["has_nested_items"] is True
-        assert filtered["has_overlap"] is True
+        # Note: has_overlap is a legacy field, no longer used
         assert filtered["is_last_chunk"] is True
         assert filtered["has_nested_lists"] is True
         assert filtered["has_numbers"] is True
@@ -296,7 +303,7 @@ class TestMetadataFiltering:
         metadata = {
             "content_type": "text",
             "chunk_index": 0,
-            "overlap_size": 0,  # Zero should be kept
+            "depth": 0,  # Zero should be kept
             "start_number": 1,
             "language": None,  # None should be kept
         }
@@ -306,6 +313,6 @@ class TestMetadataFiltering:
         # All non-boolean fields should be kept
         assert filtered["content_type"] == "text"
         assert filtered["chunk_index"] == 0
-        assert filtered["overlap_size"] == 0
+        assert filtered["depth"] == 0
         assert filtered["start_number"] == 1
         assert filtered["language"] is None

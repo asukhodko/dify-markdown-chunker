@@ -14,7 +14,7 @@ import re
 from dataclasses import dataclass
 from typing import List, Optional
 
-from ..text_normalizer import truncate_at_word_boundary, validate_no_word_fragments
+from ..text_normalizer import truncate_at_word_boundary
 from ..types import Chunk, ChunkConfig
 
 logger = logging.getLogger(__name__)
@@ -59,60 +59,342 @@ class OverlapManager:
         """
         self.config = config
 
-    def apply_overlap(self, chunks: List[Chunk], include_metadata: bool = False) -> List[Chunk]:
+    def apply_overlap(
+        self, chunks: List[Chunk], include_metadata: bool = False
+    ) -> List[Chunk]:
         """
-        Apply overlap to a list of chunks.
+        Apply overlap to a list of chunks using the new neighbor context model.
+
+        This method extracts context from neighboring chunks and either:
+        - Stores it in metadata fields (metadata mode: include_metadata=True)
+        - Merges it into content (legacy mode: include_metadata=False)
 
         Args:
-            chunks: List of chunks to process
-            include_metadata: If True, store overlap in metadata fields;
-                            if False, merge overlap into content (legacy mode)
+            chunks: List of core chunks to process (from Phase 1)
+            include_metadata: If True, store contexts in previous_content/next_content;
+                            if False, merge contexts into content (legacy mode)
 
         Returns:
-            List of chunks with overlap applied according to mode
+            List of chunks with neighbor context applied according to mode
         """
         if not chunks or len(chunks) < 2:
             # No overlap needed for single chunk or empty list
             return chunks
 
         if not self.config.enable_overlap:
-            # Overlap disabled
+            # Overlap disabled - no-op
             return chunks
 
-        overlapped_chunks = []
+        # Calculate effective overlap size
+        effective_overlap = self._calculate_effective_overlap(chunks)
+
+        if effective_overlap == 0:
+            # No overlap - no-op
+            return chunks
+
+        # Extract contexts from all chunks (single pass over core chunks)
+        result_chunks = []
 
         for i, chunk in enumerate(chunks):
-            if i == 0:
-                # First chunk - no prefix overlap
-                overlapped_chunks.append(chunk)
+            # Extract previous_content from previous chunk (if exists)
+            previous_content = ""
+            previous_chunk_index = None
+            if i > 0:
+                previous_content = self._extract_suffix_context(
+                    chunks[i - 1], effective_overlap
+                )
+                if previous_content:
+                    previous_chunk_index = i - 1
+
+            # Extract next_content from next chunk (if exists)
+            next_content = ""
+            next_chunk_index = None
+            if i < len(chunks) - 1:
+                next_content = self._extract_prefix_context(
+                    chunks[i + 1], effective_overlap
+                )
+                if next_content:
+                    next_chunk_index = i + 1
+
+            # Apply mode-specific logic
+            if include_metadata:
+                # Metadata mode: store in metadata, keep content clean
+                new_chunk = self._add_context_to_metadata(
+                    chunk,
+                    previous_content,
+                    next_content,
+                    previous_chunk_index,
+                    next_chunk_index,
+                )
             else:
-                # Add overlap from previous chunk
-                previous_chunk = chunks[i - 1]
+                # Legacy mode: merge into content
+                new_chunk = self._merge_context_into_content(
+                    chunk, previous_content, next_content
+                )
 
-                overlap_text = self._extract_overlap(previous_chunk, is_suffix=True)
+            result_chunks.append(new_chunk)
 
-                if overlap_text:
-                    # Verify overlap doesn't contain unbalanced code fences
-                    if self._has_unbalanced_fences(overlap_text):
-                        # Skip overlap to preserve code block integrity
-                        overlapped_chunks.append(chunk)
-                    else:
-                        # Create new chunk with overlap
-                        if include_metadata:
-                            # Metadata mode: store overlap in metadata
-                            new_chunk = self._add_overlap_to_metadata(chunk, overlap_text)
-                        else:
-                            # Legacy mode: merge overlap into content
-                            new_chunk = self._add_overlap_prefix(chunk, overlap_text)
-                        overlapped_chunks.append(new_chunk)
+        return result_chunks
+
+    def _calculate_effective_overlap(self, chunks: List[Chunk]) -> int:
+        """
+        Calculate effective overlap size based on configuration.
+
+        Args:
+            chunks: List of chunks (for percentage calculation)
+
+        Returns:
+            Effective overlap size in characters
+        """
+        if self.config.overlap_size > 0:
+            # Fixed-size overlap takes priority
+            return self.config.overlap_size
+        elif self.config.overlap_percentage > 0 and chunks:
+            # Percentage-based: use average chunk size
+            avg_chunk_size = sum(len(c.content) for c in chunks) // len(chunks)
+            return int(avg_chunk_size * self.config.overlap_percentage)
+        else:
+            return 0
+
+    def _extract_suffix_context(self, chunk: Chunk, target_size: int) -> str:
+        """
+        Extract context from the END of a core chunk for
+        use as previous_content.
+
+        Uses block-aligned extraction to preserve structural integrity.
+
+        Args:
+            chunk: Core chunk to extract from
+            target_size: Target context size (effective_overlap)
+
+        Returns:
+            Context string (suffix of chunk.content),
+            or empty string if extraction fails
+        """
+        content = chunk.content
+
+        if not content.strip():
+            return ""
+
+        # Apply 40% maximum ratio relative to source chunk size
+        max_overlap = max(50, int(len(content) * 0.40))
+        actual_target = min(target_size, max_overlap)
+
+        if actual_target <= 0:
+            return ""
+
+        # Use block-aligned extraction
+        overlap_text = self._extract_block_aligned_overlap(chunk, actual_target)
+
+        if overlap_text is None:
+            # No blocks fit - return empty
+            logger.debug(
+                f"Block-aligned suffix context extraction failed: "
+                f"no complete blocks fit within {actual_target} chars"
+            )
+            return ""
+
+        # Verify no unbalanced code fences
+        if self._has_unbalanced_fences(overlap_text):
+            logger.debug("Suffix context has unbalanced code fences, skipping")
+            return ""
+
+        return overlap_text
+
+    def _extract_prefix_context(self, chunk: Chunk, target_size: int) -> str:
+        """
+        Extract context from the BEGINNING of a core chunk
+        for use as next_content.
+
+        Uses block-aligned extraction to preserve structural integrity.
+
+        Args:
+            chunk: Core chunk to extract from
+            target_size: Target context size (effective_overlap)
+
+        Returns:
+            Context string (prefix of chunk.content),
+            or empty string if extraction fails
+        """
+        content = chunk.content
+
+        if not content.strip():
+            return ""
+
+        # Apply 40% maximum ratio relative to source chunk size
+        max_overlap = max(50, int(len(content) * 0.40))
+        actual_target = min(target_size, max_overlap)
+
+        if actual_target <= 0:
+            return ""
+
+        # Extract blocks from beginning
+        blocks = self._extract_blocks_from_content(content)
+        if not blocks:
+            return ""
+
+        # Collect blocks from beginning until we reach target size
+        selected_blocks: List[ContentBlock] = []
+        total_size = 0
+
+        for block in blocks:
+            block_size = block.size
+
+            # Check if adding this block would exceed target
+            if total_size == 0:
+                # Allow first block with tolerance
+                if block_size <= actual_target * 1.2:
+                    selected_blocks.append(block)
+                    total_size += block_size
                 else:
-                    overlapped_chunks.append(chunk)
+                    logger.debug(
+                        f"First block too large for prefix context: "
+                        f"{block_size} > {actual_target * 1.2}"
+                    )
+                    break
+            elif total_size + block_size + 2 <= actual_target:
+                selected_blocks.append(block)
+                total_size += block_size + 2
+            else:
+                break
 
-        # Second pass: Add overlap_suffix to metadata in metadata mode
-        if include_metadata:
-            overlapped_chunks = self._add_suffix_overlaps_to_metadata(overlapped_chunks, chunks)
+        if not selected_blocks:
+            logger.debug("No blocks fit within prefix context target size")
+            return ""
 
-        return overlapped_chunks
+        # Join selected blocks
+        overlap_text = "\n\n".join(b.content for b in selected_blocks).strip()
+
+        # Verify no unbalanced code fences
+        if self._has_unbalanced_fences(overlap_text):
+            logger.debug("Prefix context has unbalanced code fences, skipping")
+            return ""
+
+        return overlap_text
+
+    def _add_context_to_metadata(
+        self,
+        chunk: Chunk,
+        previous_content: str,
+        next_content: str,
+        previous_chunk_index: Optional[int],
+        next_chunk_index: Optional[int],
+    ) -> Chunk:
+        """
+        Add neighbor context to chunk metadata (metadata mode).
+
+        Only adds fields when context is non-empty.
+
+        Args:
+            chunk: Original core chunk
+            previous_content: Context from previous chunk (may be empty)
+            next_content: Context from next chunk (may be empty)
+            previous_chunk_index: Index of previous chunk (None if no context)
+            next_chunk_index: Index of next chunk (None if no context)
+
+        Returns:
+            New chunk with context in metadata, content unchanged
+        """
+        new_metadata = chunk.metadata.copy()
+
+        # Only add fields when non-empty
+        if previous_content:
+            new_metadata["previous_content"] = previous_content
+            if previous_chunk_index is not None:
+                new_metadata["previous_chunk_index"] = previous_chunk_index
+
+        if next_content:
+            new_metadata["next_content"] = next_content
+            if next_chunk_index is not None:
+                new_metadata["next_chunk_index"] = next_chunk_index
+
+        # Create new chunk with original content and updated metadata
+        return Chunk(
+            content=chunk.content,  # Unchanged - stays as content_core
+            start_line=chunk.start_line,
+            end_line=chunk.end_line,
+            metadata=new_metadata,
+        )
+
+    def _merge_context_into_content(
+        self, chunk: Chunk, previous_content: str, next_content: str
+    ) -> Chunk:
+        """
+        Merge neighbor context into chunk content (legacy mode).
+
+        Creates: content = previous_content + content_core + next_content
+
+        Args:
+            chunk: Original core chunk
+            previous_content: Context from previous chunk (may be empty)
+            next_content: Context from next chunk (may be empty)
+
+        Returns:
+            New chunk with merged content
+        """
+        # Build merged content
+        parts = []
+        if previous_content:
+            parts.append(previous_content)
+        parts.append(chunk.content)  # content_core
+        if next_content:
+            parts.append(next_content)
+
+        merged_content = "\n\n".join(parts)
+
+        # Verify no unbalanced code fences in final content
+        if self._has_unbalanced_fences(merged_content):
+            # Skip merging to preserve code block integrity
+            logger.warning(
+                "Merging context would create unbalanced code fences, "
+                "returning original chunk"
+            )
+            return chunk
+
+        # Check if merged content exceeds max_chunk_size
+        if len(merged_content) > self.config.max_chunk_size:
+            # Truncate contexts to fit
+            available_space = (
+                self.config.max_chunk_size - len(chunk.content) - 4
+            )  # -4 for separators
+
+            if available_space <= 0:
+                # No space for context - return original
+                return chunk
+
+            # Distribute space between previous and next
+            prev_space = available_space // 2
+            next_space = available_space - prev_space
+
+            if previous_content and len(previous_content) > prev_space:
+                previous_content = truncate_at_word_boundary(
+                    previous_content, prev_space, from_end=True
+                )
+
+            if next_content and len(next_content) > next_space:
+                next_content = truncate_at_word_boundary(
+                    next_content, next_space, from_end=False
+                )
+
+            # Rebuild merged content
+            parts = []
+            if previous_content:
+                parts.append(previous_content)
+            parts.append(chunk.content)
+            if next_content:
+                parts.append(next_content)
+            merged_content = "\n\n".join(parts)
+
+        # Create new chunk with merged content
+        # Note: metadata does NOT include previous_content/next_content
+        # fields in legacy mode
+        return Chunk(
+            content=merged_content,
+            start_line=chunk.start_line,
+            end_line=chunk.end_line,
+            # Keep original metadata, don't add context fields
+            metadata=chunk.metadata.copy(),
+        )
 
     def _is_code_chunk(self, chunk: Chunk) -> bool:
         """
@@ -346,407 +628,12 @@ class OverlapManager:
         overlap_text = "\n\n".join(b.content for b in selected_blocks)
         return overlap_text.strip()
 
-    def _extract_overlap(self, chunk: Chunk, is_suffix: bool = True) -> str:
-        """
-        Extract overlap text from a chunk using block-aware extraction.
-
-        CRITICAL FIX: Uses block-aligned extraction to prevent data loss
-        and excessive duplication. Does NOT fall back to character-based
-        extraction - if no blocks fit, returns empty string with warning.
-
-        Args:
-            chunk: Chunk to extract overlap from
-            is_suffix: If True, extract from end; if False, from beginning
-
-        Returns:
-            Overlap text (complete blocks only), or empty string if no blocks fit
-        """
-        content = chunk.content
-
-        if not content.strip():
-            return ""
-
-        # Calculate overlap size - prefer fixed size if specified,
-        # otherwise use percentage
-        if self.config.overlap_size > 0:
-            # Fixed-size overlap takes priority
-            overlap_size = self.config.overlap_size
-        elif self.config.overlap_percentage > 0:
-            # Percentage-based overlap as fallback
-            overlap_size = int(len(content) * self.config.overlap_percentage)
-        else:
-            # No overlap configured
-            return ""
-
-        # CRITICAL: Ensure overlap doesn't exceed 40% of source chunk size
-        # This prevents overlap from dominating the chunk content
-        # The final check in _add_overlap_prefix ensures the ratio stays under 50%
-        # But allow minimum of 50 chars for small chunks to enable block-aligned overlap
-        max_overlap = max(50, int(len(content) * 0.40))
-        overlap_size = min(overlap_size, max_overlap)
-
-        if overlap_size <= 0:
-            return ""
-
-        # CRITICAL FIX: Use block-aligned extraction
-        # This prevents partial blocks in overlap which causes data loss/duplication
-        if is_suffix:
-            overlap_text = self._extract_block_aligned_overlap(chunk, overlap_size)
-
-            if overlap_text is None:
-                # No blocks fit - set overlap to 0 (no char-based fallback!)
-                logger.warning(
-                    f"Block-aligned overlap failed: no complete blocks fit within "
-                    f"{overlap_size} chars. Setting overlap to 0 for this boundary."
-                )
-                return ""
-
-            return overlap_text
-        else:
-            # For prefix extraction, use legacy method (less common case)
-            return self._extract_prefix_overlap(content, overlap_size)
-
-    def _extract_suffix_overlap(self, content: str, target_size: int) -> str:
-        """
-        Extract overlap from the end of content, preserving sentence boundaries.
-
-        Args:
-            content: Content to extract from
-            target_size: Target overlap size
-
-        Returns:
-            Overlap text from end
-        """
-        if len(content) <= target_size:
-            return content
-
-        # Find sentence boundaries
-        sentences = self._split_into_sentences(content)
-
-        if not sentences:
-            # No sentences found, use word boundary extraction from end
-            return truncate_at_word_boundary(content, target_size, from_end=True)
-
-        # Collect sentences from end until we reach target size
-        overlap_sentences: List[str] = []
-        current_size = 0
-
-        for sentence in reversed(sentences):
-            sentence_size = len(sentence)
-
-            # Only add first sentence unconditionally if it fits within target
-            # Otherwise, stop to avoid exceeding the limit
-            if current_size + sentence_size <= target_size:
-                overlap_sentences.insert(0, sentence)
-                current_size += sentence_size
-            elif not overlap_sentences and sentence_size <= target_size * 1.5:
-                # Allow first sentence with some tolerance
-                overlap_sentences.insert(0, sentence)
-                current_size += sentence_size
-                break  # Stop after first sentence if it exceeds target
-            else:
-                break
-
-        result = "".join(overlap_sentences).strip()
-
-        # Final safety check: truncate if still too large using word boundary
-        if len(result) > target_size * 1.5:
-            result = truncate_at_word_boundary(result, target_size, from_end=True)
-
-        return result
-
-    def _extract_prefix_overlap(self, content: str, target_size: int) -> str:
-        """
-        Extract overlap from the beginning of content, preserving sentence boundaries.
-
-        Args:
-            content: Content to extract from
-            target_size: Target overlap size
-
-        Returns:
-            Overlap text from beginning
-        """
-        if len(content) <= target_size:
-            return content
-
-        # Find sentence boundaries
-        sentences = self._split_into_sentences(content)
-
-        if not sentences:
-            # No sentences found, use word boundary extraction
-            return truncate_at_word_boundary(content, target_size, from_end=False)
-
-        # Collect sentences from beginning until we reach target size
-        overlap_sentences: List[str] = []
-        current_size = 0
-
-        for sentence in sentences:
-            sentence_size = len(sentence)
-
-            if current_size + sentence_size <= target_size or not overlap_sentences:
-                overlap_sentences.append(sentence)
-                current_size += sentence_size
-            else:
-                break
-
-        return "".join(overlap_sentences).strip()
-
-    def _truncate_preserving_sentences(self, text: str, max_size: int) -> str:
-        """
-        Truncate text while trying to preserve sentence boundaries.
-
-        Args:
-            text: Text to truncate
-            max_size: Maximum size
-
-        Returns:
-            Truncated text, preferably ending at sentence boundary
-        """
-        text = text.strip()
-
-        if len(text) <= max_size:
-            return text
-
-        # If text already ends with sentence punctuation and is close to max_size,
-        # allow a tolerance to preserve the sentence boundary (up to 50% over)
-        if text[-1] in ".!?" and len(text) <= max_size * 1.5:
-            return text
-
-        # Try to find a sentence boundary within the text
-        # Search the entire text for sentence boundaries
-        best_boundary = -1
-        for i in range(len(text) - 1, -1, -1):
-            if text[i] in ".!?":
-                # Found a sentence boundary
-                candidate_len = i + 1
-                # Prefer boundaries closer to max_size but allow up to 50% over
-                if candidate_len <= max_size * 1.5:
-                    best_boundary = i
-                    break
-
-        if best_boundary >= 0:
-            return text[: best_boundary + 1].strip()
-
-        # No good sentence boundary found, use word boundary truncation
-        # This prevents BLOCK-2 (word splitting at chunk boundaries)
-        result = truncate_at_word_boundary(text, max_size, from_end=False)
-
-        # Validate no word fragments remain
-        if not validate_no_word_fragments(result):
-            # If validation fails, try from the opposite end
-            result = truncate_at_word_boundary(text, max_size, from_end=True)
-
-        return result
-
-    def _split_into_sentences(self, content: str) -> List[str]:
-        """
-        Split content into sentences.
-
-        Args:
-            content: Content to split
-
-        Returns:
-            List of sentences (empty list if no sentence boundaries found)
-        """
-        # Check if content has sentence boundaries
-        if not re.search(self.SENTENCE_END_PATTERN, content):
-            # No sentence boundaries found - return empty to trigger
-            # character-based extraction
-            return []
-
-        # Reconstruct sentences with their punctuation
-        result = []
-        parts = re.split(f"({self.SENTENCE_END_PATTERN})", content)
-
-        current_sentence = ""
-        for part in parts:
-            current_sentence += part
-            if re.match(self.SENTENCE_END_PATTERN, part):
-                result.append(current_sentence)
-                current_sentence = ""
-
-        # Add any remaining content
-        if current_sentence.strip():
-            result.append(current_sentence)
-
-        return [s for s in result if s.strip()]
-
-    def _add_overlap_to_metadata(self, chunk: Chunk, overlap_prefix: str) -> Chunk:
-        """
-        Add overlap to chunk metadata (metadata mode).
-        
-        In metadata mode, overlap is NOT merged into content. Instead, it's stored
-        in metadata fields. Keys are only added when overlap actually exists (non-empty).
-        
-        Args:
-            chunk: Original chunk
-            overlap_prefix: Prefix overlap from previous chunk (already validated)
-        
-        Returns:
-            Chunk with overlap stored in metadata (only if non-empty)
-        """
-        # Important: Only add metadata key if overlap is non-empty
-        # Key absence indicates no overlap (semantic significance)
-        if not overlap_prefix or not overlap_prefix.strip():
-            return chunk
-        
-        # Create new metadata dict with overlap field
-        new_metadata = chunk.metadata.copy()
-        new_metadata["overlap_prefix"] = overlap_prefix
-        
-        # Create new chunk with original content and updated metadata
-        # Content stays clean - no overlap merged
-        new_chunk = Chunk(
-            content=chunk.content,  # Original content, unchanged
-            start_line=chunk.start_line,
-            end_line=chunk.end_line,
-            metadata=new_metadata,
-        )
-        
-        return new_chunk
-
-    def _add_suffix_overlaps_to_metadata(self, overlapped_chunks: List[Chunk], original_chunks: List[Chunk]) -> List[Chunk]:
-        """
-        Add overlap_suffix to chunks in metadata mode.
-        
-        This is a second pass that adds suffix overlaps after prefix overlaps have been added.
-        For each chunk i (except the last), we extract overlap from its end and store it in
-        metadata.overlap_suffix. This overlap represents what will appear as overlap_prefix
-        in chunk i+1.
-        
-        Args:
-            overlapped_chunks: Chunks that already have overlap_prefix added (from first pass)
-            original_chunks: Original chunks before any overlap processing (for extraction)
-        
-        Returns:
-            Chunks with both overlap_prefix and overlap_suffix in metadata where applicable
-        """
-        if not overlapped_chunks or len(overlapped_chunks) < 2:
-            return overlapped_chunks
-        
-        result_chunks = []
-        
-        for i, chunk in enumerate(overlapped_chunks):
-            if i == len(overlapped_chunks) - 1:
-                # Last chunk - no suffix overlap
-                result_chunks.append(chunk)
-            else:
-                # Extract overlap from this chunk's end (same as what will be prefix of next chunk)
-                # Use original_chunks for extraction to get clean content boundaries
-                original_chunk = original_chunks[i]
-                overlap_suffix = self._extract_overlap(original_chunk, is_suffix=True)
-                
-                if overlap_suffix and not self._has_unbalanced_fences(overlap_suffix):
-                    # Add overlap_suffix to metadata
-                    new_metadata = chunk.metadata.copy()
-                    new_metadata["overlap_suffix"] = overlap_suffix
-                    
-                    new_chunk = Chunk(
-                        content=chunk.content,
-                        start_line=chunk.start_line,
-                        end_line=chunk.end_line,
-                        metadata=new_metadata,
-                    )
-                    result_chunks.append(new_chunk)
-                else:
-                    # No valid suffix overlap
-                    result_chunks.append(chunk)
-        
-        return result_chunks
-
-    def _add_overlap_prefix(self, chunk: Chunk, overlap_text: str) -> Chunk:
-        """
-        Add overlap prefix to a chunk.
-
-        Args:
-            chunk: Original chunk
-            overlap_text: Overlap text to add
-
-        Returns:
-            New chunk with overlap prefix
-        """
-        chunk_content_size = len(chunk.content)
-
-        # CRITICAL: Ensure overlap doesn't exceed 50% of the resulting chunk
-        # If overlap = X and content = Y, then ratio = X / (X + Y + 2)
-        # We want X / (X + Y + 2) <= 0.5
-        # Solving: X <= 0.5 * (X + Y + 2) => X <= 0.5X + 0.5Y + 1
-        # => 0.5X <= 0.5Y + 1 => X <= Y + 2
-        # But to be safe and account for "\n\n", we use X <= 0.45 * Y
-        max_overlap_for_ratio = int(chunk_content_size * 0.45)
-
-        if len(overlap_text) > max_overlap_for_ratio:
-            # Truncate but try to preserve sentence boundaries
-            overlap_text = self._truncate_preserving_sentences(
-                overlap_text, max_overlap_for_ratio
-            )
-
-        if not overlap_text:
-            return chunk
-
-        # CRITICAL: Strict size compliance check
-        # Calculate potential size AFTER applying overlap
-        potential_size = len(overlap_text) + 2 + chunk_content_size  # +2 for "\n\n"
-
-        if potential_size > self.config.max_chunk_size:
-            # Calculate how much overlap we can add without exceeding max_chunk_size
-            available_space = self.config.max_chunk_size - chunk_content_size - 2
-
-            if available_space <= 0:
-                # No space for overlap - return original chunk
-                return chunk
-
-            # Truncate overlap to fit within available space
-            # Also respect the 50% ratio limit
-            max_allowed = min(available_space, max_overlap_for_ratio)
-
-            # Ensure we don't exceed available space even after sentence truncation
-            if max_allowed > 0:
-                overlap_text = self._truncate_preserving_sentences(
-                    overlap_text, max_allowed
-                )
-
-                # Final safety check - if truncated overlap still too big,
-                # use word boundary truncation
-                if len(overlap_text) > available_space:
-                    overlap_text = truncate_at_word_boundary(
-                        overlap_text, available_space, from_end=False
-                    )
-            else:
-                overlap_text = ""
-
-            if not overlap_text:
-                # No meaningful overlap left - return original chunk
-                return chunk
-
-        # Create new content with overlap
-        new_content = overlap_text + "\n\n" + chunk.content
-
-        # CRITICAL: Check if adding overlap creates unbalanced code fences
-        # This can happen when overlap contains part of a code block
-        if self._has_unbalanced_fences(new_content):
-            # Adding this overlap would break code block integrity
-            # Return original chunk without overlap
-            return chunk
-
-        # Create new chunk with updated content and metadata
-        new_metadata = chunk.metadata.copy()
-        new_metadata["has_overlap"] = True
-        new_metadata["overlap_size"] = len(overlap_text)
-        new_metadata["overlap_type"] = "prefix"
-
-        new_chunk = Chunk(
-            content=new_content,
-            start_line=chunk.start_line,
-            end_line=chunk.end_line,
-            metadata=new_metadata,
-        )
-
-        return new_chunk
-
     def calculate_overlap_statistics(self, chunks: List[Chunk]) -> dict:
         """
         Calculate statistics about overlap in chunks.
+
+        Note: This method is retained for backward compatibility but statistics
+        are now based on presence of previous_content/next_content fields.
 
         Args:
             chunks: List of chunks to analyze
@@ -762,11 +649,20 @@ class OverlapManager:
                 "total_overlap_size": 0,
             }
 
-        chunks_with_overlap = [
-            c for c in chunks if c.get_metadata("has_overlap", False)
-        ]
+        # Count chunks with context (either previous or next)
+        chunks_with_context = 0
+        overlap_sizes = []
 
-        if not chunks_with_overlap:
+        for chunk in chunks:
+            prev = chunk.get_metadata("previous_content", "")
+            next_ctx = chunk.get_metadata("next_content", "")
+
+            if prev or next_ctx:
+                chunks_with_context += 1
+                # Sum both context sizes for this chunk
+                overlap_sizes.append(len(prev) + len(next_ctx))
+
+        if not overlap_sizes:
             return {
                 "total_chunks": len(chunks),
                 "chunks_with_overlap": 0,
@@ -774,15 +670,14 @@ class OverlapManager:
                 "total_overlap_size": 0,
             }
 
-        overlap_sizes = [c.get_metadata("overlap_size", 0) for c in chunks_with_overlap]
         total_overlap = sum(overlap_sizes)
 
         return {
             "total_chunks": len(chunks),
-            "chunks_with_overlap": len(chunks_with_overlap),
+            "chunks_with_overlap": chunks_with_context,
             "avg_overlap_size": (
-                total_overlap / len(chunks_with_overlap) if chunks_with_overlap else 0
+                total_overlap / chunks_with_context if chunks_with_context else 0
             ),
             "total_overlap_size": total_overlap,
-            "overlap_percentage": (len(chunks_with_overlap) / len(chunks)) * 100,
+            "overlap_percentage": (chunks_with_context / len(chunks)) * 100,
         }

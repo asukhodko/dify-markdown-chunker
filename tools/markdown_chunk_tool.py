@@ -35,7 +35,7 @@ class MarkdownChunkTool(Tool):
         """Filter metadata to keep only fields useful for RAG search.
 
         Removes statistical and internal fields that don't help with retrieval.
-        Preserves overlap fields (overlap_prefix, overlap_suffix) when present.
+        Preserves overlap context fields (previous_content, next_content) when present.
 
         Args:
             metadata: Full metadata dictionary from chunker
@@ -58,7 +58,10 @@ class MarkdownChunkTool(Tool):
             'preamble.char_count', 'preamble.line_count', 'preamble.has_metadata',
             'preamble.metadata_fields', 'preamble.type',
             # Redundant fields
-            'preamble_type', 'preview', 'total_chunks'
+            'preamble_type', 'preview', 'total_chunks',
+            # Legacy overlap fields (removed in new design)
+            'overlap_prefix', 'overlap_suffix', 'has_overlap', 'overlap_type', 'overlap_size',
+            'overlap_block_ids', 'overlap_start_offset', 'new_content_start_offset'
         }
 
         # Recursively filter metadata
