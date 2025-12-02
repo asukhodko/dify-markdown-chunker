@@ -158,6 +158,7 @@ class MarkdownChunker:
         strategy: Optional[str] = None,
         include_analysis: bool = False,
         return_format: Literal["objects", "dict"] = "objects",
+        include_metadata: bool = True,
     ) -> Union[List[Chunk], ChunkingResult, dict]:
         """
         Unified chunking method supporting multiple return formats.
@@ -182,6 +183,9 @@ class MarkdownChunker:
             return_format: Output format for the result.
                 - "objects": Return Python objects (Chunk/ChunkingResult)
                 - "dict": Return dictionary representation (JSON-serializable)
+            include_metadata: Controls overlap handling mode (default: True).
+                - True: Store overlap in metadata fields (clean content)
+                - False: Merge overlap into content (legacy mode)
 
         Returns:
             The return type depends on parameters:
@@ -257,13 +261,13 @@ class MarkdownChunker:
         result = self._orchestrator.chunk_with_strategy(md_text, strategy)
 
         # Apply post-processing (overlap, metadata, validation, preamble)
-        result = self._post_process_chunks(result, md_text)
+        result = self._post_process_chunks(result, md_text, include_metadata)
 
         # Transform output based on parameters
         return self._transformer.transform(result, include_analysis, return_format)
 
     def _post_process_chunks(  # noqa: C901
-        self, result: ChunkingResult, md_text: str
+        self, result: ChunkingResult, md_text: str, include_metadata: bool = True
     ) -> ChunkingResult:
         """
         Apply post-processing to chunks (overlap, metadata, validation, preamble).
@@ -271,6 +275,9 @@ class MarkdownChunker:
         Args:
             result: Chunking result from orchestrator
             md_text: Original markdown text
+            include_metadata: Controls overlap handling mode
+                - True: Store overlap in metadata fields
+                - False: Merge overlap into content (legacy)
 
         Returns:
             Updated ChunkingResult with post-processing applied
@@ -280,7 +287,7 @@ class MarkdownChunker:
         # Stage 3: Apply overlap if enabled
         if self.config.enable_overlap and chunks:
             try:
-                chunks = self._overlap_manager.apply_overlap(chunks)
+                chunks = self._overlap_manager.apply_overlap(chunks, include_metadata)
             except Exception as e:
                 result.errors.append(f"Overlap processing failed: {str(e)}")
 

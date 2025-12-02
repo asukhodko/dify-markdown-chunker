@@ -59,15 +59,17 @@ class OverlapManager:
         """
         self.config = config
 
-    def apply_overlap(self, chunks: List[Chunk]) -> List[Chunk]:
+    def apply_overlap(self, chunks: List[Chunk], include_metadata: bool = False) -> List[Chunk]:
         """
         Apply overlap to a list of chunks.
 
         Args:
             chunks: List of chunks to process
+            include_metadata: If True, store overlap in metadata fields;
+                            if False, merge overlap into content (legacy mode)
 
         Returns:
-            List of chunks with overlap applied
+            List of chunks with overlap applied according to mode
         """
         if not chunks or len(chunks) < 2:
             # No overlap needed for single chunk or empty list
@@ -95,11 +97,20 @@ class OverlapManager:
                         # Skip overlap to preserve code block integrity
                         overlapped_chunks.append(chunk)
                     else:
-                        # Create new chunk with overlap prefix
-                        new_chunk = self._add_overlap_prefix(chunk, overlap_text)
+                        # Create new chunk with overlap
+                        if include_metadata:
+                            # Metadata mode: store overlap in metadata
+                            new_chunk = self._add_overlap_to_metadata(chunk, overlap_text)
+                        else:
+                            # Legacy mode: merge overlap into content
+                            new_chunk = self._add_overlap_prefix(chunk, overlap_text)
                         overlapped_chunks.append(new_chunk)
                 else:
                     overlapped_chunks.append(chunk)
+
+        # Second pass: Add overlap_suffix to metadata in metadata mode
+        if include_metadata:
+            overlapped_chunks = self._add_suffix_overlaps_to_metadata(overlapped_chunks, chunks)
 
         return overlapped_chunks
 
@@ -559,6 +570,89 @@ class OverlapManager:
             result.append(current_sentence)
 
         return [s for s in result if s.strip()]
+
+    def _add_overlap_to_metadata(self, chunk: Chunk, overlap_prefix: str) -> Chunk:
+        """
+        Add overlap to chunk metadata (metadata mode).
+        
+        In metadata mode, overlap is NOT merged into content. Instead, it's stored
+        in metadata fields. Keys are only added when overlap actually exists (non-empty).
+        
+        Args:
+            chunk: Original chunk
+            overlap_prefix: Prefix overlap from previous chunk (already validated)
+        
+        Returns:
+            Chunk with overlap stored in metadata (only if non-empty)
+        """
+        # Important: Only add metadata key if overlap is non-empty
+        # Key absence indicates no overlap (semantic significance)
+        if not overlap_prefix or not overlap_prefix.strip():
+            return chunk
+        
+        # Create new metadata dict with overlap field
+        new_metadata = chunk.metadata.copy()
+        new_metadata["overlap_prefix"] = overlap_prefix
+        
+        # Create new chunk with original content and updated metadata
+        # Content stays clean - no overlap merged
+        new_chunk = Chunk(
+            content=chunk.content,  # Original content, unchanged
+            start_line=chunk.start_line,
+            end_line=chunk.end_line,
+            metadata=new_metadata,
+        )
+        
+        return new_chunk
+
+    def _add_suffix_overlaps_to_metadata(self, overlapped_chunks: List[Chunk], original_chunks: List[Chunk]) -> List[Chunk]:
+        """
+        Add overlap_suffix to chunks in metadata mode.
+        
+        This is a second pass that adds suffix overlaps after prefix overlaps have been added.
+        For each chunk i (except the last), we extract overlap from its end and store it in
+        metadata.overlap_suffix. This overlap represents what will appear as overlap_prefix
+        in chunk i+1.
+        
+        Args:
+            overlapped_chunks: Chunks that already have overlap_prefix added (from first pass)
+            original_chunks: Original chunks before any overlap processing (for extraction)
+        
+        Returns:
+            Chunks with both overlap_prefix and overlap_suffix in metadata where applicable
+        """
+        if not overlapped_chunks or len(overlapped_chunks) < 2:
+            return overlapped_chunks
+        
+        result_chunks = []
+        
+        for i, chunk in enumerate(overlapped_chunks):
+            if i == len(overlapped_chunks) - 1:
+                # Last chunk - no suffix overlap
+                result_chunks.append(chunk)
+            else:
+                # Extract overlap from this chunk's end (same as what will be prefix of next chunk)
+                # Use original_chunks for extraction to get clean content boundaries
+                original_chunk = original_chunks[i]
+                overlap_suffix = self._extract_overlap(original_chunk, is_suffix=True)
+                
+                if overlap_suffix and not self._has_unbalanced_fences(overlap_suffix):
+                    # Add overlap_suffix to metadata
+                    new_metadata = chunk.metadata.copy()
+                    new_metadata["overlap_suffix"] = overlap_suffix
+                    
+                    new_chunk = Chunk(
+                        content=chunk.content,
+                        start_line=chunk.start_line,
+                        end_line=chunk.end_line,
+                        metadata=new_metadata,
+                    )
+                    result_chunks.append(new_chunk)
+                else:
+                    # No valid suffix overlap
+                    result_chunks.append(chunk)
+        
+        return result_chunks
 
     def _add_overlap_prefix(self, chunk: Chunk, overlap_text: str) -> Chunk:
         """

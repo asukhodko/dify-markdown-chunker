@@ -35,6 +35,7 @@ class MarkdownChunkTool(Tool):
         """Filter metadata to keep only fields useful for RAG search.
 
         Removes statistical and internal fields that don't help with retrieval.
+        Preserves overlap fields (overlap_prefix, overlap_suffix) when present.
 
         Args:
             metadata: Full metadata dictionary from chunker
@@ -172,7 +173,8 @@ class MarkdownChunkTool(Tool):
                 input_text,
                 strategy=strategy_param,
                 include_analysis=include_metadata,
-                return_format="dict"
+                return_format="dict",
+                include_metadata=include_metadata  # Pass to control overlap mode
             )
 
             # 5. Format results for Dify using unified formatting logic

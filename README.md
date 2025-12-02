@@ -102,6 +102,69 @@ chunker = MarkdownChunker(config)
 chunks = chunker.chunk(markdown_text, include_analysis=True)
 ```
 
+### Overlap Handling Modes
+
+The chunker supports two modes for handling overlap between chunks:
+
+#### Metadata Mode (include_metadata=True, default)
+
+Overlap is stored in metadata fields, keeping chunk content clean:
+
+```python
+config = ChunkConfig(
+    max_chunk_size=2048,
+    enable_overlap=True,
+    overlap_size=200
+)
+
+chunker = MarkdownChunker(config)
+result = chunker.chunk(
+    markdown_text,
+    include_metadata=True  # Metadata mode (default)
+)
+
+# Chunk content is clean (no overlap merged)
+for chunk in result:
+    print(chunk.content)  # Pure chunk content
+    
+    # Overlap is in metadata
+    if 'overlap_prefix' in chunk.metadata:
+        print(f"Overlap with previous: {chunk.metadata['overlap_prefix']}")
+    if 'overlap_suffix' in chunk.metadata:
+        print(f"Overlap with next: {chunk.metadata['overlap_suffix']}")
+```
+
+**Benefits:**
+- Clean, focused chunk content
+- Explicit separation for different handling strategies
+- Applications can compose embedding text as needed
+- Both prefix and suffix overlap available in metadata
+- Better for RAG systems that need semantic clarity
+
+#### Legacy Mode (include_metadata=False)
+
+Overlap is merged directly into chunk content (backward compatible):
+
+```python
+result = chunker.chunk(
+    markdown_text,
+    include_metadata=False  # Legacy mode
+)
+
+# Chunk content includes overlap
+for chunk in result:
+    print(chunk.content)  # Content with overlap merged
+    
+    # Legacy metadata
+    if chunk.metadata.get('has_overlap'):
+        print(f"Overlap size: {chunk.metadata['overlap_size']}")
+```
+
+**Benefits:**
+- Full backward compatibility
+- Simpler output structure
+- Overlap automatically included in embeddings
+
 ### Configuration Profiles
 
 ```python

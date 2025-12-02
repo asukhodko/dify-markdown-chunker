@@ -60,10 +60,10 @@ parameters:
       zh_Hans: 块重叠
       ru_RU: Перекрытие частей
     human_description:
-      en_US: "Number of characters to overlap between consecutive chunks (default: 100)"
-      zh_Hans: "连续块之间重叠的字符数（默认：100）"
-      ru_RU: "Количество символов для перекрытия между последовательными частями (по умолчанию: 100)"
-    llm_description: Number of characters that overlap between consecutive chunks to maintain context continuity.
+      en_US: "Number of characters to overlap between consecutive chunks (default: 100). With include_metadata=true, overlap is stored in metadata; with include_metadata=false, overlap is merged into chunk content."
+      zh_Hans: "连续块之间重叠的字符数（默认：100）。当 include_metadata=true 时，重叠存储在元数据中；当 include_metadata=false 时，重叠合并到块内容中。"
+      ru_RU: "Количество символов для перекрытия между последовательными частями (по умолчанию: 100). При include_metadata=true перекрытие хранится в метаданных; при include_metadata=false перекрытие объединяется с содержимым."
+    llm_description: Number of characters that overlap between consecutive chunks to maintain context continuity. Overlap placement depends on include_metadata setting.
 
   - name: strategy
     type: select
@@ -111,10 +111,10 @@ parameters:
       zh_Hans: 包含元数据
       ru_RU: Включить метаданные
     human_description:
-      en_US: "Include structural metadata with each chunk (default: true)"
-      zh_Hans: "在每个块中包含结构元数据（默认：true）"
-      ru_RU: "Включить структурные метаданные в каждую часть (по умолчанию: true)"
-    llm_description: Whether to include metadata about chunk structure, type, strategy used, line numbers, and complexity score.
+      en_US: "Include structural metadata with each chunk (default: true). When true, overlap is stored in metadata.overlap_prefix/overlap_suffix fields (clean content); when false, overlap is merged into chunk content (legacy mode)."
+      zh_Hans: "在每个块中包含结构元数据（默认：true）。为 true 时，重叠存储在 metadata.overlap_prefix/overlap_suffix 字段中（干净内容）；为 false 时，重叠合并到块内容中（传统模式）。"
+      ru_RU: "Включить структурные метаданные в каждую часть (по умолчанию: true). При true перекрытие хранится в полях metadata.overlap_prefix/overlap_suffix (чистый контент); при false перекрытие объединяется с содержимым (устаревший режим)."
+    llm_description: "Whether to include metadata about chunk structure, type, strategy used, line numbers, and complexity score. Also controls overlap handling: true stores overlap in metadata (clean content), false merges overlap into content (legacy mode)."
 
 output_schema:
   type: object
