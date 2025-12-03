@@ -1,138 +1,499 @@
-# Dify Markdown Chunker Plugin
+# 🔖 Advanced Markdown Chunker for Dify
 
-Advanced Markdown chunking plugin for Dify with structural awareness and intelligent strategy selection.
+<div align="center">
 
+**Intelligent Markdown document chunking for RAG systems with structural awareness**
+
+[![Version](https://img.shields.io/badge/version-2.0.0--a3-orange.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![Dify Plugin](https://img.shields.io/badge/dify-plugin-green.svg)](https://dify.ai/)
+[![Dify Plugin](https://img.shields.io/badge/dify-1.9.0+-green.svg)](https://dify.ai/)
+[![Tests](https://img.shields.io/badge/tests-1366+-brightgreen.svg)](#testing)
+
+</div>
+
+---
+
+## 📋 Table of Contents
+
+- [Overview](#overview)
+- [Features](#-features)
+- [Installation](#-installation)
+- [Dify Integration](#-dify-integration)
+- [Quick Start](#-quick-start)
+- [Chunking Strategies](#-chunking-strategies)
+- [Configuration](#-configuration)
+- [API Reference](#-api-reference)
+- [Architecture](#-architecture)
+- [Performance](#-performance)
+- [Development](#-development)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+---
 
 ## Overview
 
-This plugin provides production-ready markdown chunking capabilities for Dify with intelligent content analysis and adaptive chunking strategies:
+**Advanced Markdown Chunker** is a Dify plugin that intelligently splits Markdown documents into semantically meaningful chunks optimized for RAG (Retrieval-Augmented Generation) systems. Unlike simple text splitting, it preserves document structure, keeps code blocks intact, and automatically selects the best chunking strategy based on content analysis.
 
-- **Advanced Chunking**: 6 intelligent strategies (Code, Mixed, List, Table, Structural, Sentences)
-- **Structural Awareness**: Preserves markdown structure and code blocks
-- **Automatic Strategy Selection**: Analyzes content and selects optimal chunking approach
-- **Comprehensive Testing**: 1366+ tests ensuring reliability
-- **Property-Based Testing**: Correctness guarantees through formal properties
+### Why Use This Plugin?
 
-## Features
+| Simple Chunking Problems | Advanced Markdown Chunker Solution |
+|--------------------------|-----------------------------------|
+| Breaks code blocks mid-function | Preserves code blocks as atomic units |
+| Loses header context | Maintains hierarchical section structure |
+| Splits tables and lists | Keeps tables and lists intact |
+| One-size-fits-all approach | 6 adaptive strategies based on content |
+| No overlap support | Smart overlap for better retrieval |
 
-### Core Capabilities
+---
 
-- **Parser Module**: AST parsing, code block extraction, element detection
-- **Chunker Module**: 6 adaptive strategies with automatic selection
-- **API Module**: REST API adapters with validation
-- **Utils Module**: Error handling and logging
+## ✨ Features
 
-### Dify Plugin Integration
+### 🎯 Adaptive Chunking
+- **6 intelligent strategies** — automatic selection based on content analysis
+- **Structure preservation** — headers, lists, tables, and code stay intact
+- **Smart overlap** — configurable context overlap between chunks
 
-- **Provider**: `MarkdownChunkerProvider` for Dify integration
-- **Tools**: Chunking tools exposed to Dify workflows
-- **Configuration**: Dify-specific settings and profiles
+### 🔍 Deep Content Analysis
+- **AST parsing** — full Markdown syntax analysis
+- **Content type detection** — code-heavy, text-heavy, mixed
+- **Complexity scoring** — optimizes strategy selection
 
-### Chunking Strategies
+### 🛡️ Reliability
+- **1366+ tests** — comprehensive test coverage
+- **Property-Based Testing** — formal correctness guarantees with Hypothesis
+- **4-level fallback** — graceful degradation on errors
 
-1. **Code Strategy**: Optimized for code-heavy documents
-2. **Mixed Strategy**: Balanced approach for mixed content
-3. **List Strategy**: Preserves list structures
-4. **Table Strategy**: Handles tables intelligently
-5. **Structural Strategy**: Follows document structure
-6. **Sentences Strategy**: Fallback sentence-based chunking
+### 🔌 Integration
+- **Dify Plugin** — ready-to-use in Dify workflows
+- **Python Library** — standalone usage
+- **REST API Ready** — adapters for API integration
 
-## Installation
+---
 
-### Quick Install
+## 📦 Installation
 
-1. Download the latest `.difypkg` file from releases
-2. In Dify UI: **Settings → Plugins → Install Plugin**
-3. Upload the package file
-4. Configure in your workflows
+### Dify Plugin Installation
 
-For detailed installation instructions, see **[Installation Guide](docs/installation.md)**.
+1. Download the `.difypkg` file from [Releases](https://github.com/asukhodko/dify-markdown-chunker/releases)
+2. In Dify: **Settings → Plugins → Install Plugin**
+3. Upload the `.difypkg` file
+4. The plugin is now available in your workflows
 
-### Development Setup
+**Requirements:**
+- Dify version 1.9.0 or higher
+- No additional configuration needed
+
+### Development Installation
 
 ```bash
+# Clone the repository
 git clone https://github.com/asukhodko/dify-markdown-chunker.git
 cd dify-markdown-chunker
-python3 -m venv venv
-source venv/bin/activate
-make install
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Verify installation
 make test
 ```
 
-See **[Development Guide](docs/guides/developer-guide.md)** for complete setup instructions.
+**Requirements:**
+- Python 3.12 or higher
 
-## Quick Start
+---
 
-Get started in 5 minutes with these simple examples. For comprehensive examples and detailed usage, see **[Quick Start Guide](docs/quickstart.md)** and **[Usage Guide](docs/usage.md)**.
+## 🔌 Dify Integration
 
-### Using in Dify Workflows
+### Workflow Configuration
+
+Add the chunker to your Dify workflow:
 
 ```yaml
-# In Dify workflow configuration
-- tool: markdown_chunker
+- node: chunk_markdown
+  type: tool
+  tool: advanced_markdown_chunker
   config:
     max_chunk_size: 2048
     strategy: auto
+    chunk_overlap: 100
+    include_metadata: true
 ```
 
-### Using as Python Library
+### Plugin Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `input_text` | string | required | Markdown text to chunk |
+| `max_chunk_size` | number | 1000 | Maximum chunk size in characters |
+| `chunk_overlap` | number | 100 | Overlap between consecutive chunks |
+| `strategy` | select | auto | Chunking strategy (auto/code/structural/mixed) |
+| `include_metadata` | boolean | true | Include chunk metadata |
+
+### Example: Knowledge Base Ingestion
+
+```yaml
+workflow:
+  - node: load_document
+    type: document_loader
+  
+  - node: chunk_markdown
+    type: tool
+    tool: advanced_markdown_chunker
+    input: ${load_document.content}
+    config:
+      max_chunk_size: 2048
+      strategy: auto
+      chunk_overlap: 100
+  
+  - node: embed_chunks
+    type: embedding
+    input: ${chunk_markdown.chunks}
+  
+  - node: store_vectors
+    type: vector_store
+    input: ${embed_chunks.vectors}
+```
+
+### Example: API Documentation Processing
+
+```yaml
+- node: chunk_api_docs
+  type: tool
+  tool: advanced_markdown_chunker
+  config:
+    max_chunk_size: 1500
+    strategy: code
+    include_metadata: true
+```
+
+---
+
+## 🚀 Quick Start
+
+### Basic Usage
 
 ```python
 from markdown_chunker import MarkdownChunker
 
-# Basic usage
+# Simple chunking
 chunker = MarkdownChunker()
-result = chunker.chunk("# Hello\n\nWorld", include_analysis=True)
+chunks = chunker.chunk("# Hello\n\nWorld")
 
+# With analysis
+result = chunker.chunk("# Hello\n\nWorld", include_analysis=True)
 print(f"Strategy: {result.strategy_used}")
 print(f"Chunks: {len(result.chunks)}")
 ```
 
-For more examples including configuration profiles, overlap handling, and advanced features, see **[Quick Start Guide](docs/quickstart.md)**.
+### Strategy Selection
 
-## Project Structure
+```python
+from markdown_chunker import MarkdownChunker
+
+chunker = MarkdownChunker()
+
+# Automatic selection (recommended)
+chunks = chunker.chunk(text)
+
+# Force specific strategy
+chunks = chunker.chunk(text, strategy="code")
+chunks = chunker.chunk(text, strategy="structural")
+```
+
+### Configuration Profiles
+
+```python
+from markdown_chunker import MarkdownChunker, ChunkConfig
+
+# For code-heavy documents
+config = ChunkConfig.for_code_heavy()
+chunker = MarkdownChunker(config)
+
+# For Dify RAG systems
+config = ChunkConfig.for_dify_rag()
+chunker = MarkdownChunker(config)
+
+# For search indexing
+config = ChunkConfig.for_search_indexing()
+chunker = MarkdownChunker(config)
+```
+
+### Accessing Chunk Metadata
+
+```python
+from markdown_chunker import MarkdownChunker
+
+chunker = MarkdownChunker()
+result = chunker.chunk(markdown_text, include_analysis=True)
+
+for chunk in result.chunks:
+    print(f"Content: {chunk.content[:50]}...")
+    print(f"Lines: {chunk.start_line}-{chunk.end_line}")
+    print(f"Size: {chunk.size} chars")
+    print(f"Type: {chunk.content_type}")
+    print(f"Strategy: {chunk.strategy}")
+```
+
+### Convenience Functions
+
+```python
+from markdown_chunker import chunk_text, chunk_file
+
+# Chunk text directly
+chunks = chunk_text("# My Document\n\nContent here...")
+
+# Chunk from file
+chunks = chunk_file("README.md")
+```
+
+---
+
+## 🎨 Chunking Strategies
+
+The system automatically selects the optimal strategy based on content analysis:
+
+| Strategy | Priority | Activation Conditions | Best For |
+|----------|----------|----------------------|----------|
+| **Code** | 1 (highest) | code_ratio ≥ 30%, ≥1 code block | Technical docs, tutorials |
+| **Mixed** | 2 | code_ratio ≥ 30%, complexity ≥ 0.3 | Balanced content |
+| **List** | 3 | ≥5 lists OR list_ratio > 60% | Task lists, outlines |
+| **Table** | 4 | ≥3 tables OR table_ratio > 40% | Data reports |
+| **Structural** | 5 | ≥3 headers, depth > 1 | Documentation |
+| **Sentences** | 6 (fallback) | Always applicable | Simple text |
+
+---
+
+## ⚙️ Configuration
+
+### Basic Parameters
+
+```python
+from markdown_chunker import ChunkConfig
+
+config = ChunkConfig(
+    # Size limits
+    max_chunk_size=4096,      # Maximum chunk size (chars)
+    min_chunk_size=512,       # Minimum chunk size
+    target_chunk_size=2048,   # Target size
+    
+    # Overlap
+    enable_overlap=True,      # Enable overlap
+    overlap_size=200,         # Overlap size (chars)
+    
+    # Behavior
+    preserve_code_blocks=True,    # Keep code blocks intact
+    preserve_tables=True,         # Keep tables intact
+    preserve_list_hierarchy=True, # Keep list structure
+    allow_oversize=True,          # Allow oversized chunks
+    
+    # Fallback
+    enable_fallback=True,     # Enable fallback strategies
+    max_fallback_level=4,     # Maximum fallback depth
+)
+```
+
+### Configuration Profiles
+
+| Profile | Use Case | Max Size | Overlap |
+|---------|----------|----------|---------|
+| `default()` | General use | 4096 | 200 |
+| `for_code_heavy()` | Code documentation | 6144 | 300 |
+| `for_structured_docs()` | Structured docs | 3072 | 150 |
+| `for_dify_rag()` | Dify RAG systems | 3072 | 150 |
+| `for_api_docs()` | API documentation | 3072 | 150 |
+| `for_code_docs()` | Code docs | 2048 | 100 |
+| `for_chat_context()` | LLM context | 1536 | 200 |
+| `for_search_indexing()` | Search | 1024 | 100 |
+| `for_large_documents()` | Large files | 8192 | 400 |
+| `for_fast_processing()` | Batch processing | 8192 | 100 |
+| `compact()` | Fine-grained | 2048 | 100 |
+
+### Overlap Handling
+
+Two modes for overlap handling:
+
+- **Metadata mode** (`include_metadata=True`): Overlap stored in `previous_content`/`next_content` fields
+- **Content mode** (`include_metadata=False`): Overlap merged into chunk content
+
+---
+
+## 📚 API Reference
+
+### MarkdownChunker
+
+```python
+class MarkdownChunker:
+    def __init__(
+        self,
+        config: Optional[ChunkConfig] = None,
+        enable_performance_monitoring: bool = False
+    )
+    
+    def chunk(
+        self,
+        md_text: str,
+        strategy: Optional[str] = None,
+        include_analysis: bool = False,
+        return_format: Literal["objects", "dict"] = "objects",
+        include_metadata: bool = True
+    ) -> Union[List[Chunk], ChunkingResult, dict]
+    
+    def get_available_strategies(self) -> List[str]
+    def add_strategy(self, strategy: BaseStrategy) -> None
+    def remove_strategy(self, strategy_name: str) -> None
+```
+
+### Chunk
+
+```python
+@dataclass
+class Chunk:
+    content: str           # Chunk content
+    start_line: int        # Start line (1-based)
+    end_line: int          # End line
+    metadata: Dict[str, Any]
+    
+    # Properties
+    size: int              # Size in characters
+    line_count: int        # Number of lines
+    content_type: str      # Content type (code/text/list/table/mixed)
+    strategy: str          # Strategy used
+    language: Optional[str] # Programming language (for code)
+```
+
+### ChunkingResult
+
+```python
+@dataclass
+class ChunkingResult:
+    chunks: List[Chunk]
+    strategy_used: str
+    processing_time: float
+    fallback_used: bool
+    fallback_level: int
+    errors: List[str]
+    warnings: List[str]
+    
+    # Statistics
+    total_chars: int
+    total_lines: int
+    content_type: str
+    complexity_score: float
+```
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    MarkdownChunker                          │
+│                   (Main Orchestrator)                       │
+└─────────────────────────────────────────────────────────────┘
+                              │
+              ┌───────────────┼───────────────┐
+              ▼               ▼               ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│  ParserInterface │ │ StrategySelector │ │ FallbackManager │
+│   (Stage 1)      │ │                   │ │                 │
+│                  │ │ • CodeStrategy    │ │ • 4 levels      │
+│ • AST Building   │ │ • MixedStrategy   │ │ • Graceful      │
+│ • Fenced Blocks  │ │ • ListStrategy    │ │   degradation   │
+│ • Element Detect │ │ • TableStrategy   │ │                 │
+│ • Content Analyze│ │ • StructuralStr.  │ │                 │
+│                  │ │ • SentencesStr.   │ │                 │
+└─────────────────┘ └─────────────────┘ └─────────────────┘
+              │               │               │
+              └───────────────┼───────────────┘
+                              ▼
+              ┌───────────────────────────────┐
+              │      Post-Processing          │
+              │                               │
+              │ • OverlapManager              │
+              │ • MetadataEnricher            │
+              │ • DataCompletenessValidator   │
+              │ • PreambleExtractor           │
+              └───────────────────────────────┘
+```
+
+### Modules
+
+| Module | Description |
+|--------|-------------|
+| `markdown_chunker/parser/` | AST parsing, content analysis, element detection |
+| `markdown_chunker/chunker/` | Chunking strategies, orchestration, validation |
+| `markdown_chunker/chunker/strategies/` | 6 chunking strategy implementations |
+| `markdown_chunker/api/` | REST API adapters, request validation |
+| `provider/` | Dify plugin provider |
+| `tools/` | Dify plugin tools |
+
+### Project Structure
 
 ```
 dify-markdown-chunker/
 ├── markdown_chunker/          # Core library
-│   ├── parser/                # Content analysis and parsing
-│   ├── chunker/               # Chunking strategies and logic
-│   ├── api/                   # API adapters
-│   └── utils/                 # Utilities
+│   ├── parser/                # Parsing and analysis
+│   ├── chunker/               # Chunking logic
+│   │   └── strategies/        # 6 chunking strategies
+│   └── api/                   # API adapters
 ├── provider/                  # Dify plugin provider
 ├── tools/                     # Dify plugin tools
-├── tests/                     # Comprehensive test suite (1366+ tests)
-│   ├── parser/                # Parser tests
-│   ├── chunker/               # Chunker tests
-│   ├── integration/           # Integration tests
-│   ├── api/                   # API tests
-│   └── fixtures/              # Test fixtures
+├── tests/                     # Test suite (1366+ tests)
 ├── docs/                      # Documentation
-├── benchmarks/                # Performance benchmarks
 ├── examples/                  # Usage examples
+├── benchmarks/                # Performance benchmarks
 ├── manifest.yaml              # Dify plugin manifest
-├── requirements.txt           # Dependencies
-└── Makefile                   # Development commands
+└── requirements.txt           # Dependencies
 ```
 
-## Development
+---
 
-### Running Tests
+## ⚡ Performance
+
+### Benchmarks
+
+| Document Size | Processing Time | Throughput | Chunks |
+|--------------|-----------------|------------|--------|
+| 1 KB | ~800 ms | 1.3 KB/s | 6 |
+| 10 KB | ~150 ms | 66 KB/s | 44 |
+| 50 KB | ~1.9 s | 27 KB/s | 215 |
+| 100 KB | ~7 s | 14 KB/s | 429 |
+
+### Performance Monitoring
+
+```python
+chunker = MarkdownChunker(enable_performance_monitoring=True)
+
+for doc in documents:
+    chunker.chunk(doc)
+
+stats = chunker.get_performance_stats()
+print(f"Average time: {stats['chunk']['avg_time']:.3f}s")
+```
+
+---
+
+## 🧪 Development
+
+### Testing
 
 ```bash
-# All tests (1366+ tests)
+# Run all tests (1366+)
 make test
 
-# With verbose output
+# Verbose output
 make test-verbose
 
 # With coverage report
 make test-coverage
 
-# Quick tests only
+# Quick tests
 make test-quick
 ```
 
@@ -145,11 +506,11 @@ make format
 # Run linter
 make lint
 
-# Type checking and quality checks
+# Type checking
 make quality-check
 ```
 
-### Building Plugin Package
+### Building Plugin
 
 ```bash
 # Validate structure
@@ -158,94 +519,68 @@ make validate
 # Build package
 make package
 
-# Validate package
-make validate-package
-
-# Full release build
+# Full release
 make release
 ```
 
-## Performance
+---
 
-Optimized for production use:
+## 📦 Dependencies
 
-| Document Size | Processing Time | Throughput | Chunks |
-|--------------|----------------|------------|--------|
-| 1 KB         | ~800 ms        | 1.3 KB/s   | 6      |
-| 10 KB        | ~150 ms        | 66 KB/s    | 44     |
-| 50 KB        | ~1.9 s         | 27 KB/s    | 215    |
-| 100 KB       | ~7 s           | 14 KB/s    | 429    |
+### Core
+- `markdown-it-py>=3.0.0` — Markdown parsing
+- `mistune>=3.0.0` — Alternative parser
+- `pydantic>=2.0.0` — Data validation
+- `dify_plugin==0.5.0b15` — Dify integration
 
-## Documentation
+### Development
+- `pytest>=8.0.0` — Testing
+- `hypothesis>=6.0.0` — Property-based testing
+- `black>=23.0.0` — Code formatting
+- `mypy>=1.5.0` — Type checking
 
-Comprehensive documentation is available in the **[docs/](docs/)** directory:
+---
 
-- **[Quick Start](docs/quickstart.md)** - Get started in 5 minutes
-- **[Usage Guide](docs/usage.md)** - Detailed usage examples
-- **[API Reference](docs/api/)** - Complete API documentation
-- **[Architecture](docs/architecture/)** - System design and components
-- **[Developer Guide](docs/guides/developer-guide.md)** - Development workflows
-- **[Configuration Reference](docs/reference/configuration.md)** - All configuration options
+## 🤝 Contributing
 
-See **[Documentation Index](docs/README.md)** for the complete documentation structure.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## Dependencies
+```bash
+# 1. Fork the repository
+# 2. Create feature branch
+git checkout -b feature/amazing-feature
 
-### Core Dependencies
-- `markdown-it-py>=3.0.0` - Markdown parsing
-- `mistune>=3.0.0` - Alternative parser
-- `markdown>=3.4.0` - Markdown processing
-- `pydantic>=2.0.0` - Data validation
-- `dify_plugin==0.5.0b15` - Dify integration
+# 3. Make changes with tests
+# 4. Check quality
+make test && make quality-check
 
-### Development Dependencies
-- `pytest>=8.0.0` - Testing framework
-- `hypothesis>=6.0.0` - Property-based testing
-- `black>=23.0.0` - Code formatter
-- `isort>=5.12.0` - Import sorter
-- `flake8>=6.0.0` - Linter
+# 5. Submit Pull Request
+```
 
-## Contributing
+---
 
-We welcome contributions! For detailed guidelines, see **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+## 📄 License
 
-**Quick Start:**
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes with tests
-4. Run `make test` and `make quality-check`
-5. Submit a Pull Request
+MIT License — see [LICENSE](LICENSE)
 
-**Development Resources:**
-- **[Development Guide](docs/guides/developer-guide.md)** - Complete development workflows
-- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Quick reference for developers
-- **[Testing Guide](docs/guides/testing-guide.md)** - Testing strategies and frameworks
+---
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Changelog
+## 📝 Changelog
 
 **Current Version:** 2.0.0-a3 (December 2024)
 
-### Recent Updates
+### Recent Changes
 - Redesigned overlap handling with metadata-based neighbor context
 - Regression and duplication validation
-- Comprehensive API reference documentation
-- Enhanced documentation structure
-- Type annotations improvements
+- Block-based chunking implementation
+- Improved API documentation
 
-For complete version history and detailed changes, see **[CHANGELOG.md](CHANGELOG.md)**.
+Full changelog: [CHANGELOG.md](CHANGELOG.md)
 
-## Support
+---
 
-For issues, questions, or contributions:
-- Open an issue on GitHub
-- Review documentation in `docs/`
-- Check examples in `examples/`
-- Run tests to verify functionality
+<div align="center">
 
-## Acknowledgments
+**[⬆ Back to Top](#-advanced-markdown-chunker-for-dify)**
 
-This plugin was developed as part of a larger RAG system project and has been extracted into a standalone Dify plugin for broader use.
+</div>
