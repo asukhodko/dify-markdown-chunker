@@ -39,8 +39,9 @@ htmlcov/
 .hypothesis/
 
 .kiro
-.qoder/
+.qoder/*
 !.qoder/repowiki/
+!.qoder/repowiki/**
 
 manual_testing/
 
