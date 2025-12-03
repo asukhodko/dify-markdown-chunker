@@ -97,6 +97,36 @@ class ChunkSizeNormalizer:
         merged_metadata["merged_chunks"] = True
         merged_metadata["original_chunk_count"] = 2
 
+        # CRITICAL FIX: Preserve content_type and specific metadata from both chunks
+        # If either chunk has table content_type, preserve it
+        type1 = chunk1.metadata.get("content_type")
+        type2 = chunk2.metadata.get("content_type")
+        
+        # Prioritize specific content types over generic "text"
+        if type1 == "table" or type2 == "table":
+            merged_metadata["content_type"] = "table"
+            # Preserve table-specific metadata from either chunk
+            for key in ["column_count", "row_count_in_chunk", "total_rows", "has_header", "is_split"]:
+                if key in chunk1.metadata:
+                    merged_metadata[key] = chunk1.metadata[key]
+                elif key in chunk2.metadata:
+                    merged_metadata[key] = chunk2.metadata[key]
+        elif type1 == "code" or type2 == "code":
+            merged_metadata["content_type"] = "code"
+            # Preserve code-specific metadata from either chunk
+            for key in ["language", "is_fenced", "function_names", "function_name", 
+                       "class_names", "class_name"]:
+                if key in chunk1.metadata:
+                    merged_metadata[key] = chunk1.metadata[key]
+                elif key in chunk2.metadata:
+                    merged_metadata[key] = chunk2.metadata[key]
+        elif type1 == "list" or type2 == "list":
+            merged_metadata["content_type"] = "list"
+        elif type1 and type2 and type1 != type2:
+            # Different types - mark as mixed
+            merged_metadata["content_type"] = "mixed"
+        # Otherwise, keep chunk1's content_type (already in merged_metadata)
+
         # FIX #3: Check if merged chunk exceeds max size and mark oversize flag
         # This addresses size compliance when normalizer merges chunks
         merged_size = len(merged_content)

@@ -524,9 +524,12 @@ class ChunkingOrchestrator:
                 # Track blocks by chunk for overlap calculation
                 blocks_by_chunk = []
                 for chunk in chunks:
-                    # Extract blocks from chunk content
+                    # CRITICAL FIX: Extract blocks from chunk content WITHOUT stage1_results
+                    # because stage1_results has line numbers for the FULL document,
+                    # not for individual chunk content. Using stage1_results causes
+                    # misalignment and can result in code blocks being split.
                     chunk_blocks = block_packer.extract_blocks(
-                        chunk.content, stage1_results
+                        chunk.content, stage1_results=None  # Force simple extraction
                     )
                     blocks_by_chunk.append(chunk_blocks)
 

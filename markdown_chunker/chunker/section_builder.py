@@ -373,8 +373,16 @@ class SectionBuilder:
         """
         if node.type == NodeType.CODE_BLOCK:
             # Preserve code fence markers and language tag
-            language = node.metadata.get("language", "")
+            # Check multiple possible keys where language might be stored
+            language = (
+                node.metadata.get("info")  # markdown-it-py, commonmark
+                or node.metadata.get("language")  # mistune with lang key
+                or node.metadata.get("lang")  # direct lang key
+                or ""
+            )
             code_content = node.get_text_content()
+            # Remove trailing newlines from code_content to avoid double newlines
+            code_content = code_content.rstrip("\n")
             return f"```{language}\n{code_content}\n```"
 
         elif node.type == NodeType.LIST:

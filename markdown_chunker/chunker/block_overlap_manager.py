@@ -201,6 +201,11 @@ class BlockOverlapManager:
 
         # Build overlap content
         overlap_content = "\n\n".join(block.content for block in overlap_blocks)
+        logger.debug(
+            f"Block overlap: {len(overlap_blocks)} blocks, "
+            f"content_len={len(overlap_content)}, "
+            f"fences={overlap_content.count('```')}"
+        )
 
         # CRITICAL FIX: Enforce 50% overlap limit
         # Calculate what final chunk size would be
@@ -221,13 +226,25 @@ class BlockOverlapManager:
                     # Use word boundary truncation
                     from .text_normalizer import truncate_at_word_boundary
 
+                    logger.debug(
+                        f"Truncating overlap from {overlap_size} to {max_overlap} chars"
+                    )
                     overlap_content = truncate_at_word_boundary(
                         overlap_content, max_overlap, from_end=True
                     )
                     overlap_size = len(overlap_content)
+                    logger.debug(
+                        f"After truncation: len={overlap_size}, fences={overlap_content.count('```')}"
+                    )
 
         # Create new chunk with overlap prepended
         new_content = overlap_content + "\n\n" + chunk.content
+        logger.debug(
+            f"Final chunk: overlap_len={len(overlap_content)}, "
+            f"core_len={len(chunk.content)}, "
+            f"total_len={len(new_content)}, "
+            f"fences={new_content.count('```')}"
+        )
 
         # Copy metadata and add overlap info
         new_metadata = chunk.metadata.copy()
