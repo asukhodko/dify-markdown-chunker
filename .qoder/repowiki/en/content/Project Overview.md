@@ -18,7 +18,23 @@
 - [provider/markdown_chunker.yaml](file://provider/markdown_chunker.yaml)
 - [tests/fixtures/real_documents/api_documentation.md](file://tests/fixtures/real_documents/api_documentation.md)
 - [tests/fixtures/real_documents/technical_spec.md](file://tests/fixtures/real_documents/technical_spec.md)
+- [docs/architecture-audit/01-module-inventory.md](file://docs/architecture-audit/01-module-inventory.md)
+- [docs/architecture-audit/02-data-flow.md](file://docs/architecture-audit/02-data-flow.md)
+- [docs/architecture-audit/03-strategies.md](file://docs/architecture-audit/03-strategies.md)
+- [docs/architecture-audit/04-configuration.md](file://docs/architecture-audit/04-configuration.md)
+- [docs/architecture-audit/05-test-analysis.md](file://docs/architecture-audit/05-test-analysis.md)
+- [docs/architecture-audit/06-architecture-smells.md](file://docs/architecture-audit/06-architecture-smells.md)
+- [docs/architecture-audit/07-domain-properties.md](file://docs/architecture-audit/07-domain-properties.md)
+- [docs/architecture-audit/08-simplification-recommendations.md](file://docs/architecture-audit/08-simplification-recommendations.md)
+- [scripts/validate_docs.py](file://scripts/validate_docs.py)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added new section on Architecture Audit Documentation to reflect the new architecture-audit directory
+- Added new section on Documentation Validation Script to reflect the new validate_docs.py script
+- Updated Table of Contents to include new sections
+- Added references to new architecture audit and documentation validation files in the referenced files list
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -31,6 +47,8 @@
 8. [Integration with RAG Systems](#integration-with-rag-systems)
 9. [Performance Characteristics](#performance-characteristics)
 10. [Installation and Quick Start](#installation-and-quick-start)
+11. [Architecture Audit Documentation](#architecture-audit-documentation)
+12. [Documentation Validation Script](#documentation-validation-script)
 
 ## Introduction
 
@@ -564,3 +582,53 @@ chunks = chunk_file("README.md")
 - [README.md](file://README.md#L43-L120)
 - [examples/basic_usage.py](file://examples/basic_usage.py#L1-L50)
 - [markdown_chunker/__init__.py](file://markdown_chunker/__init__.py#L50-L140)
+
+## Architecture Audit Documentation
+
+The project now includes comprehensive architecture audit documentation in the `docs/architecture-audit/` directory. This documentation provides a detailed analysis of the system's architecture, identifying potential issues and recommending improvements.
+
+The audit documentation consists of eight comprehensive reports:
+
+- **01-module-inventory.md**: Complete inventory of all modules with file statistics and dependency analysis
+- **02-data-flow.md**: Detailed analysis of data flow through the system from input to output
+- **03-strategies.md**: Catalog of all chunking strategies with selection criteria and algorithm analysis
+- **04-configuration.md**: Analysis of the configuration system with parameter usage and recommendations
+- **05-test-analysis.md**: Comprehensive test coverage analysis with categorization of test types
+- **06-architecture-smells.md**: Identification of architectural issues with severity ratings and recommendations
+- **07-domain-properties.md**: Formalized domain properties that the system must satisfy
+- **08-simplification-recommendations.md**: Concrete recommendations for simplifying the architecture
+
+These documents provide transparency into the system's design decisions and serve as a foundation for future improvements. The audit identifies key issues such as excessive file count (55 files), oversized files (structural_strategy.py with 1720 lines), and configuration complexity (32 parameters). It also provides a roadmap for simplification, recommending consolidation of files, removal of deprecated code, and reduction of configuration parameters.
+
+**Section sources**
+- [docs/architecture-audit/01-module-inventory.md](file://docs/architecture-audit/01-module-inventory.md)
+- [docs/architecture-audit/02-data-flow.md](file://docs/architecture-audit/02-data-flow.md)
+- [docs/architecture-audit/03-strategies.md](file://docs/architecture-audit/03-strategies.md)
+- [docs/architecture-audit/04-configuration.md](file://docs/architecture-audit/04-configuration.md)
+- [docs/architecture-audit/05-test-analysis.md](file://docs/architecture-audit/05-test-analysis.md)
+- [docs/architecture-audit/06-architecture-smells.md](file://docs/architecture-audit/06-architecture-smells.md)
+- [docs/architecture-audit/07-domain-properties.md](file://docs/architecture-audit/07-domain-properties.md)
+- [docs/architecture-audit/08-simplification-recommendations.md](file://docs/architecture-audit/08-simplification-recommendations.md)
+
+## Documentation Validation Script
+
+The project includes a documentation validation script at `scripts/validate_docs.py` that ensures the quality and consistency of project documentation. This script performs several important validation checks:
+
+- **Internal Link Validation**: Checks that all internal markdown links point to existing files
+- **Version Consistency**: Verifies that version numbers are consistent across documentation files
+- **Code Block Syntax**: Ensures that code blocks have proper language tags
+- **File Existence**: Validates that referenced files actually exist in the repository
+
+The validation script is designed to be run as part of the development workflow or CI/CD pipeline to catch documentation issues early. It scans all markdown files in the project and reports any errors or warnings found.
+
+To run the validation script:
+```bash
+python scripts/validate_docs.py
+```
+
+The script will output a comprehensive report showing the number of files checked, any warnings (such as code blocks without language tags), and any errors (such as broken links). A successful validation will show "Documentation is valid!" at the end.
+
+This tool enhances documentation quality by preventing common issues like broken links and inconsistent version information, ensuring that users always have access to accurate and reliable documentation.
+
+**Section sources**
+- [scripts/validate_docs.py](file://scripts/validate_docs.py)

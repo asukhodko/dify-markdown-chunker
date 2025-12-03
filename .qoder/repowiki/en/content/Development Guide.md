@@ -13,11 +13,28 @@
 - [provider/markdown_chunker.py](file://provider/markdown_chunker.py)
 - [scripts/add_typing_imports.py](file://scripts/add_typing_imports.py)
 - [scripts/analyze_unused_components.py](file://scripts/analyze_unused_components.py)
+- [scripts/validate_docs.py](file://scripts/validate_docs.py)
 - [markdown_chunker/chunker/strategies/base.py](file://markdown_chunker/chunker/strategies/base.py)
 - [markdown_chunker/__init__.py](file://markdown_chunker/__init__.py)
 - [tests/conftest.py](file://tests/conftest.py)
 - [tests/chunker/test_chunker.py](file://tests/chunker/test_chunker.py)
+- [docs/architecture-audit/01-module-inventory.md](file://docs/architecture-audit/01-module-inventory.md)
+- [docs/architecture-audit/02-data-flow.md](file://docs/architecture-audit/02-data-flow.md)
+- [docs/architecture-audit/03-strategies.md](file://docs/architecture-audit/03-strategies.md)
+- [docs/architecture-audit/04-configuration.md](file://docs/architecture-audit/04-configuration.md)
+- [docs/architecture-audit/05-test-analysis.md](file://docs/architecture-audit/05-test-analysis.md)
+- [docs/architecture-audit/06-architecture-smells.md](file://docs/architecture-audit/06-architecture-smells.md)
+- [docs/architecture-audit/07-domain-properties.md](file://docs/architecture-audit/07-domain-properties.md)
+- [docs/architecture-audit/08-simplification-recommendations.md](file://docs/architecture-audit/08-simplification-recommendations.md)
+- [docs/guides/developer-guide.md](file://docs/guides/developer-guide.md)
 </cite>
+
+## Update Summary
+**Changes Made**   
+- Added new section on Architecture Audit Findings to reflect recent audit documentation
+- Added new section on Documentation Validation Script to cover the new validation tool
+- Updated Additional Resources section to include new architecture audit and developer guide documentation
+- Enhanced source tracking with new architecture audit and script files
 
 ## Table of Contents
 1. [Setting Up the Development Environment](#setting-up-the-development-environment)
@@ -27,7 +44,9 @@
 5. [Adding or Modifying Chunking Strategies](#adding-or-modifying-chunking-strategies)
 6. [Contribution Workflow](#contribution-workflow)
 7. [Utility Scripts for Code Maintenance](#utility-scripts-for-code-maintenance)
-8. [Additional Resources](#additional-resources)
+8. [Architecture Audit Findings](#architecture-audit-findings)
+9. [Documentation Validation Script](#documentation-validation-script)
+10. [Additional Resources](#additional-resources)
 
 ## Setting Up the Development Environment
 
@@ -488,6 +507,128 @@ Report2 --> Summary["Provide cleanup summary"]
 - [scripts/add_typing_imports.py](file://scripts/add_typing_imports.py#L1-L94)
 - [scripts/analyze_unused_components.py](file://scripts/analyze_unused_components.py#L1-L323)
 
+## Architecture Audit Findings
+
+The architecture audit has identified several key issues and recommendations for improving the codebase structure and maintainability.
+
+### Key Findings
+
+1. **Excessive File Count**: The project contains 55 Python files for a relatively simple task, leading to unnecessary complexity.
+2. **Overly Large Files**: Several files exceed 700 lines, particularly `structural_strategy.py` (1720 lines) and `types.py` files (1079 and 931 lines).
+3. **Configuration Complexity**: The `ChunkConfig` class has 32 parameters, making it difficult to understand and configure.
+4. **Duplicate Functionality**: Multiple mechanisms exist for overlap handling and post-processing, creating maintenance challenges.
+5. **Technical Debt**: The codebase shows signs of iterative fixes (Phase 1, Phase 2, MC-* fixes) rather than systematic design.
+
+### Critical Architecture Smells
+
+- **SMELL-1**: Too many files (55) for the functionality provided
+- **SMELL-2**: Overly large files (6 files > 700 lines)
+- **SMELL-3**: 32 configuration parameters in ChunkConfig
+- **SMELL-5**: Dual overlap mechanisms (legacy and block-based)
+- **SMELL-6**: Duplicate post-processing pipelines
+- **SMELL-12**: Layered fixes (Phase 1, Phase 2, MC-* fixes) indicating design debt
+
+### Recommended Simplifications
+
+1. Reduce file count from 55 to approximately 12 by consolidating related functionality
+2. Decrease configuration parameters from 32 to 8 by removing unused and redundant options
+3. Consolidate the 6 chunking strategies into 4 by merging similar functionality
+4. Eliminate duplicate validation and post-processing logic
+5. Remove deprecated code and backward compatibility layers
+
+```mermaid
+flowchart TD
+INPUT[/"md_text: str"/]
+subgraph Core["markdown_chunker"]
+CHUNKER[MarkdownChunker]
+PARSER[Parser]
+SELECTOR[Strategy Selector]
+end
+subgraph Strategies["strategies/"]
+CODE[CodeAwareStrategy]
+STRUCT[StructuralStrategy]
+TABLE[TableStrategy]
+FALLBACK[FallbackStrategy]
+end
+INPUT --> CHUNKER
+CHUNKER --> PARSER
+PARSER --> |ContentAnalysis| SELECTOR
+SELECTOR --> CODE
+SELECTOR --> STRUCT
+SELECTOR --> TABLE
+SELECTOR --> FALLBACK
+CODE --> OUTPUT
+STRUCT --> OUTPUT
+TABLE --> OUTPUT
+FALLBACK --> OUTPUT
+OUTPUT[/"List[Chunk]"/]
+```
+
+**Diagram sources**
+- [docs/architecture-audit/06-architecture-smells.md](file://docs/architecture-audit/06-architecture-smells.md#L244-L258)
+- [docs/architecture-audit/08-simplification-recommendations.md](file://docs/architecture-audit/08-simplification-recommendations.md#L206-L237)
+
+**Section sources**
+- [docs/architecture-audit/01-module-inventory.md](file://docs/architecture-audit/01-module-inventory.md#L1-L290)
+- [docs/architecture-audit/06-architecture-smells.md](file://docs/architecture-audit/06-architecture-smells.md#L1-L271)
+- [docs/architecture-audit/08-simplification-recommendations.md](file://docs/architecture-audit/08-simplification-recommendations.md#L1-L292)
+
+## Documentation Validation Script
+
+A new documentation validation script has been added to ensure the quality and consistency of project documentation.
+
+### Purpose and Functionality
+
+The `scripts/validate_docs.py` script performs the following validation checks:
+
+1. **Internal Link Validation**: Checks that all internal markdown links point to existing files
+2. **Version Consistency**: Ensures version numbers are consistent across key files
+3. **Code Block Syntax**: Validates that code blocks have appropriate language tags
+4. **Documentation Accuracy**: Verifies that documentation references valid files and paths
+
+### Usage
+
+The script can be run manually or integrated into CI/CD pipelines:
+
+```bash
+python scripts/validate_docs.py
+```
+
+### Validation Process
+
+The script performs the following steps:
+
+1. Discovers all markdown files in the project
+2. Validates internal links to ensure they point to existing files
+3. Checks code blocks for proper syntax and language tags
+4. Verifies version consistency across key files (README.md, CHANGELOG.md, manifest.yaml, DEVELOPMENT.md)
+5. Reports any errors or warnings found
+
+### Integration with Development Workflow
+
+The validation script should be run:
+- Before committing documentation changes
+- As part of the CI/CD pipeline
+- Before creating a new release
+- When updating version numbers
+
+```mermaid
+flowchart TD
+Start["Documentation Validation"] --> Discovery["Find all markdown files"]
+Discovery --> Links["Validate internal links"]
+Links --> CodeBlocks["Check code block syntax"]
+CodeBlocks --> Versions["Verify version consistency"]
+Versions --> Report["Generate validation report"]
+Report --> Results["Display errors and warnings"]
+```
+
+**Diagram sources**
+- [scripts/validate_docs.py](file://scripts/validate_docs.py#L21-L202)
+
+**Section sources**
+- [scripts/validate_docs.py](file://scripts/validate_docs.py#L1-L202)
+- [DEVELOPMENT.md](file://DEVELOPMENT.md#L1-L408)
+
 ## Additional Resources
 
 For additional information and policy details, refer to the following documentation files:
@@ -496,6 +637,8 @@ For additional information and policy details, refer to the following documentat
 - **CONTRIBUTING.md**: Contribution guidelines including workflow, code style, documentation standards, and community expectations
 - **CHANGELOG.md**: Record of changes for each version
 - **README.md**: Project overview and usage examples
+- **docs/guides/developer-guide.md**: Comprehensive developer guide with architecture, coding standards, and workflows
+- **docs/architecture-audit/**: Detailed audit findings and recommendations for architecture improvements
 
 The project also includes example files in the `examples/` directory demonstrating various use cases:
 - `basic_usage.py`: Basic usage of the markdown chunker
@@ -503,7 +646,11 @@ The project also includes example files in the `examples/` directory demonstrati
 - `dify_integration.py`: Dify platform integration
 - `rag_integration.py`: RAG system integration
 
+The architecture audit documentation in `docs/architecture-audit/` provides detailed analysis of the current codebase structure and recommendations for simplification and improvement.
+
 **Section sources**
 - [DEVELOPMENT.md](file://DEVELOPMENT.md#L1-L408)
 - [CONTRIBUTING.md](file://CONTRIBUTING.md#L1-L171)
 - [examples/](file://examples/)
+- [docs/guides/developer-guide.md](file://docs/guides/developer-guide.md)
+- [docs/architecture-audit/](file://docs/architecture-audit/)
