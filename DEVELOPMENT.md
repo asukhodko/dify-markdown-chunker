@@ -1,42 +1,42 @@
 # Development Guide
 
-Руководство по разработке и сопровождению плагина Advanced Markdown Chunker для Dify.
+Development and maintenance guide for the Advanced Markdown Chunker plugin for Dify.
 
 ---
 
-## Требования
+## Requirements
 
 - Python 3.12+
-- dify-plugin CLI (для упаковки)
+- dify-plugin CLI (for packaging)
 - Git
 
 ---
 
-## Установка для разработки
+## Development Setup
 
-### 1. Клонирование репозитория
+### 1. Clone the Repository
 
 ```bash
 git clone <repository_url>
 cd dify-markdown-chunker
 ```
 
-### 2. Создание виртуального окружения
+### 2. Create Virtual Environment
 
 ```bash
 python3.12 -m venv venv
 source venv/bin/activate  # Linux/Mac
-# или
+# or
 venv\Scripts\activate  # Windows
 ```
 
-### 3. Установка зависимостей
+### 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Установка dify-plugin CLI
+### 4. Install dify-plugin CLI
 
 ```bash
 # Linux/Mac
@@ -44,110 +44,110 @@ curl -L https://github.com/langgenius/dify-plugin-daemon/releases/latest/downloa
 chmod +x /tmp/dify-plugin
 sudo mv /tmp/dify-plugin /usr/local/bin/dify-plugin
 
-# Проверка
+# Verification
 dify-plugin version
 ```
 
 ---
 
-## Структура проекта
+## Project Structure
 
 ```
 dify-markdown-chunker/
-├── manifest.yaml              # Метаданные плагина
-├── main.py                    # Точка входа
-├── requirements.txt           # Зависимости
+├── manifest.yaml              # Plugin metadata
+├── main.py                    # Entry point
+├── requirements.txt           # Dependencies
 ├── _assets/
-│   └── icon.svg              # Иконка плагина
+│   └── icon.svg              # Plugin icon
 ├── provider/
-│   ├── markdown_chunker.yaml # Конфигурация провайдера
-│   └── markdown_chunker.py   # Класс провайдера
+│   ├── markdown_chunker.yaml # Provider configuration
+│   └── markdown_chunker.py   # Provider class
 ├── tools/
-│   ├── markdown_chunk_tool.yaml  # Конфигурация инструмента
-│   └── markdown_chunk_tool.py    # Логика чанкования
-├── markdown_chunker/         # Библиотека чанкования
+│   ├── markdown_chunk_tool.yaml  # Tool configuration
+│   └── markdown_chunk_tool.py    # Chunking logic
+├── markdown_chunker/         # Chunking library
 │   ├── api/
 │   ├── chunker/
 │   └── parser/
-└── tests/                    # Тесты
+└── tests/                    # Tests
 ```
 
 ---
 
-## Разработка
+## Development
 
-### Запуск тестов
+### Running Tests
 
 ```bash
-# Все тесты
+# All tests
 make test
 
-# Быстрые тесты
+# Quick tests
 make test-quick
 
-# Конкретный тест
+# Specific test
 venv/bin/pytest tests/test_manifest.py -v
 ```
 
-### Линтинг
+### Linting
 
 ```bash
 make lint
 ```
 
-### Валидация
+### Validation
 
 ```bash
-# Валидация структуры, синтаксиса, YAML
+# Validate structure, syntax, YAML
 make validate
 ```
 
 ---
 
-## Упаковка
+## Packaging
 
-### Создание пакета
+### Create Package
 
 ```bash
 make package
 ```
 
-Создаёт: `dify-markdown-chunker-official-YYYYMMDD_HHMMSS.difypkg`
+Creates: `dify-markdown-chunker-official-YYYYMMDD_HHMMSS.difypkg`
 
-### Валидация пакета
+### Validate Package
 
 ```bash
 make validate-package
 ```
 
-### Полный релиз
+### Full Release
 
 ```bash
 make release
 ```
 
-Выполняет: validate → test → lint → package → validate-package
+Executes: validate → test → lint → package → validate-package
 
 ---
 
-## Важные правила
+## Important Rules
 
-### 1. Пути к иконкам
+### 1. Icon Paths
 
-**В YAML файлах всегда указывать без пути:**
+**Always specify without path in YAML files:**
 ```yaml
-icon: icon.svg  # ✅ Правильно
-icon: _assets/icon.svg  # ❌ Неправильно
+icon: icon.svg  # ✅ Correct
+icon: _assets/icon.svg  # ❌ Incorrect
 ```
 
-**Физический файл:**
+**Physical file:**
 ```
-_assets/icon.svg  # ✅ Здесь должен быть файл
+_assets/icon.svg  # ✅ File must be here
 ```
 
-### 2. Теги
+### 2. Tags
 
-**Использовать только стандартные теги:**
+**Use only standard tags:**
 - `productivity`
 - `business`
 - `social`
@@ -155,48 +155,48 @@ _assets/icon.svg  # ✅ Здесь должен быть файл
 - `news`
 - `weather`
 
-**Кастомные теги не проходят валидацию CLI:**
+**Custom tags do not pass CLI validation:**
 ```yaml
 tags:
-  - productivity  # ✅ Правильно
-  - business      # ✅ Правильно
-  - rag           # ❌ Не пройдёт валидацию
+  - productivity  # ✅ Correct
+  - business      # ✅ Correct
+  - rag           # ❌ Will not pass validation
 ```
 
-### 3. Исключение файлов
+### 3. File Exclusion
 
-**CLI использует `.gitignore` для исключения файлов из пакета.**
+**CLI uses `.gitignore` to exclude files from the package.**
 
-Обязательно исключить:
+Must exclude:
 - `venv/`
 - `__pycache__/`
 - `tests/`
-- `*.md` (кроме README.md)
+- `*.md` (except README.md)
 - `*.difypkg`
 
-### 4. Размер пакета
+### 4. Package Size
 
-Максимальный размер: **50 MB** (несжатый)
+Maximum size: **50 MB** (uncompressed)
 
-CLI автоматически проверяет при упаковке.
+CLI automatically checks during packaging.
 
 ---
 
-## Отладка
+## Debugging
 
-### Debug режим
+### Debug Mode
 
-1. Создайте `.env` из `.env.example`:
+1. Create `.env` from `.env.example`:
 ```bash
 cp .env.example .env
 ```
 
-2. Получите debug key из Dify UI:
+2. Get debug key from Dify UI:
 ```
 Settings → Plugins → Debug Mode
 ```
 
-3. Обновите `.env`:
+3. Update `.env`:
 ```env
 INSTALL_METHOD=remote
 REMOTE_INSTALL_HOST=https://debug.dify.ai
@@ -204,32 +204,32 @@ REMOTE_INSTALL_PORT=5003
 REMOTE_INSTALL_KEY=your_debug_key_here
 ```
 
-4. Запустите плагин:
+4. Run the plugin:
 ```bash
 python main.py
 ```
 
-**⚠️ Важно:** Удалите `.env` перед упаковкой!
+**⚠️ Important:** Delete `.env` before packaging!
 
 ---
 
-## Тестирование в Dify
+## Testing in Dify
 
-### 1. Импорт плагина
+### 1. Import Plugin
 
 ```
 Dify UI → Settings → Plugins → Install Plugin
-→ Загрузите .difypkg файл
+→ Upload .difypkg file
 ```
 
-### 2. Использование в Knowledge Base
+### 2. Using in Knowledge Base
 
 ```
 Knowledge Base → Chunking Settings
 → Custom → Advanced Markdown Chunker
 ```
 
-### 3. Использование в Workflow
+### 3. Using in Workflow
 
 ```
 Workflow → Add Tool Node
@@ -238,90 +238,90 @@ Workflow → Add Tool Node
 
 ---
 
-## Обновление версии
+## Version Update
 
-### 1. Обновите версию в manifest.yaml
+### 1. Update version in manifest.yaml
 
 ```yaml
-version: 2.0.1  # Новая версия
+version: 2.0.0-a3  # New version
 meta:
-  version: 2.0.1  # Тоже обновить
+  version: 2.0.0-a3  # Also update
 ```
 
-### 2. Обновите CHANGELOG.md
+### 2. Update CHANGELOG.md
 
 ```markdown
 ## [2.0.1] - YYYY-MM-DD
 
 ### Fixed
-- Описание исправления
+- Description of fix
 
 ### Added
-- Описание нового функционала
+- Description of new functionality
 ```
 
-### 3. Создайте пакет
+### 3. Create Package
 
 ```bash
 make release
 ```
 
-### 4. Протестируйте
+### 4. Test
 
 ```bash
-# Импортируйте в Dify
-# Проверьте функциональность
+# Import into Dify
+# Verify functionality
 ```
 
 ---
 
 ## Troubleshooting
 
-### Ошибка: "tool icon not found"
+### Error: "tool icon not found"
 
-**Причина:** Неправильный путь к иконке в YAML
+**Cause:** Incorrect icon path in YAML
 
-**Решение:**
+**Solution:**
 ```bash
-# Проверьте все YAML файлы
+# Check all YAML files
 grep -r "icon:" *.yaml provider/*.yaml tools/*.yaml
 
-# Должно быть везде: icon: icon.svg
+# Should be everywhere: icon: icon.svg
 ```
 
-### Ошибка: "Plugin package size is too large"
+### Error: "Plugin package size is too large"
 
-**Причина:** venv/ включён в пакет
+**Cause:** venv/ included in package
 
-**Решение:**
+**Solution:**
 ```bash
-# Убедитесь, что venv/ в .gitignore
+# Ensure venv/ is in .gitignore
 echo "venv/" >> .gitignore
 ```
 
-### Ошибка: "failed to package plugin: ... tag"
+### Error: "failed to package plugin: ... tag"
 
-**Причина:** Кастомные теги не проходят валидацию
+**Cause:** Custom tags do not pass validation
 
-**Решение:**
+**Solution:**
 ```yaml
-# Используйте только стандартные теги
+# Use only standard tags
 tags:
   - productivity
   - business
 ```
 
-### Тесты не проходят
+### Tests Failing
 
-**Решение:**
+**Solution:**
 ```bash
-# Проверьте, что venv активирован
+# Verify venv is activated
 source venv/bin/activate
 
-# Переустановите зависимости
+# Reinstall dependencies
 pip install -r requirements.txt
 
-# Запустите тесты с подробным выводом
+# Run tests with verbose output
 venv/bin/pytest tests/ -v
 ```
 
@@ -365,43 +365,43 @@ jobs:
 
 ---
 
-## Полезные команды
+## Useful Commands
 
 ```bash
-# Показать все команды
+# Show all commands
 make help
 
-# Очистить временные файлы
+# Clean temporary files
 make clean
 
-# Установить зависимости
+# Install dependencies
 make install
 
-# Валидация структуры
+# Validate structure
 python validate_structure.py
 
-# Валидация синтаксиса
+# Validate syntax
 python validate_syntax.py
 
-# Валидация YAML
+# Validate YAML
 python validate_yaml.py
 
-# Валидация пакета
+# Validate package
 python validate_package.py <package>.difypkg
 ```
 
 ---
 
-## Ресурсы
+## Resources
 
-- **Официальные плагины Dify:** `reference/dify-official-plugins/`
-- **Документация Dify:** https://docs.dify.ai/plugins
-- **CLI репозиторий:** https://github.com/langgenius/dify-plugin-daemon
+- **Official Dify Plugins:** `reference/dify-official-plugins/`
+- **Dify Documentation:** https://docs.dify.ai/plugins
+- **CLI Repository:** https://github.com/langgenius/dify-plugin-daemon
 - **Dify GitHub:** https://github.com/langgenius/dify
 
 ---
 
-## Контакты
+## Contact
 
 - **Issues:** [GitHub Issues]
 - **Discord:** [Dify Community](https://discord.gg/FngNHpbcY7)

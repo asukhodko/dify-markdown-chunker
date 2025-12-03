@@ -2,7 +2,40 @@
 
 All notable changes to the Advanced Markdown Chunker plugin will be documented in this file.
 
-## [2.0.3] - 2025-11-23
+## [2.0.0-a3] - 2024-12-03
+
+### Added
+- Regression and duplication validation to improve chunking reliability
+- Comprehensive API reference documentation
+- Block-based chunking implementation for markdown content
+- Documentation for block overlap management system
+- Type annotations for variable declarations
+
+### Changed
+- Redesigned chunk overlap with explicit neighbor context model
+- Overlap model now uses `previous_content` and `next_content` for metadata-based handling
+- Improved overlap content extraction to include paragraphs, not just headers
+- Documentation structure reorganized and updated
+- API reference documentation reformatted and updated
+
+### Fixed
+- Improved strategy selection and content validation
+- Enhanced packaging script and updated plugin version
+- Overlap handling now properly manages neighbor context
+
+### Refactor
+- Renamed error collector classes for clarity in parser module
+- Removed block-based chunking implementation reference
+- Redesigned overlap handling with metadata-based mode
+
+### Documentation
+- Added detailed documentation for block overlap management system
+- Updated overlap manager documentation for metadata-based mode
+- Comprehensive documentation and configuration files updated
+- API reference documentation completely revised
+- Development guide translated to English
+
+## [2.0.0-a0-3] - 2025-11-23
 
 ### Changed
 - **Optimization:** Filtered metadata to include only RAG-useful fields
@@ -21,7 +54,7 @@ All notable changes to the Advanced Markdown Chunker plugin will be documented i
   - Tests for preamble handling
   - Realistic example test with actual metadata structure
 
-## [2.0.2] - 2025-11-23
+## [2.0.0-a0-2] - 2025-11-23
 
 ### Fixed
 - **Critical:** Fixed UI crash in Dify knowledge pipeline
@@ -30,7 +63,7 @@ All notable changes to the Advanced Markdown Chunker plugin will be documented i
   - Compatible with Dify UI expectations for knowledge pipeline
   - Prevents React error #31 (objects not valid as React child)
 
-## [2.0.1] - 2025-11-23
+## [2.0.0-a0-1] - 2025-11-23
 
 ### Fixed
 - **Critical:** Fixed runtime error in tool implementation
@@ -39,7 +72,7 @@ All notable changes to the Advanced Markdown Chunker plugin will be documented i
   - Fixed strategy and metadata handling to use chunk() method parameters instead
   - Tool now correctly processes documents without errors
 
-## [2.0.0] - 2025-11-23
+## [2.0.0-a0-0] - 2025-11-23
 
 ### Fixed
 - **Critical:** Fixed icon path in manifest.yaml causing import errors

@@ -325,7 +325,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Changelog
 
-### Version 2.0.0 (Current)
+### Version 2.0.0-a3 (Current)
+- Redesigned overlap handling with metadata-based neighbor context
+- Regression and duplication validation
+- Comprehensive API reference documentation
+- Enhanced documentation structure
+- Type annotations improvements
+
+For complete changelog, see [CHANGELOG.md](CHANGELOG.md).
+
+### Version 2.0.0
 - Comprehensive test suite (1366+ tests)
 - Property-based testing with Hypothesis
 - Enhanced documentation
