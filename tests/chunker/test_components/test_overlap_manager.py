@@ -117,7 +117,7 @@ class TestOverlapManager:
         # Should extract from end (block-aligned)
         # May be empty if no blocks fit within size limit
         if context:
-            assert len(context) <= 30  # Should be close to target with tolerance
+            assert len(context) <= 50  # 2.5x tolerance for content-based extraction
             assert context in chunk.content
 
     def test_extract_prefix_context_simple(self):
@@ -131,7 +131,7 @@ class TestOverlapManager:
         # Should extract from beginning (block-aligned)
         # May be empty if no blocks fit within size limit
         if context:
-            assert len(context) <= 30  # Should be close to target with tolerance
+            assert len(context) <= 50  # 2.5x tolerance for content-based extraction
             assert chunk.content.startswith(
                 context.split()[0]
             )  # Should start with same word

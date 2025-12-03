@@ -258,9 +258,77 @@ class OverlapManager:
             else:
                 break
 
-        if not selected_blocks:
-            logger.debug("No blocks fit within prefix context target size")
-            return ""
+        # CRITICAL FIX: Reject header-only overlap (need actual content)
+        # Check if we have any blocks and if they contain actual content
+        has_content_blocks = any(
+            b.block_type in ("paragraph", "list", "table", "code")
+            for b in selected_blocks
+        ) if selected_blocks else False
+        
+        if not selected_blocks or not has_content_blocks:
+            # We only got headers - try to get content blocks instead
+            logger.debug(
+                "Prefix overlap contains only headers, searching for content blocks"
+            )
+            
+            # Strategy: Find the FIRST content block (paragraph/list/table/code)
+            # and extract from there, skipping leading headers if needed
+            content_based_blocks = []
+            total_size = 0
+            
+            # Find first content block
+            first_content_idx = None
+            for i, block in enumerate(blocks):
+                if block.block_type in ("paragraph", "list", "table", "code"):
+                    first_content_idx = i
+                    break
+            
+            if first_content_idx is not None:
+                # Extract from this content block onwards
+                # NOTE: Use target_size (not actual_target) for content-based extraction
+                # to allow more flexibility in getting actual content vs headers
+                candidate_blocks = blocks[first_content_idx:]
+                
+                for block in candidate_blocks:
+                    block_size = block.size
+                    
+                    if total_size == 0:
+                        # Be more lenient for first content block (use original target, not 40%-limited)
+                        # This allows extracting content even if it significantly exceeds the target
+                        # Priority: actual content (even if large) > headers (even if perfect size)
+                        if block_size <= target_size * 2.5:  # Very high tolerance for content
+                            content_based_blocks.append(block)
+                            total_size += block_size
+                        else:
+                            # First block too large even with high tolerance
+                            logger.debug(
+                                f"First content block too large: {block_size} > {target_size * 2.5}"
+                            )
+                            break
+                    elif total_size + block_size + 2 <= target_size:
+                        content_based_blocks.append(block)
+                        total_size += block_size + 2
+                    else:
+                        break
+            
+            # If we successfully extracted content blocks, use them
+            # Otherwise, fall back to the header-based selection (if any)
+            if content_based_blocks:
+                logger.debug(
+                    f"Using content-based prefix: {len(content_based_blocks)} blocks, "
+                    f"{total_size} chars"
+                )
+                selected_blocks = content_based_blocks
+            elif selected_blocks:
+                # Keep header-based overlap (better than nothing)
+                logger.debug(
+                    "Cannot fit content blocks in prefix, keeping header-based overlap "
+                    f"({len(selected_blocks)} blocks)"
+                )
+            else:
+                # No blocks at all - nothing to extract
+                logger.debug("No blocks fit within prefix context target size")
+                return ""
 
         # Join selected blocks
         overlap_text = "\n\n".join(b.content for b in selected_blocks).strip()
@@ -337,32 +405,11 @@ class OverlapManager:
         Returns:
             New chunk with merged content
         """
-        # FIX #2: Enforce 50% overlap limit for legacy mode
-        # Calculate total overlap size
-        total_overlap = len(previous_content) + len(next_content)
-        core_size = len(chunk.content)
-
-        # If total overlap would exceed 50% of final chunk, trim it
-        # Final chunk = previous + core + next
-        # We want: overlap / final_chunk <= 0.5
-        # Which means: overlap <= 0.5 * (overlap + core)
-        # Solving: overlap <= core (for 50% limit)
-        if total_overlap > core_size:
-            # Trim to 50% limit
-            max_overlap = core_size
-            trim_ratio = max_overlap / total_overlap if total_overlap > 0 else 1.0
-
-            if previous_content:
-                prev_target = int(len(previous_content) * trim_ratio)
-                previous_content = truncate_at_word_boundary(
-                    previous_content, prev_target, from_end=True
-                )
-
-            if next_content:
-                next_target = int(len(next_content) * trim_ratio)
-                next_content = truncate_at_word_boundary(
-                    next_content, next_target, from_end=False
-                )
+        # CRITICAL FIX: Use same overlap limit as metadata mode for equivalence
+        # This ensures: legacy_content == previous_content + "\n\n" + content + "\n\n" + next_content
+        previous_content, next_content = self._enforce_overlap_size_limit(
+            chunk, previous_content, next_content
+        )
 
         # Build merged content
         parts = []
@@ -652,9 +699,77 @@ class OverlapManager:
             else:
                 break
 
-        if not selected_blocks:
-            logger.debug("No blocks fit within overlap target size")
-            return None
+        # CRITICAL FIX: Reject header-only overlap (need actual content)
+        # Check if we have any blocks and if they contain actual content
+        has_content_blocks = any(
+            b.block_type in ("paragraph", "list", "table", "code")
+            for b in selected_blocks
+        ) if selected_blocks else False
+        
+        if not selected_blocks or not has_content_blocks:
+            # We only got headers - try to get content blocks instead
+            logger.debug(
+                "Suffix overlap contains only headers, searching for content blocks"
+            )
+            
+            # Strategy: Find the LAST content block (paragraph/list/table/code)
+            # and extract from there, even if it means skipping trailing headers
+            content_based_blocks = []
+            total_size = 0
+            
+            # Find last content block (working backwards through all blocks)
+            last_content_idx = None
+            for i in range(len(blocks) - 1, -1, -1):
+                if blocks[i].block_type in ("paragraph", "list", "table", "code"):
+                    last_content_idx = i
+                    break
+            
+            if last_content_idx is not None:
+                # Extract from this content block and include subsequent blocks
+                # NOTE: Use target_size (not actual_target) for content-based extraction
+                # to allow more flexibility in getting actual content vs headers
+                candidate_blocks = blocks[last_content_idx:]
+                
+                for block in candidate_blocks:
+                    block_size = block.size
+                    
+                    if total_size == 0:
+                        # Be more lenient for first content block (use original target, not 40%-limited)
+                        # This allows extracting content even if it significantly exceeds the target
+                        # Priority: actual content (even if large) > headers (even if perfect size)
+                        if block_size <= target_size * 2.5:  # Very high tolerance for content
+                            content_based_blocks.append(block)
+                            total_size += block_size
+                        else:
+                            # First block too large even with high tolerance
+                            logger.debug(
+                                f"First content block too large: {block_size} > {target_size * 2.5}"
+                            )
+                            break
+                    elif total_size + block_size + 2 <= target_size:
+                        content_based_blocks.append(block)
+                        total_size += block_size + 2
+                    else:
+                        break
+            
+            # If we successfully extracted content blocks, use them
+            # Otherwise, fall back to the header-based selection (if any)
+            if content_based_blocks:
+                logger.debug(
+                    f"Using content-based overlap: {len(content_based_blocks)} blocks, "
+                    f"{total_size} chars"
+                )
+                selected_blocks = content_based_blocks
+            elif selected_blocks:
+                # Keep header-based overlap (better than nothing)
+                logger.debug(
+                    "Cannot fit content blocks, keeping header-based overlap "
+                    f"({len(selected_blocks)} blocks)"
+                )
+            else:
+                # No blocks at all - nothing to extract
+                logger.debug("No blocks fit within overlap target size")
+                return None
 
         # Join selected blocks
         overlap_text = "\n\n".join(b.content for b in selected_blocks)

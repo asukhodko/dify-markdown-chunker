@@ -47,8 +47,11 @@ class TestOverlapPropertiesRedesign:
         Property: Context sizes respect effective_overlap limit with tolerance.
 
         For all chunks where context fields are present:
-        len(previous_content) <= effective_overlap * 1.2  (tolerance for block alignment)
-        len(next_content) <= effective_overlap * 1.2
+        len(previous_content) <= effective_overlap * 2.5  (tolerance for content-based extraction)
+        len(next_content) <= effective_overlap * 2.5
+        
+        The 2.5x tolerance allows extracting paragraph content blocks that may
+        exceed the target size, prioritizing content quality over strict size limits.
         """
         overlap_size = 40
         config = ChunkConfig(enable_overlap=True, overlap_size=overlap_size)
@@ -56,8 +59,8 @@ class TestOverlapPropertiesRedesign:
 
         result = manager.apply_overlap(chunks, include_metadata=True)
 
-        # Block-aligned extraction allows 1.2x tolerance for first block
-        max_size_with_tolerance = int(overlap_size * 1.2)
+        # Content-based extraction allows 2.5x tolerance for first content block
+        max_size_with_tolerance = int(overlap_size * 2.5)
 
         for chunk in result:
             if "previous_content" in chunk.metadata:

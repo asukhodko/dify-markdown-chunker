@@ -134,7 +134,15 @@ class TestOverlapMetadataMode:
         assert result[0].content == "Only one chunk here."
 
     def test_overlap_metadata_mode_with_code_fences(self):
-        """Test that unbalanced code fences prevent overlap."""
+        """Test overlap extraction with unbalanced code fences.
+        
+        When a chunk has unbalanced code fences, the system should:
+        1. Extract valid content BEFORE the unbalanced fence
+        2. Skip content that includes/follows the unbalanced fence
+        
+        This provides graceful degradation: extract what IS safe rather than
+        giving up entirely.
+        """
         config = ChunkConfig(enable_overlap=True, overlap_size=50)
         manager = OverlapManager(config)
 
@@ -145,8 +153,9 @@ class TestOverlapMetadataMode:
 
         result = manager.apply_overlap(chunks, include_metadata=True)
 
-        # Overlap should be skipped due to unbalanced fences
-        assert "previous_content" not in result[1].metadata
+        # Should extract the safe content "Some text" before the unbalanced fence
+        assert "previous_content" in result[1].metadata
+        assert result[1].metadata["previous_content"] == "Some text"
         # Content should be clean and unchanged
         assert result[1].content == "Second chunk content."
 

@@ -59,8 +59,8 @@ class MarkdownChunkTool(Tool):
             'preamble.metadata_fields', 'preamble.type',
             # Redundant fields
             'preamble_type', 'preview', 'total_chunks',
-            # Legacy overlap fields (removed in new design)
-            'overlap_prefix', 'overlap_suffix', 'has_overlap', 'overlap_type', 'overlap_size',
+            # Legacy block-based overlap fields (replaced by previous_content/next_content)
+            'has_overlap', 'overlap_type', 'overlap_size', 'overlap_block_count',
             'overlap_block_ids', 'overlap_start_offset', 'new_content_start_offset'
         }
 
@@ -164,7 +164,9 @@ class MarkdownChunkTool(Tool):
             # 3. Create ChunkConfig
             config=ChunkConfig(
                 max_chunk_size=max_chunk_size,
-                overlap_size=chunk_overlap
+                overlap_size=chunk_overlap,
+                enable_overlap=True,  # Enable overlap feature
+                block_based_overlap=False  # Use new metadata-mode overlap instead
             )
 
             # 4. Chunk the document
