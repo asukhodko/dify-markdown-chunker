@@ -5,24 +5,29 @@
 - [base.py](file://markdown_chunker/chunker/strategies/base.py)
 - [code_strategy.py](file://markdown_chunker/chunker/strategies/code_strategy.py)
 - [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py)
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py)
 - [sentences_strategy.py](file://markdown_chunker/chunker/strategies/sentences_strategy.py)
 - [structural_strategy.py](file://markdown_chunker/chunker/strategies/structural_strategy.py)
 - [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py)
 - [selector.py](file://markdown_chunker/chunker/selector.py)
 </cite>
 
+## Update Summary
+**Changes Made**   
+- Removed the unused ListStrategy from the documentation
+- Merged Code and Mixed strategies into a new CodeAwareStrategy
+- Updated all references to the old strategies with the new CodeAwareStrategy
+- Removed the List Strategy section from the Table of Contents and document
+- Updated the Strategy Selection section to reflect the new strategy count and priorities
+
 ## Table of Contents
 1. [Introduction](#introduction)
-2. [Code Strategy](#code-strategy)
-3. [Mixed Strategy](#mixed-strategy)
-4. [List Strategy](#list-strategy)
-5. [Table Strategy](#table-strategy)
-6. [Structural Strategy](#structural-strategy)
-7. [Sentences Strategy](#sentences-strategy)
-8. [Strategy Selection](#strategy-selection)
-9. [Common Issues and Mitigations](#common-issues-and-mitigations)
-10. [Strategy Selection Guidance](#strategy-selection-guidance)
+2. [CodeAware Strategy](#codeaware-strategy)
+3. [Table Strategy](#table-strategy)
+4. [Structural Strategy](#structural-strategy)
+5. [Sentences Strategy](#sentences-strategy)
+6. [Strategy Selection](#strategy-selection)
+7. [Common Issues and Mitigations](#common-issues-and-mitigations)
+8. [Strategy Selection Guidance](#strategy-selection-guidance)
 
 ## Introduction
 The Markdown Chunker implements a sophisticated strategy-based system for splitting Markdown documents into meaningful chunks. Each strategy is designed to handle specific document types and content patterns, preserving semantic relationships and context while respecting size constraints. The system uses a priority-based selection mechanism to automatically choose the most appropriate strategy based on content analysis. This document details each chunking strategy, explaining its purpose, implementation logic, ideal use cases, and behavior with concrete examples from the codebase.
@@ -30,14 +35,14 @@ The Markdown Chunker implements a sophisticated strategy-based system for splitt
 **Section sources**
 - [base.py](file://markdown_chunker/chunker/strategies/base.py#L1-L380)
 
-## Code Strategy
-The Code Strategy specializes in handling documents with large amounts of code, preserving code block atomicity while maintaining context with surrounding text. This strategy is ideal for technical documentation, API references, and tutorials with code examples.
+## CodeAware Strategy
+The CodeAware Strategy is a unified approach that combines the functionality of the former Code and Mixed strategies, specializing in handling documents with code content while maintaining context with surrounding text. This strategy is ideal for technical documentation, API references, and tutorials with code examples.
 
 ### Purpose and Logic
-The Code Strategy identifies code blocks and segments content around them, creating separate chunks for code and associated explanatory text. Code blocks are kept atomic (never split) to preserve their integrity, while large text segments may be split at sentence boundaries. The strategy extracts metadata such as programming language, function names, and class names from code blocks to enhance context.
+The CodeAware Strategy identifies code blocks and segments content around them, creating separate chunks for code and associated explanatory text. Code blocks are kept atomic (never split) to preserve their integrity, while large text segments may be split at sentence boundaries. The strategy extracts metadata such as programming language, function names, and class names from code blocks to enhance context. It also handles mixed content types by detecting and preserving other elements like lists and tables.
 
 ### Implementation Details
-The strategy traverses the AST by first extracting code blocks from the Stage 1 results, then segmenting the content around these blocks. It creates alternating text and code segments, processing each according to its type. Code segments are always kept intact, while text segments are split only if they exceed the maximum chunk size.
+The strategy traverses the AST by first extracting code blocks from the Stage 1 results, then segmenting the content around these blocks. It creates alternating text and code segments, processing each according to its type. Code segments are always kept intact, while text segments are split only if they exceed the maximum chunk size. The strategy also detects and preserves other content elements like lists and tables.
 
 ### Context Preservation
 The strategy preserves context by grouping explanatory text with relevant code blocks. When a code block is surrounded by text, the text is included in the same chunk or adjacent chunks to maintain the relationship between code and explanation.
@@ -52,8 +57,8 @@ The strategy handles edge cases such as unclosed code fences by attempting to re
 
 ```mermaid
 classDiagram
-class CodeStrategy {
-+name : str = "code"
+class CodeAwareStrategy {
++name : str = "code_aware"
 +priority : int = 1
 +can_handle(analysis, config) bool
 +calculate_quality(analysis) float
@@ -78,164 +83,22 @@ class CodeSegment {
 +function_names : Optional[List[str]]
 +class_names : Optional[List[str]]
 }
-CodeStrategy --> CodeSegment : "creates"
+CodeAwareStrategy --> CodeSegment : "creates"
 ```
 
 **Diagram sources**
 - [code_strategy.py](file://markdown_chunker/chunker/strategies/code_strategy.py#L42-L625)
-
-**Section sources**
-- [code_strategy.py](file://markdown_chunker/chunker/strategies/code_strategy.py#L1-L625)
-
-## Mixed Strategy
-The Mixed Strategy handles documents with multiple content types in significant proportions, preserving semantic relationships between different elements. This strategy is ideal for complex documents with a balanced mix of code, lists, tables, and text.
-
-### Purpose and Logic
-The Mixed Strategy detects all content elements (headers, code blocks, lists, tables) and groups them into logical sections based on headers. It processes these sections into chunks, splitting around indivisible elements like code blocks and tables while balancing chunk sizes adaptively.
-
-### Implementation Details
-The strategy traverses the AST by detecting all elements and sorting them by position. It inserts text paragraphs between other elements, then groups elements into logical sections based on headers. Sections are processed into chunks, with large sections split around indivisible elements.
-
-### Context Preservation
-The strategy preserves context by grouping related elements within logical sections. Elements that belong to the same section (under the same header) are kept together when possible, maintaining the semantic relationship between different content types.
-
-### Edge Cases
-The strategy handles edge cases such as missing Stage 1 data by falling back to regex-based detection. It also handles overlapping elements by prioritizing certain element types and ensuring proper ordering.
-
-### Strategy-Specific Parameters
-- `min_complexity`: Minimum complexity score for the strategy to handle content
-- `max_chunk_size`: Maximum size for each chunk
-- `allow_oversize`: Whether to allow oversized chunks for indivisible elements
-
-```mermaid
-classDiagram
-class MixedStrategy {
-+name : str = "mixed"
-+priority : int = 2
-+can_handle(analysis, config) bool
-+calculate_quality(analysis) float
-+apply(content, stage1_results, config) List[Chunk]
--detect_all_elements(content, stage1_results) List[ContentElement]
--insert_text_paragraphs(content, elements) List[ContentElement]
--group_into_logical_sections(elements) List[LogicalSection]
--process_sections(sections, config) List[Chunk]
--has_indivisible_elements(section) bool
--split_around_indivisible(section, config) List[List[ContentElement]]
--split_by_size(section, config) List[List[ContentElement]]
--create_section_chunk(section, config) Chunk
--create_part_chunk(elements, config) Chunk
--detect_lists_regex(lines) List[ContentElement]
--detect_tables_regex(lines) List[ContentElement]
-}
-class ContentElement {
-+element_type : str
-+content : str
-+start_line : int
-+end_line : int
-+is_indivisible : bool
-+metadata : Optional[Dict[Any, Any]]
-}
-class LogicalSection {
-+header : Optional[ContentElement]
-+elements : List[ContentElement]
-+start_line : int
-+end_line : int
-+calculate_size() int
-+get_element_types() Set[str]
-}
-MixedStrategy --> ContentElement : "creates"
-MixedStrategy --> LogicalSection : "creates"
-ContentElement --> LogicalSection : "grouped in"
-```
-
-**Diagram sources**
 - [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L75-L849)
 
 **Section sources**
+- [code_strategy.py](file://markdown_chunker/chunker/strategies/code_strategy.py#L1-L625)
 - [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L1-L849)
-
-## List Strategy
-The List Strategy preserves list hierarchy and handles nested structures, ensuring parent-child relationships remain intact. This strategy is ideal for documents with extensive lists such as checklists, outlines, and specifications.
-
-### Purpose and Logic
-The List Strategy extracts list items and builds a hierarchical structure from them. It groups related list items together, duplicating parent items when splitting large lists to maintain context. The strategy handles mixed list types (ordered, unordered, task lists) and maintains numbering for ordered lists.
-
-### Implementation Details
-The strategy traverses the AST by extracting list items from the Stage 1 results or parsing them manually. It builds a list hierarchy by establishing parent-child relationships based on indentation levels. The hierarchy is then processed into chunks, with large lists split into groups that fit within size constraints.
-
-### Context Preservation
-The strategy preserves context by duplicating parent items in continuation chunks. When a large list is split, each chunk includes the parent item to maintain the hierarchical relationship and provide context for the child items.
-
-### Edge Cases
-The strategy handles edge cases such as malformed lists by using regex patterns as a fallback when Stage 1 data is unavailable. It also handles deeply nested lists by calculating the maximum nesting level and preserving the hierarchy.
-
-### Strategy-Specific Parameters
-- `list_count_threshold`: Minimum number of lists (default: 5)
-- `list_ratio_threshold`: Minimum ratio of list content (default: 0.6)
-- `min_chunk_size`: Minimum size for each chunk
-
-```mermaid
-classDiagram
-class ListStrategy {
-+name : str = "list"
-+priority : int = 3
-+can_handle(analysis, config) bool
-+calculate_quality(analysis) float
-+apply(content, stage1_results, config) List[Chunk]
--extract_list_items(content, stage1_results) List[ListItemInfo]
--convert_stage1_lists(stage1_items) List[ListItemInfo]
--parse_lists_manually(content) List[ListItemInfo]
--parse_list_line(line, line_num) Optional[ListItemInfo]
--determine_list_type(marker, content) str
--build_list_hierarchy(list_items) List[ListItemInfo]
--create_chunks_from_lists(list_hierarchy, content, config) List[Chunk]
--create_chunks_from_items(items, config) List[Chunk]
--calculate_item_size(item) int
--group_list_items(root_item, max_chunk_size) List[ListGroup]
--generate_parent_context(root_item) str
--create_list_chunk(item, config, is_continuation) Chunk
--create_multi_item_chunk(items, config) Chunk
--create_group_chunk(group, config) Chunk
--format_list_item(item, level_offset) str
--count_items(item) int
--calculate_max_nesting(item) int
-}
-class ListItemInfo {
-+content : str
-+level : int
-+list_type : str
-+marker : str
-+number : Optional[int]
-+is_checked : Optional[bool]
-+start_line : int
-+end_line : int
-+children : Optional[List[ListItemInfo]]
-+parent : Optional[ListItemInfo]
-}
-class ListGroup {
-+items : List[ListItemInfo]
-+size : int
-+start_line : int
-+end_line : int
-+is_continuation : bool
-+parent_context : str
-}
-ListStrategy --> ListItemInfo : "creates"
-ListStrategy --> ListGroup : "creates"
-ListItemInfo --> ListItemInfo : "parent/child"
-```
-
-**Diagram sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L58-L853)
-
-**Section sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L1-L853)
 
 ## Table Strategy
 The Table Strategy preserves table structure and handles large tables by splitting rows while duplicating headers for readability. This strategy is ideal for documents with extensive tabular data such as specifications, API documentation, and data reports.
 
 ### Purpose and Logic
-The Table Strategy detects markdown tables and processes them into chunks, preserving the table structure and formatting. For large tables, it splits by rows while duplicating headers in each chunk to maintain readability and context.
+The Table Strategy detects markdown tables and processes them into chunks, preserving the table structure and formatting. For large tables, it splits by rows while duplicating headers in each chunk. When splitting, it duplicates the header and separator in each chunk.
 
 ### Implementation Details
 The strategy traverses the AST by detecting tables using regex patterns that match table headers, separators, and rows. It creates chunks from tables, keeping small tables intact and splitting large tables by rows. When splitting, it duplicates the header and separator in each chunk.
@@ -255,7 +118,7 @@ The strategy handles edge cases such as tables without headers by still preservi
 classDiagram
 class TableStrategy {
 +name : str = "table"
-+priority : int = 4
++priority : int = 2
 +can_handle(analysis, config) bool
 +calculate_quality(analysis) float
 +apply(content, stage1_results, config) List[Chunk]
@@ -322,7 +185,7 @@ The strategy handles edge cases such as missing Stage 1 data by falling back to 
 classDiagram
 class StructuralStrategy {
 +name : str = "structural"
-+priority : int = 5
++priority : int = 3
 +can_handle(analysis, config) bool
 +calculate_quality(analysis) float
 +apply(content, stage1_results, config) List[Chunk]
@@ -393,7 +256,7 @@ The strategy handles edge cases such as sentences with abbreviations by using so
 classDiagram
 class SentencesStrategy {
 +name : str = "sentences"
-+priority : int = 6
++priority : int = 4
 +can_handle(analysis, config) bool
 +calculate_quality(analysis) float
 +apply(content, stage1_results, config) List[Chunk]
@@ -419,7 +282,7 @@ The Strategy Selector evaluates and scores each strategy based on content analys
 The selector first checks if a strategy can handle the content based on thresholds (e.g., code ratio, list count). Then it calculates a quality score based on how well-suited the strategy is for the content. The final score combines priority and quality, with higher priority strategies receiving higher weights.
 
 ### Scoring Mechanism
-Each strategy calculates its quality score based on factors specific to its domain. For example, the Code Strategy gives higher scores for higher code ratios and more code blocks, while the List Strategy scores higher for more lists and higher list ratios.
+Each strategy calculates its quality score based on factors specific to its domain. For example, the CodeAware Strategy gives higher scores for higher code ratios and more code blocks, while the Table Strategy scores higher for more tables and higher table ratios.
 
 ### Selection Modes
 The selector supports two modes:
@@ -460,17 +323,14 @@ end
 ## Common Issues and Mitigations
 ### Over-chunking
 Over-chunking occurs when documents are split into too many small chunks, breaking semantic relationships. Each strategy mitigates this by:
-- **Code Strategy**: Grouping related text with code blocks
-- **Mixed Strategy**: Combining small adjacent chunks
-- **List Strategy**: Grouping multiple root items together
+- **CodeAware Strategy**: Grouping related text with code blocks
 - **Table Strategy**: Keeping small tables intact
 - **Structural Strategy**: Combining small sections
 - **Sentences Strategy**: Grouping multiple sentences
 
 ### Context Loss
 Context loss happens when chunks are separated from their surrounding context. Mitigations include:
-- **Code Strategy**: Preserving code block atomicity
-- **List Strategy**: Duplicating parent items in continuation chunks
+- **CodeAware Strategy**: Preserving code block atomicity
 - **Table Strategy**: Duplicating headers in split table chunks
 - **Structural Strategy**: Adding header path information to chunks
 

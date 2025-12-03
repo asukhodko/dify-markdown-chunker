@@ -3,14 +3,20 @@
 <cite>
 **Referenced Files in This Document**
 - [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py)
-- [markdown_chunker/chunker/core.py](file://markdown_chunker/chunker/core.py)
 - [tests/chunker/test_config_profiles.py](file://tests/chunker/test_config_profiles.py)
-- [examples/basic_usage.py](file://examples/basic_usage.py)
-- [tests/fixtures/mixed.md](file://tests/fixtures/mixed.md)
-- [tests/fixtures/code_heavy.md](file://tests/fixtures/code_heavy.md)
-- [tests/integration/test_full_api_flow.py](file://tests/integration/test_full_api_flow.py)
-- [examples/rag_integration.py](file://examples/rag_integration.py)
+- [docs/ARCHITECTURE_REDESIGN_SUMMARY.md](file://docs/ARCHITECTURE_REDESIGN_SUMMARY.md)
+- [docs/architecture-audit-v2/06-complexity-metrics.md](file://docs/architecture-audit-v2/06-complexity-metrics.md)
+- [docs/architecture-audit/04-configuration.md](file://docs/architecture-audit/04-configuration.md)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Updated documentation to reflect the reduction of configuration parameters from 32 to 8 in the new architecture
+- Removed references to derived values, fix flags, and unused parameters
+- Updated configuration architecture section to reflect simplified parameter set
+- Revised profile comparison matrix and parameter details to align with new configuration model
+- Removed obsolete sections related to deprecated parameters and dual mechanisms
+- Updated code examples and validation logic to match current implementation
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -28,43 +34,23 @@
 
 The Dify Markdown Chunker provides a sophisticated configuration system that allows users to tailor chunking behavior to specific document types and use cases through predefined profiles. These profiles encapsulate sets of parameters including chunk size limits, overlap settings, strategy thresholds, and enabled strategies, optimizing the chunking process for different content types and application requirements.
 
-The configuration system follows a factory pattern with built-in profiles that serve as templates for common use cases, while also providing flexibility for custom configurations through programmatic extension and inheritance mechanisms.
+The configuration system follows a factory pattern with built-in profiles that serve as templates for common use cases, while also providing flexibility for custom configurations through programmatic extension and inheritance mechanisms. This documentation has been updated to reflect the significant simplification of the configuration system in version 2.0, which reduced the number of configuration parameters from 32 to 8 by eliminating derived values and fix flags.
 
 ## Configuration Architecture
 
-The core configuration system is built around the `ChunkConfig` dataclass, which serves as the foundation for all chunking behavior customization. This configuration object controls every aspect of the chunking process through carefully designed parameters.
+The core configuration system is built around the `ChunkConfig` dataclass, which serves as the foundation for all chunking behavior customization. In the new architecture, this configuration object has been streamlined to include only essential parameters, reducing complexity from 32 parameters to 8 core parameters.
 
 ```mermaid
 classDiagram
 class ChunkConfig {
 +int max_chunk_size
 +int min_chunk_size
-+int target_chunk_size
 +int overlap_size
-+float overlap_percentage
 +bool enable_overlap
 +float code_ratio_threshold
-+int min_code_blocks
-+float min_complexity
 +int list_count_threshold
-+float list_ratio_threshold
 +int table_count_threshold
-+float table_ratio_threshold
-+int header_count_threshold
-+bool allow_oversize
-+bool preserve_code_blocks
-+bool preserve_tables
-+bool preserve_list_hierarchy
-+bool enable_fallback
-+str fallback_strategy
-+int max_fallback_level
-+bool enable_streaming
-+int streaming_threshold
-+bool extract_preamble
-+int preamble_min_size
-+int section_boundary_level
-+int min_content_per_chunk
-+bool preserve_markdown_structure
++float min_complexity
 +default() ChunkConfig
 +for_code_heavy() ChunkConfig
 +for_dify_rag() ChunkConfig
@@ -107,16 +93,15 @@ StrategySelector --> ChunkConfig : "reads thresholds"
 ```
 
 **Diagram sources**
-- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L498-L1061)
-- [markdown_chunker/chunker/core.py](file://markdown_chunker/chunker/core.py#L41-L200)
+- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L500-L1080)
 
 **Section sources**
-- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L498-L1061)
-- [markdown_chunker/chunker/core.py](file://markdown_chunker/chunker/core.py#L41-L200)
+- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L500-L1080)
+- [docs/ARCHITECTURE_REDESIGN_SUMMARY.md](file://docs/ARCHITECTURE_REDESIGN_SUMMARY.md#L159-L214)
 
 ## Predefined Profiles
 
-The system provides several predefined profiles optimized for common use cases. Each profile encapsulates a specific set of parameters designed to achieve optimal chunking results for particular document types and application requirements.
+The system provides several predefined profiles optimized for common use cases. Each profile encapsulates a specific set of parameters designed to achieve optimal chunking results for particular document types and application requirements. The new architecture maintains these profiles while simplifying the underlying parameter set from 32 to 8 essential parameters.
 
 ### Available Profiles
 
@@ -153,12 +138,12 @@ end
 ```
 
 **Section sources**
-- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L870-L1001)
-- [tests/chunker/test_config_profiles.py](file://tests/chunker/test_config_profiles.py#L1-L70)
+- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L686-L1008)
+- [tests/chunker/test_config_profiles.py](file://tests/chunker/test_config_profiles.py#L6-L70)
 
 ## Profile Factory Methods
 
-Each predefined profile is implemented as a class method on the `ChunkConfig` class, following a consistent naming convention and providing clear documentation for each configuration's intended use case.
+Each predefined profile is implemented as a class method on the `ChunkConfig` class, following a consistent naming convention and providing clear documentation for each configuration's intended use case. The factory methods now operate on a simplified parameter set of 8 essential parameters, down from 32 in the previous architecture.
 
 ### Factory Method Implementation Pattern
 
@@ -171,50 +156,55 @@ B --> C[Set Profile-Specific Parameters]
 C --> D[Apply Validation Rules]
 D --> E[Return Config Instance]
 F[Validation Rules] --> G[max_chunk_size > min_chunk_size]
-G --> H[target_chunk_size within bounds]
+G --> H[overlap_size within bounds]
 H --> I[percentage values 0-1]
 I --> J[threshold values 0-1]
 B --> F
 ```
 
 **Diagram sources**
-- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L667-L1001)
+- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L686-L1008)
 
 ### Profile Parameter Details
 
-Each profile optimizes specific parameters for its intended use case:
+Each profile optimizes specific parameters for its intended use case, now based on the 8 essential parameters:
 
 #### Code-Heavy Profile (`for_code_heavy`)
 - **Max Chunk Size**: 6144 (larger for complete code blocks)
-- **Target Chunk Size**: 3072
-- **Code Ratio Threshold**: 0.5 (more aggressive detection)
-- **Min Code Blocks**: 2
+- **Min Chunk Size**: 512
 - **Overlap Size**: 300 (larger for code context)
-- **Preserve Code Blocks**: True
+- **Enable Overlap**: True
+- **Code Ratio Threshold**: 0.5 (more aggressive detection)
+- **List Count Threshold**: 5
+- **Table Count Threshold**: 3
+- **Min Complexity**: 0.3
 
 #### RAG Profile (`for_dify_rag`)
 - **Max Chunk Size**: 3072
 - **Min Chunk Size**: 256
-- **Target Chunk Size**: 1536
 - **Overlap Size**: 150
-- **Allow Oversize**: False (strict limits)
-- **Preserve Code Blocks**: True
-- **Preserve List Hierarchy**: True
+- **Enable Overlap**: True
+- **Code Ratio Threshold**: 0.6
+- **List Count Threshold**: 5
+- **Table Count Threshold**: 3
+- **Min Complexity**: 0.3
 
 #### Fast Processing Profile (`for_fast_processing`)
 - **Max Chunk Size**: 8192
 - **Min Chunk Size**: 1024
-- **Target Chunk Size**: 4096
 - **Overlap Size**: 100
 - **Enable Overlap**: False
-- **Enable Streaming**: True
+- **Code Ratio Threshold**: 0.7
+- **List Count Threshold**: 5
+- **Table Count Threshold**: 3
+- **Min Complexity**: 0.3
 
 **Section sources**
-- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L695-L1001)
+- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L714-L1008)
 
 ## Custom Profile Creation
 
-Users can create custom profiles by instantiating `ChunkConfig` with specific parameters or by extending existing profiles. The configuration system provides multiple approaches for customization.
+Users can create custom profiles by instantiating `ChunkConfig` with specific parameters or by extending existing profiles. The configuration system provides multiple approaches for customization, now simplified to work with only 8 essential parameters instead of the previous 32.
 
 ### Direct Instantiation
 
@@ -225,11 +215,9 @@ The simplest approach is to create a custom configuration by directly instantiat
 custom_config = ChunkConfig(
     max_chunk_size=2500,
     min_chunk_size=300,
-    target_chunk_size=1200,
     overlap_size=150,
     enable_overlap=True,
-    code_ratio_threshold=0.4,
-    preserve_code_blocks=True
+    code_ratio_threshold=0.4
 )
 ```
 
@@ -267,12 +255,12 @@ def create_optimized_config(document_type: str, content_length: int):
 ```
 
 **Section sources**
-- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L1003-L1061)
-- [examples/basic_usage.py](file://examples/basic_usage.py#L115-L130)
+- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L1022-L1047)
+- [tests/chunker/test_config_profiles.py](file://tests/chunker/test_config_profiles.py#L6-L70)
 
 ## Profile Inheritance and Extension
 
-The configuration system supports inheritance and extension mechanisms that allow users to build upon existing profiles while maintaining type safety and configuration validation.
+The configuration system supports inheritance and extension mechanisms that allow users to build upon existing profiles while maintaining type safety and configuration validation. The inheritance mechanism now operates on a simplified parameter set of 8 essential parameters.
 
 ### Inheritance Mechanism
 
@@ -283,32 +271,30 @@ classDiagram
 class DefaultConfig {
 +max_chunk_size : 4096
 +min_chunk_size : 512
-+target_chunk_size : 2048
 +overlap_size : 200
 +enable_overlap : True
++code_ratio_threshold : 0.7
++list_count_threshold : 5
++table_count_threshold : 3
++min_complexity : 0.3
 }
 class CodeHeavyConfig {
 +max_chunk_size : 6144
-+target_chunk_size : 3072
-+code_ratio_threshold : 0.5
 +overlap_size : 300
-+preserve_code_blocks : True
++code_ratio_threshold : 0.5
 }
 class RAGConfig {
 +max_chunk_size : 3072
 +min_chunk_size : 256
-+target_chunk_size : 1536
 +overlap_size : 150
-+allow_oversize : False
-+preserve_code_blocks : True
-+preserve_list_hierarchy : True
++code_ratio_threshold : 0.6
 }
 DefaultConfig <|-- CodeHeavyConfig
 DefaultConfig <|-- RAGConfig
 ```
 
 **Diagram sources**
-- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L667-L1001)
+- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L686-L1008)
 
 ### Parameter Override Strategy
 
@@ -346,11 +332,11 @@ class DebugConfig(ProductionConfig):
 ```
 
 **Section sources**
-- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L667-L1001)
+- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L686-L1008)
 
 ## Performance Implications
 
-Different configuration profiles have varying performance characteristics that impact processing speed, memory usage, and chunk quality. Understanding these implications helps users select the most appropriate profile for their specific requirements.
+Different configuration profiles have varying performance characteristics that impact processing speed, memory usage, and chunk quality. Understanding these implications helps users select the most appropriate profile for their specific requirements. The simplified configuration with 8 parameters reduces the combinatorial complexity of configuration options, making performance characteristics more predictable.
 
 ### Performance Characteristics by Profile
 
@@ -383,7 +369,7 @@ J --> N[Excellent Quality<br/>Moderate Performance]
 ```
 
 **Diagram sources**
-- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L584-L620)
+- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L582-L620)
 
 ### Memory Usage Patterns
 
@@ -404,12 +390,12 @@ The relationship between configuration parameters and processing time follows pr
 - **Fallback**: Enabled fallback strategies add processing overhead
 
 **Section sources**
-- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L584-L620)
+- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L582-L620)
 - [tests/chunker/test_performance_benchmarks.py](file://tests/chunker/test_performance_benchmarks.py#L311-L356)
 
 ## Best Practices
 
-Effective use of configuration profiles requires understanding the trade-offs between different parameter combinations and aligning them with specific use case requirements.
+Effective use of configuration profiles requires understanding the trade-offs between different parameter combinations and aligning them with specific use case requirements. With the reduction from 32 to 8 parameters, the configuration system is now simpler to understand and use correctly.
 
 ### Selection Guidelines
 
@@ -448,8 +434,9 @@ def validate_config(config: ChunkConfig) -> List[str]:
     # Threshold validation
     thresholds = [
         ("code_ratio_threshold", config.code_ratio_threshold),
-        ("list_ratio_threshold", config.list_ratio_threshold),
-        ("table_ratio_threshold", config.table_ratio_threshold)
+        ("list_count_threshold", config.list_count_threshold),
+        ("table_count_threshold", config.table_count_threshold),
+        ("min_complexity", config.min_complexity)
     ]
     
     for name, value in thresholds:
@@ -477,11 +464,11 @@ Implement monitoring for configuration effectiveness:
 
 **Section sources**
 - [tests/chunker/test_config_profiles.py](file://tests/chunker/test_config_profiles.py#L45-L70)
-- [examples/basic_usage.py](file://examples/basic_usage.py#L115-L130)
+- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L636-L684)
 
 ## Implementation Examples
 
-This section provides practical examples of using configuration profiles in real-world scenarios, demonstrating both basic usage and advanced customization techniques.
+This section provides practical examples of using configuration profiles in real-world scenarios, demonstrating both basic usage and advanced customization techniques with the simplified 8-parameter configuration.
 
 ### Basic Profile Usage
 
@@ -517,7 +504,7 @@ class TechnicalDocumentationConfig(ChunkConfig):
     @classmethod
     def for_technical_docs(cls):
         config = super().for_code_heavy()
-        config.target_chunk_size = 2500
+        config.max_chunk_size = 2500
         config.overlap_size = 250
         config.code_ratio_threshold = 0.4  # Less aggressive
         return config
@@ -611,7 +598,7 @@ def prepare_for_rag(markdown_content: str, profile: str = "dify_rag"):
 
 ## Troubleshooting
 
-Common issues and solutions when working with configuration profiles, along with diagnostic techniques for identifying and resolving problems.
+Common issues and solutions when working with configuration profiles, along with diagnostic techniques for identifying and resolving problems in the simplified 8-parameter configuration system.
 
 ### Common Configuration Issues
 
@@ -631,8 +618,9 @@ def diagnose_profile_issue(config: ChunkConfig, content: str):
     
     # Check thresholds
     print(f"Code ratio threshold: {config.code_ratio_threshold}")
-    print(f"List ratio threshold: {config.list_ratio_threshold}")
-    print(f"Table ratio threshold: {config.table_ratio_threshold}")
+    print(f"List count threshold: {config.list_count_threshold}")
+    print(f"Table count threshold: {config.table_count_threshold}")
+    print(f"Min complexity: {config.min_complexity}")
     
     # Test with different strategies
     chunker = MarkdownChunker(config)
@@ -686,21 +674,14 @@ def validate_chunk_config(config: ChunkConfig) -> List[str]:
     # Threshold validation
     thresholds = [
         ("code_ratio_threshold", config.code_ratio_threshold),
-        ("list_ratio_threshold", config.list_ratio_threshold),
-        ("table_ratio_threshold", config.table_ratio_threshold)
+        ("list_count_threshold", config.list_count_threshold),
+        ("table_count_threshold", config.table_count_threshold),
+        ("min_complexity", config.min_complexity)
     ]
     
     for name, value in thresholds:
         if not (0.0 <= value <= 1.0):
             issues.append(f"{name} must be between 0.0 and 1.0")
-    
-    # Strategy validation
-    if config.min_code_blocks <= 0:
-        issues.append("min_code_blocks must be positive")
-    if config.list_count_threshold <= 0:
-        issues.append("list_count_threshold must be positive")
-    if config.table_count_threshold <= 0:
-        issues.append("table_count_threshold must be positive")
     
     return issues
 
@@ -731,23 +712,16 @@ def debug_configuration(config: ChunkConfig, content: str):
     print("=== Configuration Debug ===")
     print(f"Max chunk size: {config.max_chunk_size}")
     print(f"Min chunk size: {config.min_chunk_size}")
-    print(f"Target chunk size: {config.target_chunk_size}")
-    print(f"Overlap enabled: {config.enable_overlap}")
     print(f"Overlap size: {config.overlap_size}")
+    print(f"Overlap enabled: {config.enable_overlap}")
     print(f"Code ratio threshold: {config.code_ratio_threshold}")
-    print(f"List ratio threshold: {config.list_ratio_threshold}")
-    print(f"Table ratio threshold: {config.table_ratio_threshold}")
+    print(f"List count threshold: {config.list_count_threshold}")
+    print(f"Table count threshold: {config.table_count_threshold}")
+    print(f"Min complexity: {config.min_complexity}")
     print(f"Allow oversize: {config.allow_oversize}")
     print(f"Preserve code blocks: {config.preserve_code_blocks}")
     print(f"Preserve tables: {config.preserve_tables}")
     print(f"Preserve list hierarchy: {config.preserve_list_hierarchy}")
-    
-    print("\n=== Strategy Thresholds ===")
-    print(f"Min code blocks: {config.min_code_blocks}")
-    print(f"Min complexity: {config.min_complexity}")
-    print(f"List count threshold: {config.list_count_threshold}")
-    print(f"Table count threshold: {config.table_count_threshold}")
-    print(f"Header count threshold: {config.header_count_threshold}")
     
     print("\n=== Performance Settings ===")
     print(f"Enable fallback: {config.enable_fallback}")
@@ -759,4 +733,4 @@ def debug_configuration(config: ChunkConfig, content: str):
 
 **Section sources**
 - [tests/chunker/test_config_profiles.py](file://tests/chunker/test_config_profiles.py#L45-L70)
-- [examples/basic_usage.py](file://examples/basic_usage.py#L115-L130)
+- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L636-L684)
