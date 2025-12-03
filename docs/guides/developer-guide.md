@@ -912,10 +912,10 @@ items: List[str] = []
 
 ### Documentation
 
-- [README.md](../README.md) - Project overview
-- [ALGORITHM_MAPPING.md](ALGORITHM_MAPPING.md) - Algorithm implementation
-- [API Reference](API_REFERENCE.md) - Full API reference
-- [Architecture Documentation](architecture.md) - Detailed architecture specification
+- [README.md](../../README.md) - Project overview
+- [Algorithm Documentation](../reference/algorithms.md) - Algorithm implementation details
+- [API Reference](../api/README.md) - Complete API documentation
+- [Architecture Documentation](../architecture/README.md) - System architecture and design
 
 ### Community
 

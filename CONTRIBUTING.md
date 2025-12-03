@@ -2,6 +2,10 @@
 
 Thank you for your interest in contributing to the Dify Markdown Chunker plugin!
 
+For comprehensive development documentation, see **[Developer Guide](docs/guides/developer-guide.md)**.
+
+---
+
 ## Getting Started
 
 1. Fork the repository
@@ -160,7 +164,10 @@ Use GitHub Issues for feature requests. Include:
 ## Questions?
 
 - Open a GitHub Issue for questions
-- Check existing documentation in `docs/`
+- Check existing documentation:
+  - **[Developer Guide](docs/guides/developer-guide.md)** - Comprehensive development documentation
+  - **[Documentation Index](docs/README.md)** - All documentation
+  - **[DEVELOPMENT.md](DEVELOPMENT.md)** - Quick development reference
 - Review examples in `examples/`
 
 ## License

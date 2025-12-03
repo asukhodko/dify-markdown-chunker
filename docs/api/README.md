@@ -858,9 +858,10 @@ restored = ChunkingResult.from_dict(result_dict)
 
 ## See Also
 
-- [README.md](README.md) - Quick start and overview
-- [MIGRATION.md](MIGRATION.md) - Migration guide from old structure
-- [examples/](examples/) - Usage examples
+- [Quick Start Guide](../quickstart.md) - Get started quickly
+- [Usage Guide](../usage.md) - Detailed usage examples
+- [Configuration Reference](../reference/configuration.md) - Complete configuration options
+- [Examples](../../examples/) - Usage examples
 
 ---
 

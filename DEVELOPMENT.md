@@ -1,6 +1,6 @@
-# Development Guide
+# Development Guide - Quick Reference
 
-Development and maintenance guide for the Advanced Markdown Chunker plugin for Dify.
+Quick reference guide for developers. For comprehensive development documentation, see **[Developer Guide](docs/guides/developer-guide.md)**.
 
 ---
 
@@ -394,7 +394,16 @@ python validate_package.py <package>.difypkg
 
 ## Resources
 
-- **Official Dify Plugins:** `reference/dify-official-plugins/`
+### Documentation
+
+- **[Developer Guide](docs/guides/developer-guide.md)** - Comprehensive development guide with architecture, coding standards, and workflows
+- **[Testing Guide](docs/guides/testing-guide.md)** - Testing strategies and frameworks
+- **[Contributing Guide](CONTRIBUTING.md)** - Contribution process and guidelines
+- **[API Reference](docs/api/)** - Complete API documentation
+- **[Architecture](docs/architecture/)** - System design and components
+
+### External Resources
+
 - **Dify Documentation:** https://docs.dify.ai/plugins
 - **CLI Repository:** https://github.com/langgenius/dify-plugin-daemon
 - **Dify GitHub:** https://github.com/langgenius/dify

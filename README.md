@@ -1,7 +1,6 @@
 # Dify Markdown Chunker Plugin
 
 Advanced Markdown chunking plugin for Dify with structural awareness and intelligent strategy selection.
-Dify Markdown Chunker Plugin.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
@@ -43,31 +42,31 @@ This plugin provides production-ready markdown chunking capabilities for Dify wi
 
 ## Installation
 
-### As Dify Plugin
+### Quick Install
 
-1. Download the plugin package
-2. Install in your Dify instance following [Dify plugin installation guide](https://docs.dify.ai/plugins)
-3. Configure the plugin in your Dify workflows
+1. Download the latest `.difypkg` file from releases
+2. In Dify UI: **Settings → Plugins → Install Plugin**
+3. Upload the package file
+4. Configure in your workflows
 
-### For Development
+For detailed installation instructions, see **[Installation Guide](docs/installation.md)**.
+
+### Development Setup
 
 ```bash
-# Clone the repository
 git clone https://github.com/asukhodko/dify-markdown-chunker.git
 cd dify-markdown-chunker
-
-# Create virtual environment
 python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
+source venv/bin/activate
 make install
-
-# Run tests
 make test
 ```
 
+See **[Development Guide](docs/guides/developer-guide.md)** for complete setup instructions.
+
 ## Quick Start
+
+Get started in 5 minutes with these simple examples. For comprehensive examples and detailed usage, see **[Quick Start Guide](docs/quickstart.md)** and **[Usage Guide](docs/usage.md)**.
 
 ### Using in Dify Workflows
 
@@ -82,7 +81,7 @@ make test
 ### Using as Python Library
 
 ```python
-from markdown_chunker import MarkdownChunker, ChunkConfig
+from markdown_chunker import MarkdownChunker
 
 # Basic usage
 chunker = MarkdownChunker()
@@ -90,105 +89,9 @@ result = chunker.chunk("# Hello\n\nWorld", include_analysis=True)
 
 print(f"Strategy: {result.strategy_used}")
 print(f"Chunks: {len(result.chunks)}")
-
-# With custom config
-config = ChunkConfig(
-    max_chunk_size=2048,
-    min_chunk_size=256,
-    enable_overlap=True
-)
-
-chunker = MarkdownChunker(config)
-chunks = chunker.chunk(markdown_text, include_analysis=True)
 ```
 
-### Overlap Handling Modes
-
-The chunker supports two modes for handling overlap between chunks:
-
-#### Metadata Mode (include_metadata=True, default)
-
-Neighbor context is stored in metadata fields, keeping chunk content clean:
-
-```python
-config = ChunkConfig(
-    max_chunk_size=2048,
-    enable_overlap=True,
-    overlap_size=200
-)
-
-chunker = MarkdownChunker(config)
-result = chunker.chunk(
-    markdown_text,
-    include_metadata=True  # Metadata mode (default)
-)
-
-# Chunk content is clean (no overlap merged)
-for chunk in result:
-    print(chunk.content)  # Pure chunk content
-    
-    # Neighbor context is in metadata
-    if 'previous_content' in chunk.metadata:
-        print(f"Context from previous chunk: {chunk.metadata['previous_content']}")
-        print(f"Previous chunk index: {chunk.metadata.get('previous_chunk_index')}")
-    
-    if 'next_content' in chunk.metadata:
-        print(f"Context from next chunk: {chunk.metadata['next_content']}")
-        print(f"Next chunk index: {chunk.metadata.get('next_chunk_index')}")
-```
-
-**Benefits:**
-- Clean, focused chunk content
-- Explicit neighbor context tracking
-- Applications can compose embedding text as needed
-- Traceability through chunk index references
-- Better for RAG systems that need semantic clarity
-
-**Context Fields:**
-- `previous_content`: Text fragment from the end of the preceding chunk
-- `next_content`: Text fragment from the beginning of the following chunk
-- `previous_chunk_index`: Index of the source chunk for `previous_content`
-- `next_chunk_index`: Index of the source chunk for `next_content`
-
-#### Legacy Mode (include_metadata=False)
-
-Neighbor context is merged directly into chunk content (backward compatible):
-
-```python
-result = chunker.chunk(
-    markdown_text,
-    include_metadata=False  # Legacy mode
-)
-
-# Chunk content includes neighbor context
-for chunk in result:
-    print(chunk.content)  # Content with context merged
-```
-
-**Benefits:**
-- Full backward compatibility
-- Simpler output structure
-- Context automatically included in embeddings
-
-**Note**: In legacy mode, `start_offset` and `end_offset` describe the core content range, not the merged content.
-
-### Configuration Profiles
-
-```python
-from markdown_chunker import ChunkConfig
-
-# For API documentation
-config = ChunkConfig.for_api_docs()
-
-# For code documentation
-config = ChunkConfig.for_code_docs()
-
-# For RAG systems (Dify default)
-config = ChunkConfig.for_dify_rag()
-
-# For search indexing
-config = ChunkConfig.for_search_indexing()
-```
+For more examples including configuration profiles, overlap handling, and advanced features, see **[Quick Start Guide](docs/quickstart.md)**.
 
 ## Project Structure
 
@@ -275,11 +178,16 @@ Optimized for production use:
 
 ## Documentation
 
-- **[API Reference](docs/API_REFERENCE.md)** - Complete API documentation
-- **[Developer Guide](docs/DEVELOPER_GUIDE.md)** - Development guide
-- **[Algorithm Documentation](docs/ALGORITHM_MAPPING.md)** - Algorithm details
-- **[Architecture](docs/architecture.md)** - System architecture
-- **[Configuration](docs/configuration.md)** - Configuration options
+Comprehensive documentation is available in the **[docs/](docs/)** directory:
+
+- **[Quick Start](docs/quickstart.md)** - Get started in 5 minutes
+- **[Usage Guide](docs/usage.md)** - Detailed usage examples
+- **[API Reference](docs/api/)** - Complete API documentation
+- **[Architecture](docs/architecture/)** - System design and components
+- **[Developer Guide](docs/guides/developer-guide.md)** - Development workflows
+- **[Configuration Reference](docs/reference/configuration.md)** - All configuration options
+
+See **[Documentation Index](docs/README.md)** for the complete documentation structure.
 
 ## Dependencies
 
@@ -299,25 +207,19 @@ Optimized for production use:
 
 ## Contributing
 
-We welcome contributions! Please follow these steps:
+We welcome contributions! For detailed guidelines, see **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
+**Quick Start:**
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run tests: `make test`
-5. Format code: `make format`
-6. Run quality checks: `make quality-check`
-7. Commit your changes (`git commit -m 'Add amazing feature'`)
-8. Push to the branch (`git push origin feature/amazing-feature`)
-9. Open a Pull Request
+2. Create a feature branch
+3. Make your changes with tests
+4. Run `make test` and `make quality-check`
+5. Submit a Pull Request
 
-### Code Standards
-
-- Follow PEP 8 style guide
-- Use type hints
-- Write comprehensive tests
-- Document public APIs
-- Maintain test coverage above 80%
+**Development Resources:**
+- **[Development Guide](docs/guides/developer-guide.md)** - Complete development workflows
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Quick reference for developers
+- **[Testing Guide](docs/guides/testing-guide.md)** - Testing strategies and frameworks
 
 ## License
 
@@ -325,27 +227,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Changelog
 
-### Version 2.0.0-a3 (Current)
+**Current Version:** 2.0.0-a3 (December 2024)
+
+### Recent Updates
 - Redesigned overlap handling with metadata-based neighbor context
 - Regression and duplication validation
 - Comprehensive API reference documentation
 - Enhanced documentation structure
 - Type annotations improvements
 
-For complete changelog, see [CHANGELOG.md](CHANGELOG.md).
-
-### Version 2.0.0
-- Comprehensive test suite (1366+ tests)
-- Property-based testing with Hypothesis
-- Enhanced documentation
-- Improved Makefile with development commands
-- Performance benchmarks
-- Usage examples
-
-### Version 1.0.0
-- Initial Dify plugin release
-- Basic chunking functionality
-- Dify integration
+For complete version history and detailed changes, see **[CHANGELOG.md](CHANGELOG.md)**.
 
 ## Support
 
