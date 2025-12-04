@@ -1,8 +1,0 @@
-Outer fence:
-
-~~~
-```
-code inside
-```
-~~~
-

@@ -1,1 +1,0 @@
-"""Nested structure test fixtures."""

@@ -14,8 +14,7 @@ from typing import Any
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-from markdown_chunker import MarkdownChunker
-from markdown_chunker.chunker.types import ChunkConfig
+from markdown_chunker import MarkdownChunker, ChunkConfig
 
 
 class MarkdownChunkTool(Tool):
@@ -85,17 +84,21 @@ class MarkdownChunkTool(Tool):
         return filtered
 
     def _extract_chunks_list(self, result: Any) -> list:
-        """Extract list of chunks from result, regardless of format.
+        """Extract list of chunks from ChunkingResult.
         
-        Handles both dict format (with 'chunks' key) and direct list format.
+        v2.0 API: result is a ChunkingResult object with .chunks attribute
         
         Args:
-            result: Result from chunker.chunk(), either dict or list
+            result: ChunkingResult object from chunker.chunk()
             
         Returns:
-            List of chunk objects/dicts
+            List of Chunk objects
         """
-        if isinstance(result, dict) and 'chunks' in result:
+        # v2.0 API: result is ChunkingResult object with chunks attribute
+        if hasattr(result, 'chunks'):
+            return result.chunks
+        # Fallback for backward compatibility
+        elif isinstance(result, dict) and 'chunks' in result:
             return result['chunks']
         elif isinstance(result, list):
             return result
@@ -161,26 +164,20 @@ class MarkdownChunkTool(Tool):
             strategy=tool_parameters.get("strategy", "auto")
             include_metadata=tool_parameters.get("include_metadata", True)
 
-            # 3. Create ChunkConfig
+            # 3. Create ChunkConfig (v2.0 simplified API)
             config=ChunkConfig(
                 max_chunk_size=max_chunk_size,
                 overlap_size=chunk_overlap,
-                enable_overlap=True,  # Enable overlap feature
-                block_based_overlap=False  # Use new metadata-mode overlap instead
+                # Note: v2.0 removed enable_overlap, block_based_overlap, and strategy parameters
+                # Overlap is controlled by overlap_size (0 = disabled)
+                # Strategy is automatically selected based on content
             )
 
-            # 4. Chunk the document
+            # 4. Chunk the document (v2.0 simplified API)
             chunker=MarkdownChunker(config)
-            # Pass strategy to chunk() method, not to config
-            # Convert "auto" to None for automatic selection
-            strategy_param=None if strategy == "auto" else strategy
-            result=chunker.chunk(
-                input_text,
-                strategy=strategy_param,
-                include_analysis=include_metadata,
-                return_format="dict",
-                include_metadata=include_metadata  # Pass to control overlap mode
-            )
+            # v2.0 API: chunk() method only takes text, no other parameters
+            # Strategy selection is automatic based on content analysis
+            result=chunker.chunk(input_text)
 
             # 5. Format results for Dify using unified formatting logic
             # Dify UI expects result to be an array of strings

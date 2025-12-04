@@ -7,7 +7,6 @@ The plugin wraps the markdown_chunker library and exposes it as a Dify Tool
 that can be used in Knowledge Base processing pipelines.
 
 Author: asukhodko
-Version: 2.0.0
 Date: 2025-11-22
 """
 
