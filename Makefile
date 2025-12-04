@@ -37,37 +37,41 @@ help:
 
 test:
 	@echo "Running tests..."
+	@$(PYTHON) -m pytest tests/test_domain_properties.py tests/test_v2_properties.py -v
+
+test-all:
+	@echo "Running all tests..."
 	@$(PYTHON) -m pytest tests/
 
 test-verbose:
 	@echo "Running tests with verbose output..."
-	@$(PYTHON) -m pytest tests/ -v -s --tb=short
+	@$(PYTHON) -m pytest tests/test_domain_properties.py tests/test_v2_properties.py -v -s --tb=short
 
 test-coverage:
 	@echo "Running tests with coverage report..."
-	@$(PYTHON) -m pytest tests/ --cov=markdown_chunker --cov-report=html --cov-report=term-missing --cov-report=xml 2>/dev/null || \
-	$(PYTHON) -m pytest tests/
+	@$(PYTHON) -m pytest tests/test_domain_properties.py tests/test_v2_properties.py --cov=markdown_chunker_v2 --cov-report=html --cov-report=term-missing --cov-report=xml 2>/dev/null || \
+	$(PYTHON) -m pytest tests/test_domain_properties.py tests/test_v2_properties.py
 	@echo "Coverage report generated in htmlcov/ (if pytest-cov available)"
 
 lint:
 	@echo "Running linter..."
-	@echo "Checking markdown_chunker/..."
-	@$(PYTHON) -m flake8 markdown_chunker/ --count --select=E9,F63,F7,F82 --show-source --statistics || (echo "❌ Critical errors found" && exit 1)
-	@$(PYTHON) -m flake8 markdown_chunker/ --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
+	@echo "Checking markdown_chunker_v2/..."
+	@$(PYTHON) -m flake8 markdown_chunker_v2/ --count --select=E9,F63,F7,F82 --show-source --statistics || (echo "❌ Critical errors found" && exit 1)
+	@$(PYTHON) -m flake8 markdown_chunker_v2/ --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics
 	@echo "Checking tests/..."
 	@$(PYTHON) -m flake8 tests/ --count --exit-zero --max-complexity=10 --max-line-length=88 --statistics --extend-ignore=E501
 	@echo "✅ Linting completed"
 
 format:
 	@echo "Formatting code with black..."
-	@$(PYTHON) -m black markdown_chunker/ tests/ scripts/ --line-length=88
+	@$(PYTHON) -m black markdown_chunker_v2/ tests/ scripts/ --line-length=88
 	@echo "Sorting imports with isort..."
-	@$(PYTHON) -m isort markdown_chunker/ tests/ scripts/ --profile=black
+	@$(PYTHON) -m isort markdown_chunker_v2/ tests/ scripts/ --profile=black
 	@echo "✅ Code formatted"
 
 quality-check: lint
 	@echo "Running type checking..."
-	@$(PYTHON) -m mypy markdown_chunker/ --ignore-missing-imports --no-strict-optional || echo "⚠️  Type check had warnings (non-critical)"
+	@$(PYTHON) -m mypy markdown_chunker_v2/ --ignore-missing-imports --no-strict-optional || echo "⚠️  Type check had warnings (non-critical)"
 	@echo "✅ Quality checks completed"
 
 benchmark:
@@ -76,7 +80,7 @@ benchmark:
 
 demo:
 	@echo "Running basic functionality demo..."
-	@$(PYTHON) -c "from markdown_chunker import MarkdownChunker; chunker = MarkdownChunker(); result = chunker.chunk('# Test\n\nHello world!', include_analysis=True); print(f'✅ Created {len(result.chunks)} chunks using {result.strategy_used} strategy')"
+	@$(PYTHON) -c "from markdown_chunker import MarkdownChunker; chunker = MarkdownChunker(); chunks = chunker.chunk('# Test\n\nHello world!'); print(f'✅ Created {len(chunks)} chunks using {chunks[0].strategy if chunks else \"none\"} strategy')"
 
 validate:
 	@echo "Running validations..."
