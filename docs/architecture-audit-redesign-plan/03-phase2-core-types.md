@@ -125,13 +125,27 @@ class ChunkConfig:
 **Целевое состояние:**
 - 1 файл `parser.py` (~500 строк)
 - 5-10 экспортов
+- Line ending normalization в начале
 
 **Шаги:**
 1. Создать `markdown_chunker/parser.py`
-2. Перенести основную логику из `parser/core.py`
-3. Упростить `ContentAnalysis` — только нужные поля
-4. Удалить deprecated Simple API
-5. Удалить backward compatibility
+2. **Добавить `_normalize_line_endings()` в начало `parse()`** (FINDING-EDGE-2 fix)
+3. Перенести основную логику из `parser/core.py`
+4. Упростить `ContentAnalysis` — только нужные поля
+5. Удалить deprecated Simple API
+6. Удалить backward compatibility
+
+**Line Ending Normalization:**
+```python
+def _normalize_line_endings(self, text: str) -> str:
+    """Нормализация line endings к Unix-стилю."""
+    return text.replace('\r\n', '\n').replace('\r', '\n')
+
+def parse(self, md_text: str) -> ContentAnalysis:
+    # Нормализация в начале pipeline
+    md_text = self._normalize_line_endings(md_text)
+    # ... остальная логика
+```
 
 ```python
 # markdown_chunker/parser.py

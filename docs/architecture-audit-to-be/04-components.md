@@ -32,7 +32,20 @@ class Parser:
         Returns:
             ContentAnalysis с метриками и извлечёнными элементами
         """
+        # Нормализация line endings (FINDING-EDGE-2 fix)
+        md_text = self._normalize_line_endings(md_text)
+        
         lines = md_text.split('\n')
+    
+    def _normalize_line_endings(self, text: str) -> str:
+        """
+        Нормализация line endings к Unix-стилю.
+        
+        Конвертирует:
+        - \r\n (Windows) → \n
+        - \r (old Mac) → \n
+        """
+        return text.replace('\r\n', '\n').replace('\r', '\n')
         
         # Извлечение элементов
         code_blocks = self._extract_code_blocks(md_text)
@@ -502,6 +515,97 @@ class Validator:
                 f"PROP-1: Minor content difference - "
                 f"input {input_chars} chars, output {output_chars} chars"
             )
+    
+    def _validate_overlap_content_match(
+        self,
+        chunks: List[Chunk],
+        errors: List[str],
+        warnings: List[str]
+    ) -> None:
+        """
+        Проверка соответствия overlap content и metadata (FINDING-PROP1-1, PROP1-2 fix).
+        
+        Для каждого чанка с overlap:
+        - overlap_size должен соответствовать реальному размеру previous_content
+        - previous_content должен быть суффиксом предыдущего чанка
+        """
+        for i in range(1, len(chunks)):
+            chunk = chunks[i]
+            prev_chunk = chunks[i - 1]
+            
+            overlap_size = chunk.metadata.get("overlap_size", 0)
+            previous_content = chunk.metadata.get("previous_content", "")
+            
+            if overlap_size > 0:
+                # Проверка 1: overlap_size соответствует previous_content
+                if len(previous_content) != overlap_size:
+                    warnings.append(
+                        f"Chunk {i}: overlap_size ({overlap_size}) differs from "
+                        f"previous_content length ({len(previous_content)})"
+                    )
+                
+                # Проверка 2: previous_content является суффиксом предыдущего чанка
+                if previous_content and not prev_chunk.content.endswith(previous_content):
+                    warnings.append(
+                        f"Chunk {i}: previous_content does not match "
+                        f"end of chunk {i-1}"
+                    )
+    
+    def _validate_table_containment(
+        self,
+        original_text: str,
+        chunks: List[Chunk],
+        errors: List[str],
+        warnings: List[str]
+    ) -> None:
+        """
+        Проверка целостности таблиц (FINDING-PROP7-1 fix).
+        
+        Каждая таблица должна быть полностью в одном чанке.
+        """
+        tables = self._extract_tables(original_text)
+        
+        for table in tables:
+            table_header = table['content'].split('\n')[0]
+            containing_chunks = [
+                i for i, chunk in enumerate(chunks)
+                if table_header in chunk.content
+            ]
+            
+            if len(containing_chunks) == 0:
+                errors.append(
+                    f"PROP-7: Table at line {table['start_line']} not found in any chunk"
+                )
+            elif len(containing_chunks) > 1:
+                errors.append(
+                    f"PROP-7: Table at line {table['start_line']} spans multiple chunks"
+                )
+    
+    def _extract_tables(self, text: str) -> List[dict]:
+        """Извлечение таблиц из текста."""
+        tables = []
+        lines = text.split('\n')
+        
+        i = 0
+        while i < len(lines):
+            if '|' in lines[i] and i + 1 < len(lines) and '---' in lines[i + 1]:
+                start = i
+                content_lines = [lines[i]]
+                i += 1
+                
+                while i < len(lines) and '|' in lines[i]:
+                    content_lines.append(lines[i])
+                    i += 1
+                
+                tables.append({
+                    'start_line': start + 1,
+                    'end_line': i,
+                    'content': '\n'.join(content_lines)
+                })
+            else:
+                i += 1
+        
+        return tables
 
 
 ```

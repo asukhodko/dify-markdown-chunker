@@ -1,5 +1,17 @@
 # Целевая Архитектура: Обзор
 
+## Версионирование
+
+Редизайн выпускается как **версия 2.0.0** согласно Semantic Versioning, так как содержит breaking changes в API.
+
+**Ключевые изменения:**
+- Упрощённый API `chunk()` — всегда возвращает `ChunkingResult`
+- Сокращение параметров `ChunkConfig` с 32 до 8
+- Удаление deprecated методов (`chunk_with_analysis`, `chunk_simple`)
+- Консолидация стратегий с 6 до 3
+
+**Миграция:** См. `MIGRATION.md` для подробного руководства по миграции с v1.x.
+
 ## Цели редизайна
 
 1. **Простота** — минимум компонентов для решения задачи
@@ -97,6 +109,11 @@ tests/
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
 │  │   Parser    │  │  Selector   │  │  Validator  │        │
 │  │ (parser.py) │  │ (chunker.py)│  │(validator.py)│        │
+│  │             │  │             │  │             │        │
+│  │ +normalize  │  │             │  │ +overlap    │        │
+│  │  line_ends  │  │             │  │  integrity  │        │
+│  │             │  │             │  │ +table      │        │
+│  │             │  │             │  │  integrity  │        │
 │  └─────────────┘  └─────────────┘  └─────────────┘        │
 │           │              │                                  │
 │           │              ▼                                  │
@@ -205,3 +222,30 @@ __all__ = [
 | 8 | Serialization Round-Trip | HIGH |
 | 9 | Idempotence | MEDIUM |
 | 10 | Header Path Correctness | MEDIUM |
+
+## Известные ограничения
+
+### Вложенные code blocks (4+ backticks)
+
+Markdown поддерживает вложенные code blocks с использованием большего количества backticks:
+
+````markdown
+`````markdown
+````python
+```bash
+echo "nested"
+```
+````
+`````
+````
+
+**Ограничение:** Текущий парсер использует regex `^```(\w*)\n` и может некорректно обрабатывать вложенные блоки с 4+ backticks.
+
+**Workarounds:**
+1. Избегать вложенных code blocks в документах для чанкинга
+2. Использовать indented code blocks вместо fenced для внутренних блоков
+3. При необходимости — использовать `strategy_override="fallback"` для таких документов
+
+### Line endings
+
+Система нормализует все line endings к Unix-стилю (`\n`) в начале обработки. Оригинальные line endings не сохраняются.

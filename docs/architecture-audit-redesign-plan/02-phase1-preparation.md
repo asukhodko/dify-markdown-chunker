@@ -1,27 +1,70 @@
-# План Редизайна: Фаза 1 — Подготовка
+# План Редизайна: Фаза 0 и 1 — Подготовка
 
-## Цель
+## Фаза 0: Тестовый корпус (1-2 дня)
 
-Создать "страховочную сетку" из property-based тестов перед началом редизайна.
+### 0.1 Создать тестовый корпус
 
-## Длительность: 2-3 дня
+```
+tests/fixtures/corpus/
+├── code_heavy/
+│   ├── python_tutorial.md
+│   ├── api_reference.md
+│   └── code_snippets.md
+├── structured/
+│   ├── user_guide.md
+│   ├── architecture_doc.md
+│   └── faq.md
+├── mixed/
+│   ├── readme.md
+│   ├── changelog.md
+│   └── contributing.md
+├── simple/
+│   ├── notes.md
+│   ├── todo.md
+│   └── blog_post.md
+└── edge_cases/
+    ├── nested_code_blocks.md
+    ├── large_tables.md
+    ├── mixed_line_endings.md
+    └── unicode_heavy.md
+```
 
-## Задачи
+### 0.2 Сохранить baseline результаты
+
+```bash
+python scripts/save_baseline.py --corpus tests/fixtures/corpus --output baseline.json
+```
+
+### 0.3 Создать скрипт сравнения
+
+```bash
+python scripts/compare_results.py --baseline baseline.json --new new_results.json
+```
+
+### 0.4 Определить rollback критерии
+
+| Метрика | Порог | Действие |
+|---------|-------|----------|
+| Chunk count difference | >5% | Review required |
+| Content loss | >1% | Rollback |
+| Property test failures | Any | Rollback |
+| Table integrity errors | Any | Rollback |
+
+---
+
+## Фаза 1: Property-Based тесты (2-3 дня)
 
 ### 1.1 Создать структуру тестов
 
 ```
 tests_v2/
 ├── conftest.py
-├── test_properties.py      # 8 property-based тестов
+├── test_properties.py      # 10 property-based тестов (PROP-1..10)
+├── test_design_fixes.py    # 6 property-based тестов (design fixes)
 ├── test_integration.py     # 1 интеграционный тест
 ├── test_edge_cases.py      # ~10 edge cases
 └── fixtures/
-    └── sample_docs/
-        ├── code_heavy.md
-        ├── structured.md
-        ├── mixed.md
-        └── simple.md
+    └── corpus/             # Тестовый корпус
 ```
 
 ### 1.2 Написать property-based тесты
@@ -36,13 +79,26 @@ tests_v2/
 | 4 | No Empty Chunks | Нет пустых чанков |
 | 5 | Valid Line Numbers | Корректные номера строк |
 
-**Важные (PROP-6 через PROP-8):**
+**Важные (PROP-6 через PROP-10):**
 
 | # | Свойство | Описание |
 |---|----------|----------|
 | 6 | Code Block Integrity | Code blocks не разбиваются |
 | 7 | Table Integrity | Таблицы не разбиваются |
 | 8 | Serialization Round-Trip | Сериализация обратима |
+| 9 | Idempotence | Повторный вызов даёт идентичный результат |
+| 10 | Header Path Correctness | Путь заголовков корректен |
+
+**Design Fixes (6 тестов):**
+
+| # | Свойство | Описание |
+|---|----------|----------|
+| 1 | Overlap Integrity | Overlap content соответствует metadata |
+| 2 | Code Fence Balance | Чётное количество ``` в каждом чанке |
+| 3 | Table Integrity Validation | Таблицы валидируются |
+| 4 | Oversize Metadata | Правильные причины oversize |
+| 5 | Line Ending Normalization | Нет \r в результате |
+| 6 | Idempotence | Повторный чанкинг идентичен |
 
 ### 1.3 Проверить текущий код
 

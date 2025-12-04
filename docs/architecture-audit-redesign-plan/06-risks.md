@@ -55,21 +55,27 @@
 
 ### Митигация
 
-1. **Тестовый набор документов**
-   - code_heavy.md — много кода
-   - structured.md — много заголовков
-   - mixed.md — смешанный контент
-   - edge_cases.md — граничные случаи
+1. **Тестовый корпус из 15+ реальных документов**
+   - code_heavy/ — python_tutorial.md, api_reference.md, code_snippets.md
+   - structured/ — user_guide.md, architecture_doc.md, faq.md
+   - mixed/ — readme.md, changelog.md, contributing.md
+   - simple/ — notes.md, todo.md, blog_post.md
+   - edge_cases/ — nested_code_blocks.md, large_tables.md, mixed_line_endings.md
 
-2. **Автоматическое сравнение**
+2. **Автоматическое сравнение с baseline**
    ```python
-   def compare_results(old_result, new_result):
-       assert len(old_result.chunks) == len(new_result.chunks)
-       for old, new in zip(old_result.chunks, new_result.chunks):
-           assert old.content == new.content
+   def compare_results(baseline: dict, new_results: dict) -> dict:
+       differences = {}
+       for doc, old in baseline.items():
+           new = new_results.get(doc)
+           if len(old['chunks']) != len(new['chunks']):
+               diff_pct = abs(len(old['chunks']) - len(new['chunks'])) / len(old['chunks']) * 100
+               if diff_pct > 5:  # Threshold
+                   differences[doc] = {'chunk_count_diff': diff_pct}
+       return differences
    ```
 
-3. **Ручная проверка** — визуальный осмотр результатов
+3. **Количественные критерии** — >5% разница требует review
 
 ### Индикаторы
 
@@ -211,13 +217,39 @@
 
 ---
 
+## Количественные критерии rollback
+
+| Метрика | Порог | Действие |
+|---------|-------|----------|
+| Chunk count difference | >5% на тестовом корпусе | Review required |
+| Content loss | >1% | **Rollback** |
+| Property test failures | Any | **Rollback** |
+| Table integrity errors | Any new | **Rollback** |
+| Fence balance errors | >1% increase | Review required |
+| Performance degradation | >20% slower | Review required |
+
+### Скрипт сравнения
+
+```bash
+# Сравнение результатов
+python scripts/compare_results.py --baseline baseline.json --new new_results.json
+
+# Вывод:
+# Total documents: 15
+# Documents with differences: 2
+# Chunk count diff > 5%: 1 (doc: large_tables.md, diff: 8%)
+# Content loss > 1%: 0
+# VERDICT: REVIEW REQUIRED
+```
+
 ## Стратегия отката
 
 ### Когда откатываться
 
 1. Property-based тесты не проходят после 3 попыток исправления
-2. Результаты на реальных документах критически отличаются
-3. Трудозатраты превысили оценку в 2 раза
+2. **Content loss >1% на тестовом корпусе**
+3. **Любые новые table integrity или fence balance errors**
+4. Трудозатраты превысили оценку в 2 раза
 
 ### Как откатываться
 

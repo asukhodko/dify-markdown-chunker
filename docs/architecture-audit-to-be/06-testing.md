@@ -20,13 +20,64 @@
 ```
 tests/
 ├── conftest.py              # Общие фикстуры
-├── test_properties.py       # 8 property-based тестов (доменные свойства)
+├── test_properties.py       # 10 property-based тестов (доменные свойства)
+├── test_design_fixes.py     # 6 property-based тестов (исправления дизайна)
 ├── test_integration.py      # 1 интеграционный тест (full pipeline)
 ├── test_edge_cases.py       # ~10 тестов на граничные случаи
 ├── test_serialization.py    # Round-trip тесты
 └── fixtures/
-    └── sample_docs/         # Тестовые markdown-документы
+    └── corpus/              # Тестовый корпус реальных документов
+        ├── code_heavy/      # Документы с преобладанием кода
+        ├── structured/      # Структурированные документы
+        ├── mixed/           # Смешанный контент
+        ├── simple/          # Простые документы
+        └── edge_cases/      # Граничные случаи
 ```
+
+## Тестовый корпус
+
+Для валидации редизайна создаётся корпус из 15+ реальных markdown документов:
+
+| Категория | Документы | Назначение |
+|-----------|-----------|------------|
+| code_heavy | python_tutorial.md, api_reference.md, code_snippets.md | Тестирование CodeAwareStrategy |
+| structured | user_guide.md, architecture_doc.md, faq.md | Тестирование StructuralStrategy |
+| mixed | readme.md, changelog.md, contributing.md | Тестирование смешанного контента |
+| simple | notes.md, todo.md, blog_post.md | Тестирование FallbackStrategy |
+| edge_cases | nested_code_blocks.md, large_tables.md, mixed_line_endings.md, unicode_heavy.md | Граничные случаи |
+
+## Baseline Comparison
+
+Перед редизайном сохраняются baseline результаты для сравнения:
+
+```python
+# scripts/save_baseline.py
+def save_baseline(corpus_dir: Path, output_file: Path):
+    """Сохранить baseline результаты для всех документов корпуса."""
+    chunker = MarkdownChunker()
+    results = {}
+    
+    for doc_path in corpus_dir.rglob("*.md"):
+        content = doc_path.read_text()
+        result = chunker.chunk(content)
+        results[str(doc_path.relative_to(corpus_dir))] = {
+            'chunk_count': len(result.chunks),
+            'strategy_used': result.strategy_used,
+            'chunks': [c.to_dict() for c in result.chunks]
+        }
+    
+    output_file.write_text(json.dumps(results, indent=2))
+```
+
+## Rollback Criteria
+
+| Метрика | Порог | Действие |
+|---------|-------|----------|
+| Chunk count difference | >5% | Review required |
+| Content loss | >1% | Rollback |
+| Property test failures | Any | Rollback |
+| Table integrity errors | Any | Rollback |
+| Fence balance errors | >1% increase | Review required |
 
 ## Property-Based тесты (test_properties.py)
 
@@ -150,6 +201,30 @@ class TestCriticalProperties:
 
 ```python
 class TestImportantProperties:
+    """Важные свойства системы."""
+    
+    @given(md_text=markdown_text)
+    @settings(max_examples=100)
+    def test_prop9_idempotence(self, md_text: str):
+        """
+        PROP-9: Idempotence
+        
+        ∀ doc ∈ ValidMarkdown:
+          chunk(doc) ≡ chunk(doc)  (повторный вызов даёт идентичный результат)
+        """
+        chunker = MarkdownChunker()
+        
+        result1 = chunker.chunk(md_text)
+        result2 = chunker.chunk(md_text)
+        
+        assert len(result1.chunks) == len(result2.chunks)
+        for c1, c2 in zip(result1.chunks, result2.chunks):
+            assert c1.content == c2.content
+            assert c1.start_line == c2.start_line
+            assert c1.end_line == c2.end_line
+
+
+class TestImportantPropertiesOther:
     """Важные свойства системы."""
     
     @given(md_text=st.text(min_size=10).filter(lambda x: '```' in x))
@@ -440,14 +515,125 @@ print("hello")
 - Минимальный набор edge cases
 - Round-trip тесты для сериализации
 
+## Дополнительные property-based тесты (Design Fixes)
+
+```python
+# tests/test_design_fixes.py
+"""
+Property-based тесты для исправлений дизайна.
+"""
+
+class TestDesignFixesProperties:
+    """Property-based тесты для исправлений дизайна."""
+    
+    @given(md_text=markdown_text)
+    @settings(max_examples=100)
+    def test_line_ending_normalization(self, md_text: str):
+        """
+        Property: Line Ending Normalization
+        
+        ∀ doc: после обработки нет \r в контенте чанков
+        **Validates: Requirements 6.1, 6.2, 6.3**
+        """
+        md_with_crlf = md_text.replace('\n', '\r\n')
+        
+        chunker = MarkdownChunker()
+        result = chunker.chunk(md_with_crlf)
+        
+        for chunk in result.chunks:
+            assert '\r' not in chunk.content
+    
+    @given(md_text=markdown_text)
+    @settings(max_examples=100)
+    def test_oversize_metadata_correctness(self, md_text: str):
+        """
+        Property: Oversize Metadata Correctness
+        
+        ∀ chunk с size > max_chunk_size: 
+          allow_oversize=True AND oversize_reason ∈ {valid_reasons}
+        **Validates: Requirements 5.1, 5.3**
+        """
+        config = ChunkConfig(max_chunk_size=500)
+        chunker = MarkdownChunker(config)
+        result = chunker.chunk(md_text)
+        
+        VALID_REASONS = {'code_block_integrity', 'table_integrity', 'section_integrity'}
+        
+        for chunk in result.chunks:
+            if chunk.size > config.max_chunk_size:
+                assert chunk.metadata.get("allow_oversize") == True
+                assert chunk.metadata.get("oversize_reason") in VALID_REASONS
+    
+    def test_code_fence_balance(self):
+        """
+        Property: Code Fence Balance
+        
+        ∀ chunk: fence_count % 2 == 0 OR fence_balance_error=True
+        **Validates: Requirements 3.1, 3.2**
+        """
+        md_with_code = "```python\nprint('hello')\n```\n\nText\n\n```js\nconsole.log('hi')\n```"
+        
+        chunker = MarkdownChunker(ChunkConfig(max_chunk_size=50))
+        result = chunker.chunk(md_with_code)
+        
+        for chunk in result.chunks:
+            fence_count = chunk.content.count('```')
+            assert fence_count % 2 == 0 or chunk.metadata.get("fence_balance_error")
+    
+    def test_table_integrity(self):
+        """
+        Property: Table Integrity
+        
+        ∀ table: table содержится в ровно одном чанке
+        **Validates: Requirements 4.1, 4.2, 4.3**
+        """
+        md_with_table = """# Title
+
+| Col1 | Col2 | Col3 |
+|------|------|------|
+| A    | B    | C    |
+| D    | E    | F    |
+
+Some text after table."""
+        
+        chunker = MarkdownChunker()
+        result = chunker.chunk(md_with_table)
+        
+        table_header = "| Col1 | Col2 | Col3 |"
+        containing_chunks = [c for c in result.chunks if table_header in c.content]
+        
+        assert len(containing_chunks) == 1
+    
+    def test_overlap_integrity(self):
+        """
+        Property: Overlap Integrity
+        
+        ∀ chunk с overlap: previous_content является суффиксом предыдущего чанка
+        **Validates: Requirements 2.1, 2.2, 2.3**
+        """
+        md = "A" * 1000 + "\n\n" + "B" * 1000
+        
+        chunker = MarkdownChunker(ChunkConfig(max_chunk_size=500, overlap_size=100))
+        result = chunker.chunk(md)
+        
+        for i in range(1, len(result.chunks)):
+            chunk = result.chunks[i]
+            prev_chunk = result.chunks[i - 1]
+            
+            previous_content = chunk.metadata.get("previous_content", "")
+            if previous_content:
+                assert prev_chunk.content.endswith(previous_content)
+```
+
 ## Миграция тестов
 
 ### Фаза 1: Создание новых тестов
 
-1. Написать 8 property-based тестов (PROP-1 через PROP-8)
-2. Написать 1 интеграционный тест
-3. Написать ~10 edge case тестов
-4. Убедиться, что текущий код проходит новые тесты
+1. Написать 10 property-based тестов (PROP-1 через PROP-10)
+2. Написать 6 property-based тестов для design fixes
+3. Написать 1 интеграционный тест
+4. Написать ~10 edge case тестов
+5. Убедиться, что текущий код проходит новые тесты
 
 ### Фаза 2: Параллельный запуск
 

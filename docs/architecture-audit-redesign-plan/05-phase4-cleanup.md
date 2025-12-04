@@ -210,10 +210,141 @@ tests/regression/                            # Все
 tests_v2/                                    # Новые тесты
 ```
 
-### 5.4 Обновить документацию (0.5 дня)
+### 5.4 Создать MIGRATION.md (1 день)
+
+**Задачи:**
+1. Документировать все breaking API changes с примерами кода
+2. Документировать изменения в выборе стратегий
+3. Документировать удалённые параметры конфигурации
+4. Предоставить FAQ по миграции
+
+**Содержание MIGRATION.md:**
+
+```markdown
+# Migration Guide: v1.x → v2.0
+
+## Overview
+
+Версия 2.0.0 содержит breaking changes для упрощения API и улучшения 
+производительности. Этот документ описывает все изменения и способы миграции.
+
+## Breaking Changes
+
+### 1. chunk() method signature
+
+**Before (v1.x):**
+```python
+# Возвращал List[Chunk] по умолчанию
+chunks = chunker.chunk(text)
+
+# Для получения метаданных нужен был флаг
+result = chunker.chunk(text, include_analysis=True)
+```
+
+**After (v2.0):**
+```python
+# Всегда возвращает ChunkingResult
+result = chunker.chunk(text)
+chunks = result.chunks
+strategy = result.strategy_used
+```
+
+**Migration:**
+```python
+# Если вам нужны только чанки:
+chunks = chunker.chunk(text).chunks
+
+# Или используйте convenience function:
+from markdown_chunker import chunk_text
+chunks = chunk_text(text)
+```
+
+### 2. ChunkConfig parameters
+
+**Removed parameters (24):**
+- `enable_overlap` → используйте `overlap_size > 0`
+- `block_based_splitting` → всегда включено
+- `preserve_code_blocks` → всегда включено
+- `preserve_tables` → всегда включено
+- `enable_deduplication` → удалено
+- `enable_regression_validation` → удалено
+- ... (полный список ниже)
+
+**Renamed parameters:**
+- `max_size` → `max_chunk_size`
+- `min_size` → `min_chunk_size`
+
+**New parameters:**
+- `preserve_atomic_blocks` (default: True)
+- `strategy_override` (default: None)
+
+### 3. Strategy selection changes
+
+**v1.x behavior:**
+- Документы с кодом И заголовками → StructuralStrategy
+- Только код → CodeStrategy
+- Только таблицы → TableStrategy
+
+**v2.0 behavior:**
+- Любой code block ИЛИ таблица → CodeAwareStrategy
+- Только заголовки → StructuralStrategy
+- Остальное → FallbackStrategy
+
+**Migration:**
+```python
+# Для принудительного выбора стратегии:
+config = ChunkConfig(strategy_override="structural")
+result = chunker.chunk(text, config)
+```
+
+### 4. Removed methods
+
+**Removed:**
+- `chunk_with_analysis()` → используйте `chunk()`
+- `chunk_simple()` → используйте `chunk_text()`
+- `get_strategy_info()` → используйте `result.strategy_used`
+
+### 5. Removed classes
+
+**Removed:**
+- `CodeStrategy` → `CodeAwareStrategy`
+- `TableStrategy` → `CodeAwareStrategy`
+- `MixedStrategy` → `CodeAwareStrategy`
+- `ListStrategy` → удалена
+- `SentencesStrategy` → `FallbackStrategy`
+
+## Full List of Removed Config Parameters
+
+| Parameter | Replacement |
+|-----------|-------------|
+| enable_overlap | overlap_size > 0 |
+| block_based_splitting | Always enabled |
+| preserve_code_blocks | Always enabled |
+| preserve_tables | Always enabled |
+| enable_deduplication | Removed |
+| enable_regression_validation | Removed |
+| enable_header_path_validation | Removed |
+| use_enhanced_parser | Always enabled |
+| use_legacy_overlap | Removed |
+| ... | ... |
+
+## FAQ
+
+**Q: Мой код использует chunk_with_analysis(), что делать?**
+A: Замените на `chunk()`, который теперь всегда возвращает `ChunkingResult`.
+
+**Q: Как получить старое поведение выбора стратегии?**
+A: Используйте `strategy_override` в конфигурации.
+
+**Q: Почему удалены параметры для багфиксов?**
+A: Все багфиксы теперь включены по умолчанию. Параметры были нужны 
+только для backward compatibility.
+```
+
+### 5.5 Обновить документацию (0.5 дня)
 
 **Обновить:**
-- `README.md` — новый API
+- `README.md` — новый API, ссылка на MIGRATION.md
 - `docs/quickstart.md` — примеры
 - `docs/usage.md` — полное руководство
 

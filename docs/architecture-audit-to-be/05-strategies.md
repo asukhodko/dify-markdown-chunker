@@ -144,6 +144,82 @@ class BaseStrategy(ABC):
                 chunk.metadata["fence_count"] = fence_count
         
         return chunks
+    
+    def _set_oversize_metadata(
+        self,
+        chunk: Chunk,
+        reason: str,
+        config: ChunkConfig
+    ) -> None:
+        """
+        Установка метаданных для oversize чанка (FINDING-PROP2-1, PHASE12-1 fix).
+        
+        Вызывается стратегией при создании чанка, который превышает max_chunk_size.
+        Стратегия знает точную причину oversize, поэтому устанавливает её сама,
+        а не полагается на эвристику в post-process.
+        
+        Args:
+            chunk: Чанк для пометки
+            reason: Причина (code_block_integrity, table_integrity, section_integrity)
+            config: Конфигурация для проверки размера
+        """
+        VALID_REASONS = {'code_block_integrity', 'table_integrity', 'section_integrity'}
+        
+        if reason not in VALID_REASONS:
+            raise ValueError(f"Invalid oversize_reason: {reason}. Must be one of {VALID_REASONS}")
+        
+        if chunk.size > config.max_chunk_size:
+            chunk.metadata["allow_oversize"] = True
+            chunk.metadata["oversize_reason"] = reason
+    
+    def _ensure_fence_balance(self, chunks: List[Chunk]) -> List[Chunk]:
+        """
+        Проверка и исправление fence balance (FINDING-MC002-1, PROP6-1 fix).
+        
+        Если чанк имеет нечётное количество ```, пытаемся объединить
+        с соседним чанком для восстановления баланса.
+        """
+        result = []
+        i = 0
+        
+        while i < len(chunks):
+            chunk = chunks[i]
+            fence_count = chunk.content.count('```')
+            
+            if fence_count % 2 == 0:
+                # Баланс OK
+                result.append(chunk)
+                i += 1
+            else:
+                # Попытка объединения с следующим чанком
+                if i + 1 < len(chunks):
+                    merged_content = chunk.content + '\n' + chunks[i + 1].content
+                    merged_fence_count = merged_content.count('```')
+                    
+                    if merged_fence_count % 2 == 0:
+                        # Объединение восстановило баланс
+                        merged_chunk = self._create_chunk(
+                            content=merged_content,
+                            start_line=chunk.start_line,
+                            end_line=chunks[i + 1].end_line,
+                            merged_for_fence_balance=True
+                        )
+                        result.append(merged_chunk)
+                        i += 2
+                        continue
+                
+                # Объединение не помогло — логируем ошибку
+                import logging
+                logging.getLogger(__name__).error(
+                    f"Chunk {i} has unbalanced fences ({fence_count}), "
+                    f"could not restore balance"
+                )
+                chunk.metadata["fence_balance_error"] = True
+                chunk.metadata["fence_count"] = fence_count
+                result.append(chunk)
+                i += 1
+        
+        return result
 ```
 
 ## CodeAwareStrategy (strategies/code_aware.py)
@@ -229,9 +305,15 @@ class CodeAwareStrategy(BaseStrategy):
                     content=segment.content,
                     start_line=segment.start_line,
                     end_line=segment.end_line,
-                    content_type=segment.block_type,
-                    allow_oversize=len(segment.content) > config.max_chunk_size
+                    content_type=segment.block_type
                 )
+                
+                # Стратегия сама устанавливает oversize metadata с точной причиной
+                if segment.block_type == 'code':
+                    self._set_oversize_metadata(chunk, 'code_block_integrity', config)
+                elif segment.block_type == 'table':
+                    self._set_oversize_metadata(chunk, 'table_integrity', config)
+                
                 chunks.append(chunk)
                 current_start = segment.end_line + 1
             else:

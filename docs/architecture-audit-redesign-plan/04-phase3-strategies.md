@@ -70,6 +70,60 @@ class BaseStrategy(ABC):
     def _split_at_boundary(self, content: str, max_size: int) -> List[str]:
         """Разбить по семантическим границам."""
         # ... реализация
+    
+    # === NEW: Design Fixes ===
+    
+    def _set_oversize_metadata(self, chunk: Chunk, reason: str, config: ChunkConfig) -> None:
+        """
+        Установка метаданных для oversize чанка (FINDING-PROP2-1 fix).
+        
+        Стратегия знает точную причину oversize, поэтому устанавливает её сама.
+        """
+        VALID_REASONS = {'code_block_integrity', 'table_integrity', 'section_integrity'}
+        if reason not in VALID_REASONS:
+            raise ValueError(f"Invalid oversize_reason: {reason}")
+        
+        if chunk.size > config.max_chunk_size:
+            chunk.metadata["allow_oversize"] = True
+            chunk.metadata["oversize_reason"] = reason
+    
+    def _ensure_fence_balance(self, chunks: List[Chunk]) -> List[Chunk]:
+        """
+        Проверка и исправление fence balance (FINDING-MC002-1 fix).
+        
+        Пытается объединить чанки с нечётным количеством ``` для восстановления баланса.
+        """
+        result = []
+        i = 0
+        
+        while i < len(chunks):
+            chunk = chunks[i]
+            fence_count = chunk.content.count('```')
+            
+            if fence_count % 2 == 0:
+                result.append(chunk)
+                i += 1
+            else:
+                # Попытка объединения с следующим чанком
+                if i + 1 < len(chunks):
+                    merged = chunk.content + '\n' + chunks[i + 1].content
+                    if merged.count('```') % 2 == 0:
+                        merged_chunk = self._create_chunk(
+                            content=merged,
+                            start_line=chunk.start_line,
+                            end_line=chunks[i + 1].end_line,
+                            merged_for_fence_balance=True
+                        )
+                        result.append(merged_chunk)
+                        i += 2
+                        continue
+                
+                # Объединение не помогло
+                chunk.metadata["fence_balance_error"] = True
+                result.append(chunk)
+                i += 1
+        
+        return result
 ```
 
 ### 3.2 Создать CodeAwareStrategy (2 дня)
