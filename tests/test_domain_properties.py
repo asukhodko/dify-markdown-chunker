@@ -11,7 +11,7 @@ import pytest
 from hypothesis import given, strategies as st, settings, assume
 from typing import List
 
-from markdown_chunker import MarkdownChunker, ChunkConfig
+from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
 
 
 # =============================================================================

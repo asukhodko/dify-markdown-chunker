@@ -11,8 +11,7 @@ import pytest
 from hypothesis import given, strategies as st, settings, assume
 from typing import List
 
-from markdown_chunker import MarkdownChunker
-from markdown_chunker.chunker.types import ChunkConfig
+from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
 
 
 # =============================================================================
@@ -134,13 +133,12 @@ class TestOverlapIntegrity:
         config = ChunkConfig(
             max_chunk_size=500,
             min_chunk_size=100,
-            overlap_size=100,
-            enable_overlap=True
+            overlap_size=100  # overlap_size > 0 enables overlap
         )
         chunker = MarkdownChunker(config)
-        result = chunker.chunk(doc, include_analysis=True)
+        chunks = chunker.chunk(doc)
         
-        for chunk in result.chunks:
+        for chunk in chunks:
             # Check overlap content in metadata
             overlap_content = chunk.metadata.get("previous_content", "")
             if overlap_content:
@@ -162,13 +160,12 @@ class TestOverlapIntegrity:
         config = ChunkConfig(
             max_chunk_size=300,
             min_chunk_size=50,
-            overlap_size=50,
-            enable_overlap=True
+            overlap_size=50  # overlap_size > 0 enables overlap
         )
         chunker = MarkdownChunker(config)
-        result = chunker.chunk(doc, include_analysis=True)
+        chunks = chunker.chunk(doc)
         
-        for i, chunk in enumerate(result.chunks):
+        for i, chunk in enumerate(chunks):
             # Check that chunk content has balanced fences
             fence_count = chunk.content.count("```")
             assert fence_count % 2 == 0, (
@@ -202,12 +199,12 @@ class TestChunkIntegrityPreservation:
         config = ChunkConfig(
             max_chunk_size=200,  # Small to trigger oversize
             min_chunk_size=50,
-            enable_overlap=False
+            overlap_size=0  # overlap_size=0 disables overlap
         )
         chunker = MarkdownChunker(config)
-        result = chunker.chunk(doc, include_analysis=True)
+        chunks = chunker.chunk(doc)
         
-        for i, chunk in enumerate(result.chunks):
+        for i, chunk in enumerate(chunks):
             if len(chunk.content) > config.max_chunk_size:
                 assert chunk.metadata.get("allow_oversize", False), (
                     f"Chunk {i} exceeds max_chunk_size ({len(chunk.content)} > "
@@ -226,18 +223,16 @@ class TestChunkIntegrityPreservation:
         config = ChunkConfig(
             max_chunk_size=200,
             min_chunk_size=50,
-            enable_overlap=False
+            overlap_size=0  # overlap_size=0 disables overlap
         )
         chunker = MarkdownChunker(config)
-        result = chunker.chunk(doc, include_analysis=True)
+        chunks = chunker.chunk(doc)
         
         valid_reasons = {"code_block_integrity", "table_integrity", "section_integrity"}
         
-        for i, chunk in enumerate(result.chunks):
+        for i, chunk in enumerate(chunks):
             if chunk.metadata.get("allow_oversize", False):
                 reason = chunk.metadata.get("oversize_reason")
-                # Note: Current implementation may not always set reason
-                # This test documents expected behavior for new design
                 if reason is not None:
                     assert reason in valid_reasons, (
                         f"Chunk {i} has invalid oversize_reason: {reason}"
@@ -268,20 +263,20 @@ class TestStrategyEquivalence:
         All strategies must produce results satisfying PROP-1 through PROP-5.
         """
         chunker = MarkdownChunker()
-        result = chunker.chunk(doc, include_analysis=True)
+        chunks = chunker.chunk(doc)
         
         # PROP-3: Monotonic ordering
-        for i in range(len(result.chunks) - 1):
-            assert result.chunks[i].start_line <= result.chunks[i + 1].start_line, (
+        for i in range(len(chunks) - 1):
+            assert chunks[i].start_line <= chunks[i + 1].start_line, (
                 f"PROP-3 violated: chunks out of order at {i}"
             )
         
         # PROP-4: No empty chunks
-        for i, chunk in enumerate(result.chunks):
+        for i, chunk in enumerate(chunks):
             assert chunk.content.strip(), f"PROP-4 violated: empty chunk at {i}"
         
         # PROP-5: Valid line numbers
-        for i, chunk in enumerate(result.chunks):
+        for i, chunk in enumerate(chunks):
             assert chunk.start_line >= 1, (
                 f"PROP-5 violated: invalid start_line at {i}"
             )
@@ -314,16 +309,10 @@ class TestDefaultConfigEquivalence:
         Default configuration must produce valid chunking results.
         """
         chunker = MarkdownChunker()  # Default config
-        result = chunker.chunk(doc, include_analysis=True)
-        
-        # Should succeed or produce empty result for empty input
-        if doc.strip():
-            # Non-empty input should produce chunks or have errors
-            # (some edge cases may legitimately produce no chunks)
-            pass
+        chunks = chunker.chunk(doc)
         
         # All chunks must be valid
-        for chunk in result.chunks:
+        for chunk in chunks:
             assert chunk.content.strip(), "Empty chunk produced"
             assert chunk.start_line >= 1, "Invalid start_line"
             assert chunk.end_line >= chunk.start_line, "Invalid end_line"
@@ -352,10 +341,10 @@ class TestUnicodePreservation:
         Unicode characters must not be corrupted or lost.
         """
         chunker = MarkdownChunker()
-        result = chunker.chunk(doc, include_analysis=True)
+        chunks = chunker.chunk(doc)
         
         # Reconstruct content from chunks
-        reconstructed = "".join(chunk.content for chunk in result.chunks)
+        reconstructed = "".join(chunk.content for chunk in chunks)
         
         # All non-whitespace Unicode chars should be present
         for char in doc:
@@ -373,9 +362,9 @@ class TestUnicodePreservation:
         """
         doc = "# Заголовок\n\nТекст на русском языке с кириллицей."
         chunker = MarkdownChunker()
-        result = chunker.chunk(doc, include_analysis=True)
+        chunks = chunker.chunk(doc)
         
-        reconstructed = "".join(chunk.content for chunk in result.chunks)
+        reconstructed = "".join(chunk.content for chunk in chunks)
         assert "Заголовок" in reconstructed
         assert "кириллицей" in reconstructed
     
@@ -388,9 +377,9 @@ class TestUnicodePreservation:
         """
         doc = "# Test 🎉\n\nHello 👍 World 🚀"
         chunker = MarkdownChunker()
-        result = chunker.chunk(doc, include_analysis=True)
+        chunks = chunker.chunk(doc)
         
-        reconstructed = "".join(chunk.content for chunk in result.chunks)
+        reconstructed = "".join(chunk.content for chunk in chunks)
         assert "🎉" in reconstructed
         assert "👍" in reconstructed
         assert "🚀" in reconstructed

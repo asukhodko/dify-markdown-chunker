@@ -154,12 +154,86 @@ class Chunk:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Chunk":
         """Create from dictionary."""
+        if not isinstance(data, dict):
+            raise ValueError(f"Expected dict, got {type(data).__name__}")
+        if "content" not in data:
+            raise ValueError("Missing required field: content")
+        if "start_line" not in data:
+            raise ValueError("Missing required field: start_line")
+        if "end_line" not in data:
+            raise ValueError("Missing required field: end_line")
+        
         return cls(
             content=data["content"],
             start_line=data["start_line"],
             end_line=data["end_line"],
             metadata=data.get("metadata", {}),
         )
+    
+    def to_json(self) -> str:
+        """Serialize chunk to JSON string."""
+        import json
+        return json.dumps(self.to_dict(), ensure_ascii=False)
+    
+    @classmethod
+    def from_json(cls, json_str: str) -> "Chunk":
+        """Deserialize chunk from JSON string."""
+        import json
+        try:
+            data = json.loads(json_str)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON: {e}")
+        return cls.from_dict(data)
+
+
+@dataclass
+class ChunkingMetrics:
+    """
+    Statistics about chunking results.
+    
+    Provides quality metrics for monitoring and tuning.
+    """
+    total_chunks: int
+    avg_chunk_size: float
+    std_dev_size: float
+    min_size: int
+    max_size: int
+    undersize_count: int  # chunks < min_chunk_size
+    oversize_count: int   # chunks > max_chunk_size
+    
+    @classmethod
+    def from_chunks(cls, chunks: List["Chunk"], min_chunk_size: int = 512, 
+                    max_chunk_size: int = 4096) -> "ChunkingMetrics":
+        """Calculate metrics from chunk list."""
+        if not chunks:
+            return cls(0, 0.0, 0.0, 0, 0, 0, 0)
+        
+        sizes = [c.size for c in chunks]
+        avg = sum(sizes) / len(sizes)
+        variance = sum((s - avg) ** 2 for s in sizes) / len(sizes)
+        std_dev = variance ** 0.5
+        
+        return cls(
+            total_chunks=len(chunks),
+            avg_chunk_size=avg,
+            std_dev_size=std_dev,
+            min_size=min(sizes),
+            max_size=max(sizes),
+            undersize_count=sum(1 for s in sizes if s < min_chunk_size),
+            oversize_count=sum(1 for s in sizes if s > max_chunk_size)
+        )
+    
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "total_chunks": self.total_chunks,
+            "avg_chunk_size": self.avg_chunk_size,
+            "std_dev_size": self.std_dev_size,
+            "min_size": self.min_size,
+            "max_size": self.max_size,
+            "undersize_count": self.undersize_count,
+            "oversize_count": self.oversize_count,
+        }
 
 
 @dataclass

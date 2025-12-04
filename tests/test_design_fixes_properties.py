@@ -13,7 +13,7 @@ Property-based тесты для исправлений дизайна markdown_
 import pytest
 from hypothesis import given, strategies as st, settings, assume
 
-from markdown_chunker import MarkdownChunker, ChunkConfig
+from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
 
 
 # Генератор markdown текста
@@ -118,7 +118,7 @@ class TestCodeFenceBalance:
         
         md_text = "".join(parts)
         
-        chunker = MarkdownChunker(ChunkConfig(max_chunk_size=200))
+        chunker = MarkdownChunker(ChunkConfig(max_chunk_size=200, overlap_size=50))
         chunks = chunker.chunk(md_text)
         
         for i, chunk in enumerate(chunks):
@@ -149,7 +149,7 @@ console.log("Hello");
 
 More text at the end.
 """
-        chunker = MarkdownChunker(ChunkConfig(max_chunk_size=100))
+        chunker = MarkdownChunker(ChunkConfig(max_chunk_size=100, overlap_size=20))
         chunks = chunker.chunk(md_with_code)
         
         for i, chunk in enumerate(chunks):

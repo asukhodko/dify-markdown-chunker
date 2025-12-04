@@ -8,7 +8,7 @@ This is the redesigned version with:
 - Linear pipeline without duplication
 """
 
-from .types import Chunk, ContentAnalysis, FencedBlock, ChunkingResult
+from .types import Chunk, ContentAnalysis, FencedBlock, ChunkingResult, ChunkingMetrics
 from .config import ChunkConfig
 from .chunker import MarkdownChunker
 from .validator import Validator, ValidationResult, validate_chunks
@@ -22,6 +22,7 @@ __all__ = [
     "ContentAnalysis",
     "FencedBlock",
     "ChunkingResult",
+    "ChunkingMetrics",
     "Validator",
     "ValidationResult",
     "validate_chunks",
