@@ -1,0 +1,20 @@
+{
+  "filename": "webpack.md",
+  "category": "github_readmes",
+  "subcategory": "javascript",
+  "size_bytes": 80930,
+  "line_count": 662,
+  "source": "github",
+  "source_url": "https://github.com/webpack/webpack",
+  "collection_date": "2025-12-06T00:39:00.765746",
+  "code_ratio": 0.0030211480362537764,
+  "table_count": 13,
+  "list_count": 62,
+  "header_count": 34,
+  "max_header_depth": 4,
+  "code_block_count": 2,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "54f5fa5c4413ac41c62cc0fa33dbe0eaa9fbb99efb965f71d119a9cd26010475",
+  "extra": {}
+}

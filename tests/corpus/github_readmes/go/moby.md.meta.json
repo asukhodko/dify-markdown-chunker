@@ -1,0 +1,20 @@
+{
+  "filename": "moby.md",
+  "category": "github_readmes",
+  "subcategory": "go",
+  "size_bytes": 4107,
+  "line_count": 65,
+  "source": "github",
+  "source_url": "https://github.com/moby/moby",
+  "collection_date": "2025-12-06T00:39:30.673512",
+  "code_ratio": 0.0,
+  "table_count": 0,
+  "list_count": 6,
+  "header_count": 3,
+  "max_header_depth": 2,
+  "code_block_count": 0,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "7767a05537387c43607ea267ecd72e9cf0bf291c6fe8efa53bcdd9475ea09b36",
+  "extra": {}
+}

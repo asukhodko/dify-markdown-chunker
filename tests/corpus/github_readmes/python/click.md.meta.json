@@ -1,0 +1,20 @@
+{
+  "filename": "click.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 1778,
+  "line_count": 63,
+  "source": "github",
+  "source_url": "https://github.com/pallets/click",
+  "collection_date": "2025-12-06T00:38:47.785034",
+  "code_ratio": 0.2698412698412698,
+  "table_count": 0,
+  "list_count": 3,
+  "header_count": 4,
+  "max_header_depth": 2,
+  "code_block_count": 2,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "4c3de4aa0918deac2f712facacd1dc30a8cc4627d0118dd290292ab0af65ca0b",
+  "extra": {}
+}

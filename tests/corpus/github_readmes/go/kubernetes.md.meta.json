@@ -1,0 +1,20 @@
+{
+  "filename": "kubernetes.md",
+  "category": "github_readmes",
+  "subcategory": "go",
+  "size_bytes": 4387,
+  "line_count": 101,
+  "source": "github",
+  "source_url": "https://github.com/kubernetes/kubernetes",
+  "collection_date": "2025-12-06T00:39:29.261995",
+  "code_ratio": 0.0594059405940594,
+  "table_count": 0,
+  "list_count": 2,
+  "header_count": 10,
+  "max_header_depth": 5,
+  "code_block_count": 2,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "ca72a02de7afff935feb2beb5c670b758617eac433a8473703ed151f9641bb62",
+  "extra": {}
+}

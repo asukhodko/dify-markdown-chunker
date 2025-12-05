@@ -1,0 +1,20 @@
+{
+  "filename": "unstructured_003.md",
+  "category": "personal_notes",
+  "subcategory": "unstructured",
+  "size_bytes": 800,
+  "line_count": 34,
+  "source": "synthetic",
+  "source_url": null,
+  "collection_date": "2025-12-06T01:15:16.611536",
+  "code_ratio": 0.17647058823529413,
+  "table_count": 0,
+  "list_count": 3,
+  "header_count": 4,
+  "max_header_depth": 2,
+  "code_block_count": 2,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "bef986feb37456fb6f482454263baf64dbb870f1949e1a9b343bd83afb078f71",
+  "extra": {}
+}

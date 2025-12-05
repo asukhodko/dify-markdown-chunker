@@ -1,0 +1,20 @@
+{
+  "filename": "research_notes_003_ed56eff2.md",
+  "category": "research_notes",
+  "subcategory": null,
+  "size_bytes": 4749,
+  "line_count": 185,
+  "source": "synthetic_diverse",
+  "source_url": null,
+  "collection_date": "2025-12-06T01:35:53.240632",
+  "code_ratio": 0.32972972972972975,
+  "table_count": 4,
+  "list_count": 31,
+  "header_count": 23,
+  "max_header_depth": 3,
+  "code_block_count": 4,
+  "nesting_level": 0,
+  "expected_strategy": "code_aware",
+  "content_hash": "25080c994bf6669827a9dee5e2686ed66c26602049e0ee0b60861f039383ff94",
+  "extra": {}
+}

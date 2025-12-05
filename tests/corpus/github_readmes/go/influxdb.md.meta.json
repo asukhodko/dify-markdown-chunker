@@ -1,0 +1,20 @@
+{
+  "filename": "influxdb.md",
+  "category": "github_readmes",
+  "subcategory": "go",
+  "size_bytes": 4266,
+  "line_count": 69,
+  "source": "github",
+  "source_url": "https://github.com/influxdata/influxdb",
+  "collection_date": "2025-12-06T00:39:41.963344",
+  "code_ratio": 0.0,
+  "table_count": 0,
+  "list_count": 17,
+  "header_count": 5,
+  "max_header_depth": 2,
+  "code_block_count": 0,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "07459a2b229819ea4e741765907db13965d30ae5a38bfc02785cb296ec95cfaf",
+  "extra": {}
+}

@@ -1,0 +1,20 @@
+{
+  "filename": "eslint.md",
+  "category": "github_readmes",
+  "subcategory": "javascript",
+  "size_bytes": 19996,
+  "line_count": 355,
+  "source": "github",
+  "source_url": "https://github.com/eslint/eslint",
+  "collection_date": "2025-12-06T00:39:27.603569",
+  "code_ratio": 0.04225352112676056,
+  "table_count": 0,
+  "list_count": 52,
+  "header_count": 26,
+  "max_header_depth": 3,
+  "code_block_count": 4,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "628d681f9b0d446140401a79aaab39406ed5af9e81193917dce4bf487c0ca02b",
+  "extra": {}
+}

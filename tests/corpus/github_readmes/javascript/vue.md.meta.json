@@ -1,0 +1,20 @@
+{
+  "filename": "vue.md",
+  "category": "github_readmes",
+  "subcategory": "javascript",
+  "size_bytes": 7874,
+  "line_count": 123,
+  "source": "github",
+  "source_url": "https://github.com/vuejs/vue",
+  "collection_date": "2025-12-06T00:38:55.094435",
+  "code_ratio": 0.0,
+  "table_count": 3,
+  "list_count": 5,
+  "header_count": 12,
+  "max_header_depth": 4,
+  "code_block_count": 0,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "a9abe8e795aaa122e6ef5d4ca34f323778e727112bcbec4e06b960541cc0df61",
+  "extra": {}
+}

@@ -1,0 +1,20 @@
+{
+  "filename": "boto3.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 5619,
+  "line_count": 157,
+  "source": "github",
+  "source_url": "https://github.com/boto/boto3",
+  "collection_date": "2025-12-06T00:38:45.061751",
+  "code_ratio": 0.0,
+  "table_count": 1,
+  "list_count": 14,
+  "header_count": 0,
+  "max_header_depth": 0,
+  "code_block_count": 0,
+  "nesting_level": 0,
+  "expected_strategy": "fallback",
+  "content_hash": "6172c0ac76a8a990058a3dbee01aaf1b83199db48bc46ab6226f817c64f0ce9f",
+  "extra": {}
+}

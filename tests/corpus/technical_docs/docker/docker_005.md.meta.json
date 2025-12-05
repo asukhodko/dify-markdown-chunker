@@ -1,0 +1,20 @@
+{
+  "filename": "docker_005.md",
+  "category": "technical_docs",
+  "subcategory": "docker",
+  "size_bytes": 5405,
+  "line_count": 348,
+  "source": "synthetic",
+  "source_url": null,
+  "collection_date": "2025-12-06T01:15:16.531786",
+  "code_ratio": 0.34195402298850575,
+  "table_count": 2,
+  "list_count": 45,
+  "header_count": 53,
+  "max_header_depth": 4,
+  "code_block_count": 21,
+  "nesting_level": 0,
+  "expected_strategy": "code_aware",
+  "content_hash": "80ab6b0912ce8825d2c6b394868716f353c8e91812a04dbd6690088daae11e4c",
+  "extra": {}
+}

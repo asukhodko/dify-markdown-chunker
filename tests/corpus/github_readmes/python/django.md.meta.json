@@ -1,0 +1,20 @@
+{
+  "filename": "django.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 2017,
+  "line_count": 53,
+  "source": "github",
+  "source_url": "https://github.com/django/django",
+  "collection_date": "2025-12-06T00:38:20.858469",
+  "code_ratio": 0.0,
+  "table_count": 0,
+  "list_count": 9,
+  "header_count": 0,
+  "max_header_depth": 0,
+  "code_block_count": 0,
+  "nesting_level": 0,
+  "expected_strategy": "fallback",
+  "content_hash": "17c3550b268b902983fd4a4decd9a475bb8725c0941e016d29c6b7bf62273eab",
+  "extra": {}
+}

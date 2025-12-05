@@ -1,0 +1,20 @@
+{
+  "filename": "cheatsheets_003.md",
+  "category": "personal_notes",
+  "subcategory": "cheatsheets",
+  "size_bytes": 1095,
+  "line_count": 64,
+  "source": "synthetic",
+  "source_url": null,
+  "collection_date": "2025-12-06T01:15:16.617401",
+  "code_ratio": 0.125,
+  "table_count": 3,
+  "list_count": 9,
+  "header_count": 11,
+  "max_header_depth": 3,
+  "code_block_count": 3,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "54ce1fea5518600670c1b24a627f5fd712e2cef023e51dd1a49346a8904c15a4",
+  "extra": {}
+}

@@ -1,0 +1,20 @@
+{
+  "filename": "parcel.md",
+  "category": "github_readmes",
+  "subcategory": "javascript",
+  "size_bytes": 32,
+  "line_count": 1,
+  "source": "github",
+  "source_url": "https://github.com/parcel-bundler/parcel",
+  "collection_date": "2025-12-06T00:39:24.830299",
+  "code_ratio": 0.0,
+  "table_count": 0,
+  "list_count": 0,
+  "header_count": 0,
+  "max_header_depth": 0,
+  "code_block_count": 0,
+  "nesting_level": 0,
+  "expected_strategy": "fallback",
+  "content_hash": "f6afeefec336caa1e33d185e851d4a12da126f791f4c37fdc0c2b2b8d6922221",
+  "extra": {}
+}

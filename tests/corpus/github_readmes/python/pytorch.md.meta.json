@@ -1,0 +1,20 @@
+{
+  "filename": "pytorch.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 27316,
+  "line_count": 575,
+  "source": "github",
+  "source_url": "https://github.com/pytorch/pytorch",
+  "collection_date": "2025-12-06T00:38:19.390228",
+  "code_ratio": 0.15478260869565216,
+  "table_count": 2,
+  "list_count": 81,
+  "header_count": 47,
+  "max_header_depth": 5,
+  "code_block_count": 24,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "23c7b032f47cff21856f352a35a6ba971ea91115796ac7a3cbc9fe4a28443f74",
+  "extra": {}
+}

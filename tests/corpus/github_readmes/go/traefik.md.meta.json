@@ -1,0 +1,20 @@
+{
+  "filename": "traefik.md",
+  "category": "github_readmes",
+  "subcategory": "go",
+  "size_bytes": 7982,
+  "line_count": 160,
+  "source": "github",
+  "source_url": "https://github.com/traefik/traefik",
+  "collection_date": "2025-12-06T00:39:39.119981",
+  "code_ratio": 0.01875,
+  "table_count": 0,
+  "list_count": 37,
+  "header_count": 14,
+  "max_header_depth": 2,
+  "code_block_count": 3,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "987749c67507f616845c9903f8016ae453a3c36b59064f56e399d93f8b6f7852",
+  "extra": {}
+}

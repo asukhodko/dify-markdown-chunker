@@ -1,0 +1,20 @@
+{
+  "filename": "prettier.md",
+  "category": "github_readmes",
+  "subcategory": "javascript",
+  "size_bytes": 3396,
+  "line_count": 105,
+  "source": "github",
+  "source_url": "https://github.com/prettier/prettier",
+  "collection_date": "2025-12-06T00:39:10.616378",
+  "code_ratio": 0.0761904761904762,
+  "table_count": 0,
+  "list_count": 4,
+  "header_count": 5,
+  "max_header_depth": 3,
+  "code_block_count": 3,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "f1f5a86cd0fd0f6a288882527830a9bbbd5851e3238c4d7426b7bbb496165cd1",
+  "extra": {}
+}

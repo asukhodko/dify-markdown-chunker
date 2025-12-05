@@ -1,0 +1,20 @@
+{
+  "filename": "scikit-learn.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 7442,
+  "line_count": 214,
+  "source": "github",
+  "source_url": "https://github.com/scikit-learn/scikit-learn",
+  "collection_date": "2025-12-06T00:38:24.979771",
+  "code_ratio": 0.0,
+  "table_count": 10,
+  "list_count": 33,
+  "header_count": 0,
+  "max_header_depth": 0,
+  "code_block_count": 0,
+  "nesting_level": 0,
+  "expected_strategy": "fallback",
+  "content_hash": "73d6ba9819305b724cef6ec406c8911393803585cf14ed9d62238ef544a14b39",
+  "extra": {}
+}

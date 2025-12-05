@@ -1,0 +1,20 @@
+{
+  "filename": "engineering_blogs_044_7f87d860.md",
+  "category": "engineering_blogs",
+  "subcategory": null,
+  "size_bytes": 4816,
+  "line_count": 218,
+  "source": "synthetic_diverse",
+  "source_url": null,
+  "collection_date": "2025-12-06T01:35:53.220860",
+  "code_ratio": 0.45871559633027525,
+  "table_count": 3,
+  "list_count": 25,
+  "header_count": 21,
+  "max_header_depth": 4,
+  "code_block_count": 6,
+  "nesting_level": 0,
+  "expected_strategy": "code_aware",
+  "content_hash": "82e4794e7ad88e66f6c70e89de28955f2870889d82eddfde4c9e514f0e17ed9c",
+  "extra": {}
+}

@@ -1,0 +1,20 @@
+{
+  "filename": "tornado.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 1599,
+  "line_count": 52,
+  "source": "github",
+  "source_url": "https://github.com/tornadoweb/tornado",
+  "collection_date": "2025-12-06T00:38:36.207789",
+  "code_ratio": 0.0,
+  "table_count": 0,
+  "list_count": 2,
+  "header_count": 0,
+  "max_header_depth": 0,
+  "code_block_count": 0,
+  "nesting_level": 0,
+  "expected_strategy": "fallback",
+  "content_hash": "c73388725fb5bcee774868ed8b7cc4838e4394d1a6985069c89d079364fecbbb",
+  "extra": {}
+}

@@ -1,0 +1,20 @@
+{
+  "filename": "conda.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 6124,
+  "line_count": 161,
+  "source": "github",
+  "source_url": "https://github.com/conda/conda",
+  "collection_date": "2025-12-06T00:38:46.426308",
+  "code_ratio": 0.06832298136645963,
+  "table_count": 0,
+  "list_count": 5,
+  "header_count": 6,
+  "max_header_depth": 2,
+  "code_block_count": 11,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "e915e90bb1e4cd4a596e5fe2946192f36d4a9543f8c71d2e700b2f48a3a2b31b",
+  "extra": {}
+}

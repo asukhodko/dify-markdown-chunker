@@ -1,0 +1,20 @@
+{
+  "filename": "black.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 9794,
+  "line_count": 229,
+  "source": "github",
+  "source_url": "https://github.com/psf/black",
+  "collection_date": "2025-12-06T00:38:49.183499",
+  "code_ratio": 0.021834061135371178,
+  "table_count": 0,
+  "list_count": 19,
+  "header_count": 14,
+  "max_header_depth": 3,
+  "code_block_count": 4,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "d127c60e5a8cef6c167087cc8e63f581f8489fe7a79a74c7c2815e4d2b268e0d",
+  "extra": {}
+}

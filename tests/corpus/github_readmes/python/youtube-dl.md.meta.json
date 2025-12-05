@@ -1,0 +1,20 @@
+{
+  "filename": "youtube-dl.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 101042,
+  "line_count": 1581,
+  "source": "github",
+  "source_url": "https://github.com/ytdl-org/youtube-dl",
+  "collection_date": "2025-12-06T00:38:37.846461",
+  "code_ratio": 0.3270082226438963,
+  "table_count": 1,
+  "list_count": 301,
+  "header_count": 123,
+  "max_header_depth": 5,
+  "code_block_count": 43,
+  "nesting_level": 0,
+  "expected_strategy": "code_aware",
+  "content_hash": "dc249af3a7587ad18dce6d22f6e486ac0af6f91fe1172e7e866bae584e0c73cb",
+  "extra": {}
+}

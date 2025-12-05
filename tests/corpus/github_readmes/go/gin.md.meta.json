@@ -1,0 +1,20 @@
+{
+  "filename": "gin.md",
+  "category": "github_readmes",
+  "subcategory": "go",
+  "size_bytes": 11523,
+  "line_count": 228,
+  "source": "github",
+  "source_url": "https://github.com/gin-gonic/gin",
+  "collection_date": "2025-12-06T00:39:33.571630",
+  "code_ratio": 0.12719298245614036,
+  "table_count": 11,
+  "list_count": 66,
+  "header_count": 18,
+  "max_header_depth": 4,
+  "code_block_count": 3,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "97e15593b9be0b462367b10874f0a7b4b2297bfd73518f9554dbfca86d8f3adf",
+  "extra": {}
+}

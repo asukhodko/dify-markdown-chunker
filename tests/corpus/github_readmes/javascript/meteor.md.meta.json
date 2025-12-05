@@ -1,0 +1,20 @@
+{
+  "filename": "meteor.md",
+  "category": "github_readmes",
+  "subcategory": "javascript",
+  "size_bytes": 3224,
+  "line_count": 97,
+  "source": "github",
+  "source_url": "https://github.com/meteor/meteor",
+  "collection_date": "2025-12-06T00:39:17.805237",
+  "code_ratio": 0.041237113402061855,
+  "table_count": 1,
+  "list_count": 11,
+  "header_count": 6,
+  "max_header_depth": 3,
+  "code_block_count": 3,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "cae9fb576b8c06349f0c2ded8f6a10228f02c9c162a332669c05bd1623f830df",
+  "extra": {}
+}

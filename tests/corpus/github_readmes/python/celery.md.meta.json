@@ -1,0 +1,20 @@
+{
+  "filename": "celery.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 18041,
+  "line_count": 609,
+  "source": "github",
+  "source_url": "https://github.com/celery/celery",
+  "collection_date": "2025-12-06T00:38:43.660631",
+  "code_ratio": 0.0,
+  "table_count": 8,
+  "list_count": 50,
+  "header_count": 1,
+  "max_header_depth": 1,
+  "code_block_count": 0,
+  "nesting_level": 0,
+  "expected_strategy": "fallback",
+  "content_hash": "931857f8b49e8df88d3bdee363a89dca4c8ce0e146ce8b4ec89a04adb16774d8",
+  "extra": {}
+}

@@ -1,0 +1,20 @@
+{
+  "filename": "cpython.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 8911,
+  "line_count": 236,
+  "source": "github",
+  "source_url": "https://github.com/python/cpython",
+  "collection_date": "2025-12-06T00:38:34.784591",
+  "code_ratio": 0.0,
+  "table_count": 0,
+  "list_count": 16,
+  "header_count": 0,
+  "max_header_depth": 0,
+  "code_block_count": 0,
+  "nesting_level": 0,
+  "expected_strategy": "fallback",
+  "content_hash": "a06cf3960edcad75e17e558ea6fff7fd4a062327a1bf85b49150ce1f87327489",
+  "extra": {}
+}

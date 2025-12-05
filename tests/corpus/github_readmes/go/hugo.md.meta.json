@@ -1,0 +1,20 @@
+{
+  "filename": "hugo.md",
+  "category": "github_readmes",
+  "subcategory": "go",
+  "size_bytes": 12830,
+  "line_count": 283,
+  "source": "github",
+  "source_url": "https://github.com/gohugoio/hugo",
+  "collection_date": "2025-12-06T00:39:32.071693",
+  "code_ratio": 0.392226148409894,
+  "table_count": 2,
+  "list_count": 26,
+  "header_count": 10,
+  "max_header_depth": 2,
+  "code_block_count": 4,
+  "nesting_level": 0,
+  "expected_strategy": "code_aware",
+  "content_hash": "dcea7f75cc3a534a7521b5f146e6c8dcaa6942e6b1eea011e223c6988fc495b5",
+  "extra": {}
+}

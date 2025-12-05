@@ -1,0 +1,20 @@
+{
+  "filename": "ansible.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 5930,
+  "line_count": 102,
+  "source": "github",
+  "source_url": "https://github.com/ansible/ansible",
+  "collection_date": "2025-12-06T00:38:30.539069",
+  "code_ratio": 0.0,
+  "table_count": 0,
+  "list_count": 26,
+  "header_count": 10,
+  "max_header_depth": 2,
+  "code_block_count": 0,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "f5335e00c0ccaca7867b838dc8534a4187b1fdd0d6d4efd6bdc289450f71bcba",
+  "extra": {}
+}

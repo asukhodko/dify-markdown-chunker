@@ -1,0 +1,20 @@
+{
+  "filename": "changelogs_037.md",
+  "category": "changelogs",
+  "subcategory": null,
+  "size_bytes": 2120,
+  "line_count": 88,
+  "source": "synthetic",
+  "source_url": null,
+  "collection_date": "2025-12-06T01:15:16.591671",
+  "code_ratio": 0.0,
+  "table_count": 0,
+  "list_count": 40,
+  "header_count": 16,
+  "max_header_depth": 3,
+  "code_block_count": 0,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "428669930573e93c4d0097e7ad94654e810d1c2583d2908abbf6f70502e4d528",
+  "extra": {}
+}

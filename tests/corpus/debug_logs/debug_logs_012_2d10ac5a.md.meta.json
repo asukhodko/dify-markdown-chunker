@@ -1,0 +1,20 @@
+{
+  "filename": "debug_logs_012_2d10ac5a.md",
+  "category": "debug_logs",
+  "subcategory": null,
+  "size_bytes": 4817,
+  "line_count": 237,
+  "source": "synthetic_diverse",
+  "source_url": null,
+  "collection_date": "2025-12-06T01:35:53.204068",
+  "code_ratio": 0.4177215189873418,
+  "table_count": 4,
+  "list_count": 36,
+  "header_count": 22,
+  "max_header_depth": 3,
+  "code_block_count": 9,
+  "nesting_level": 0,
+  "expected_strategy": "code_aware",
+  "content_hash": "76a63e6386a7052ec8b166573b0bba847c1598440804b205f29ec73c6387aa04",
+  "extra": {}
+}

@@ -1,0 +1,20 @@
+{
+  "filename": "streamlit.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 6224,
+  "line_count": 141,
+  "source": "github",
+  "source_url": "https://github.com/streamlit/streamlit",
+  "collection_date": "2025-12-06T00:38:42.095584",
+  "code_ratio": 0.04964539007092199,
+  "table_count": 0,
+  "list_count": 17,
+  "header_count": 12,
+  "max_header_depth": 3,
+  "code_block_count": 4,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "228fbb78e4283941c327c86599a896ed88a1cea78f7904484f919390b2868d9c",
+  "extra": {}
+}

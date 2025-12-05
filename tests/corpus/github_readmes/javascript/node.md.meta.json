@@ -1,0 +1,20 @@
+{
+  "filename": "node.md",
+  "category": "github_readmes",
+  "subcategory": "javascript",
+  "size_bytes": 41975,
+  "line_count": 922,
+  "source": "github",
+  "source_url": "https://github.com/nodejs/node",
+  "collection_date": "2025-12-06T00:39:02.197263",
+  "code_ratio": 0.013015184381778741,
+  "table_count": 0,
+  "list_count": 660,
+  "header_count": 23,
+  "max_header_depth": 4,
+  "code_block_count": 3,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "e4474a13af91a2039950e0af47bf347acfa0b54fe3f7a57f1d537691ece81d1a",
+  "extra": {}
+}

@@ -1,0 +1,20 @@
+{
+  "filename": "github_readmes_010_5db609dd.md",
+  "category": "github_readmes",
+  "subcategory": null,
+  "size_bytes": 173,
+  "line_count": 10,
+  "source": "synthetic_diverse",
+  "source_url": null,
+  "collection_date": "2025-12-06T01:35:53.224079",
+  "code_ratio": 0.0,
+  "table_count": 0,
+  "list_count": 0,
+  "header_count": 2,
+  "max_header_depth": 2,
+  "code_block_count": 0,
+  "nesting_level": 0,
+  "expected_strategy": "fallback",
+  "content_hash": "5fcde880a059fba2d8a6d32193a9adea2e82954c829b2f63af9801e0f674d96f",
+  "extra": {}
+}

@@ -1,0 +1,20 @@
+{
+  "filename": "flask.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 1639,
+  "line_count": 54,
+  "source": "github",
+  "source_url": "https://github.com/pallets/flask",
+  "collection_date": "2025-12-06T00:38:22.228977",
+  "code_ratio": 0.18518518518518517,
+  "table_count": 0,
+  "list_count": 1,
+  "header_count": 5,
+  "max_header_depth": 2,
+  "code_block_count": 2,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "1f2de14735b1ee9d3a342fa7c5d5e87b95727276c0a56c8a9d77221f37880602",
+  "extra": {}
+}

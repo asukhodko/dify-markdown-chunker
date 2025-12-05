@@ -1,0 +1,20 @@
+{
+  "filename": "pandas.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 11865,
+  "line_count": 191,
+  "source": "github",
+  "source_url": "https://github.com/pandas-dev/pandas",
+  "collection_date": "2025-12-06T00:38:26.353631",
+  "code_ratio": 0.03664921465968586,
+  "table_count": 1,
+  "list_count": 26,
+  "header_count": 15,
+  "max_header_depth": 2,
+  "code_block_count": 5,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "6f12b7d9c6a944926236beebb7d24dcebc4a3b1e2880976ae0de817bd1243d16",
+  "extra": {}
+}

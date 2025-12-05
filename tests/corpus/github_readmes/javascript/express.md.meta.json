@@ -1,0 +1,20 @@
+{
+  "filename": "express.md",
+  "category": "github_readmes",
+  "subcategory": "javascript",
+  "size_bytes": 9952,
+  "line_count": 277,
+  "source": "github",
+  "source_url": "https://github.com/expressjs/express",
+  "collection_date": "2025-12-06T00:38:59.284562",
+  "code_ratio": 0.07581227436823104,
+  "table_count": 0,
+  "list_count": 85,
+  "header_count": 16,
+  "max_header_depth": 4,
+  "code_block_count": 11,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "b64824e537697508d0bc7bc65a0897283bb1d8b5f72ede4ff8c1ffb3363aec39",
+  "extra": {}
+}

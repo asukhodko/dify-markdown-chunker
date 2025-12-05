@@ -1,0 +1,20 @@
+{
+  "filename": "nuxt.md",
+  "category": "github_readmes",
+  "subcategory": "javascript",
+  "size_bytes": 5473,
+  "line_count": 118,
+  "source": "github",
+  "source_url": "https://github.com/nuxt/nuxt",
+  "collection_date": "2025-12-06T00:39:19.202958",
+  "code_ratio": 0.1864406779661017,
+  "table_count": 0,
+  "list_count": 25,
+  "header_count": 12,
+  "max_header_depth": 3,
+  "code_block_count": 2,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "d5510435305deef9c100ef540725932015603519bd6333b337126061dc35e072",
+  "extra": {}
+}

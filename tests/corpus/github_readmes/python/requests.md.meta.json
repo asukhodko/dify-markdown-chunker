@@ -1,0 +1,20 @@
+{
+  "filename": "requests.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 2939,
+  "line_count": 79,
+  "source": "github",
+  "source_url": "https://github.com/psf/requests",
+  "collection_date": "2025-12-06T00:38:23.604232",
+  "code_ratio": 0.189873417721519,
+  "table_count": 0,
+  "list_count": 15,
+  "header_count": 5,
+  "max_header_depth": 2,
+  "code_block_count": 4,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "208d76712b5588525a2623a18f46786e7fa61d3dedbc56fddf39d67aa7df834b",
+  "extra": {}
+}

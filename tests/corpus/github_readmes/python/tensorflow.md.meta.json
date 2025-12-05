@@ -1,0 +1,20 @@
+{
+  "filename": "tensorflow.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 11901,
+  "line_count": 174,
+  "source": "github",
+  "source_url": "https://github.com/tensorflow/tensorflow",
+  "collection_date": "2025-12-06T00:38:17.991763",
+  "code_ratio": 0.05172413793103448,
+  "table_count": 5,
+  "list_count": 40,
+  "header_count": 9,
+  "max_header_depth": 4,
+  "code_block_count": 4,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "5e25db9f7d2a733880923a155bd2944dd783362d76a84ffe6dd05864d9641257",
+  "extra": {}
+}

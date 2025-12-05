@@ -1,0 +1,20 @@
+{
+  "filename": "technical_docs_042_84524485.md",
+  "category": "technical_docs",
+  "subcategory": null,
+  "size_bytes": 173,
+  "line_count": 10,
+  "source": "synthetic_diverse",
+  "source_url": null,
+  "collection_date": "2025-12-06T01:35:53.251772",
+  "code_ratio": 0.0,
+  "table_count": 0,
+  "list_count": 0,
+  "header_count": 2,
+  "max_header_depth": 2,
+  "code_block_count": 0,
+  "nesting_level": 0,
+  "expected_strategy": "fallback",
+  "content_hash": "39ca2c2e6112607cbea178807933b11678f62b3d91511664a36bb412acacff9c",
+  "extra": {}
+}

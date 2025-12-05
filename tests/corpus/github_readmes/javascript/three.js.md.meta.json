@@ -1,0 +1,20 @@
+{
+  "filename": "three.js.md",
+  "category": "github_readmes",
+  "subcategory": "javascript",
+  "size_bytes": 2969,
+  "line_count": 86,
+  "source": "github",
+  "source_url": "https://github.com/mrdoob/three.js",
+  "collection_date": "2025-12-06T00:39:05.007171",
+  "code_ratio": 0.38372093023255816,
+  "table_count": 0,
+  "list_count": 0,
+  "header_count": 5,
+  "max_header_depth": 4,
+  "code_block_count": 2,
+  "nesting_level": 0,
+  "expected_strategy": "code_aware",
+  "content_hash": "d553d824625a07d7690de93af6f8daf13d6aaed42700929d7ce4e725fa5ef10d",
+  "extra": {}
+}

@@ -1,0 +1,20 @@
+{
+  "filename": "debug_logs_002.md",
+  "category": "debug_logs",
+  "subcategory": null,
+  "size_bytes": 1535,
+  "line_count": 85,
+  "source": "synthetic",
+  "source_url": null,
+  "collection_date": "2025-12-06T01:15:16.619621",
+  "code_ratio": 0.36470588235294116,
+  "table_count": 1,
+  "list_count": 14,
+  "header_count": 10,
+  "max_header_depth": 2,
+  "code_block_count": 4,
+  "nesting_level": 0,
+  "expected_strategy": "code_aware",
+  "content_hash": "db2e783aa06e42924ee2174e0f2ab2a6d4f2f29d0e70dbd8242b592735d897fc",
+  "extra": {}
+}

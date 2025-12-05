@@ -1,0 +1,20 @@
+{
+  "filename": "Chart.js.md",
+  "category": "github_readmes",
+  "subcategory": "javascript",
+  "size_bytes": 2605,
+  "line_count": 39,
+  "source": "github",
+  "source_url": "https://github.com/chartjs/Chart.js",
+  "collection_date": "2025-12-06T00:39:06.422741",
+  "code_ratio": 0.0,
+  "table_count": 0,
+  "list_count": 9,
+  "header_count": 3,
+  "max_header_depth": 2,
+  "code_block_count": 0,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "30418232ad2cc5a51fa0938e12dc97e31cfd1fb3b0bc352132f281c0c10da348",
+  "extra": {}
+}

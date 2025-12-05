@@ -1,0 +1,20 @@
+{
+  "filename": "cobra.md",
+  "category": "github_readmes",
+  "subcategory": "go",
+  "size_bytes": 4949,
+  "line_count": 134,
+  "source": "github",
+  "source_url": "https://github.com/spf13/cobra",
+  "collection_date": "2025-12-06T00:39:34.928772",
+  "code_ratio": 0.022388059701492536,
+  "table_count": 0,
+  "list_count": 14,
+  "header_count": 8,
+  "max_header_depth": 3,
+  "code_block_count": 3,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "50473243fcb2851020fc25bcd7ad372fc969825588b9994beec4d9e33523a0c0",
+  "extra": {}
+}

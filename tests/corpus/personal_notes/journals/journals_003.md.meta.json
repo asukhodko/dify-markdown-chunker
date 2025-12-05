@@ -1,0 +1,20 @@
+{
+  "filename": "journals_003.md",
+  "category": "personal_notes",
+  "subcategory": "journals",
+  "size_bytes": 1044,
+  "line_count": 53,
+  "source": "synthetic",
+  "source_url": null,
+  "collection_date": "2025-12-06T01:15:16.614505",
+  "code_ratio": 0.3018867924528302,
+  "table_count": 0,
+  "list_count": 10,
+  "header_count": 10,
+  "max_header_depth": 2,
+  "code_block_count": 2,
+  "nesting_level": 0,
+  "expected_strategy": "code_aware",
+  "content_hash": "1ce180ddd1ef74be0950f497aa6bd0b4265e1053aae413f3973c689ad7a657c1",
+  "extra": {}
+}

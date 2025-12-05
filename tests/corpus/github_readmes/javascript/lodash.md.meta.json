@@ -1,0 +1,20 @@
+{
+  "filename": "lodash.md",
+  "category": "github_readmes",
+  "subcategory": "javascript",
+  "size_bytes": 3733,
+  "line_count": 87,
+  "source": "github",
+  "source_url": "https://github.com/lodash/lodash",
+  "collection_date": "2025-12-06T00:39:12.023742",
+  "code_ratio": 0.22988505747126436,
+  "table_count": 0,
+  "list_count": 11,
+  "header_count": 5,
+  "max_header_depth": 2,
+  "code_block_count": 4,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "3202935a3f5cdd6ad269fbe3292a8c1c8514aae0f5d279b45259ec7992bd8ac1",
+  "extra": {}
+}

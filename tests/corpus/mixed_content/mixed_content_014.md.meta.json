@@ -1,0 +1,20 @@
+{
+  "filename": "mixed_content_014.md",
+  "category": "mixed_content",
+  "subcategory": null,
+  "size_bytes": 3159,
+  "line_count": 65,
+  "source": "synthetic",
+  "source_url": null,
+  "collection_date": "2025-12-06T01:15:16.636277",
+  "code_ratio": 0.12307692307692308,
+  "table_count": 2,
+  "list_count": 4,
+  "header_count": 10,
+  "max_header_depth": 3,
+  "code_block_count": 3,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "e06f0abae09b4b21b1ab954dc29715b885c2525bf9e3ece87efe8bd8104d4e9f",
+  "extra": {}
+}

@@ -1,0 +1,20 @@
+{
+  "filename": "keras.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 5354,
+  "line_count": 134,
+  "source": "github",
+  "source_url": "https://github.com/keras-team/keras",
+  "collection_date": "2025-12-06T00:38:52.051797",
+  "code_ratio": 0.09701492537313433,
+  "table_count": 2,
+  "list_count": 17,
+  "header_count": 10,
+  "max_header_depth": 4,
+  "code_block_count": 7,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "1c6a263b20c8288f35dad2e8eb36c4bc6dc63b2b9691d216c06d6a230fdb8860",
+  "extra": {}
+}

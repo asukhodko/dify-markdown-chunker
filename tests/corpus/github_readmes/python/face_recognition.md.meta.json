@@ -1,0 +1,20 @@
+{
+  "filename": "face_recognition.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 19424,
+  "line_count": 416,
+  "source": "github",
+  "source_url": "https://github.com/ageitgey/face_recognition",
+  "collection_date": "2025-12-06T00:38:39.279812",
+  "code_ratio": 0.6009615384615384,
+  "table_count": 0,
+  "list_count": 39,
+  "header_count": 43,
+  "max_header_depth": 5,
+  "code_block_count": 16,
+  "nesting_level": 0,
+  "expected_strategy": "code_aware",
+  "content_hash": "4155c2e032564992ea9582728b908185b7309159588045715a11059f609d028e",
+  "extra": {}
+}

@@ -1,0 +1,20 @@
+{
+  "filename": "sqlalchemy.md",
+  "category": "github_readmes",
+  "subcategory": "python",
+  "size_bytes": 5719,
+  "line_count": 159,
+  "source": "github",
+  "source_url": "https://github.com/sqlalchemy/sqlalchemy",
+  "collection_date": "2025-12-06T00:38:50.641708",
+  "code_ratio": 0.0,
+  "table_count": 1,
+  "list_count": 19,
+  "header_count": 0,
+  "max_header_depth": 0,
+  "code_block_count": 0,
+  "nesting_level": 0,
+  "expected_strategy": "fallback",
+  "content_hash": "25b10613cda71aa22d38285a2878a019d9d7e09e4541a5d266a3fb04d573bce1",
+  "extra": {}
+}

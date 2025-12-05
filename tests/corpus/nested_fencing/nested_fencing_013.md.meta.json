@@ -1,0 +1,20 @@
+{
+  "filename": "nested_fencing_013.md",
+  "category": "nested_fencing",
+  "subcategory": null,
+  "size_bytes": 800,
+  "line_count": 65,
+  "source": "synthetic",
+  "source_url": null,
+  "collection_date": "2025-12-06T01:15:16.626926",
+  "code_ratio": 0.1076923076923077,
+  "table_count": 0,
+  "list_count": 4,
+  "header_count": 8,
+  "max_header_depth": 3,
+  "code_block_count": 9,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "07f2b2411d0c2aeb1c58f9f8e63df06ebf2fb04107585413cdc0bb035a9beb35",
+  "extra": {}
+}

@@ -1,0 +1,20 @@
+{
+  "filename": "babel.md",
+  "category": "github_readmes",
+  "subcategory": "javascript",
+  "size_bytes": 8366,
+  "line_count": 127,
+  "source": "github",
+  "source_url": "https://github.com/babel/babel",
+  "collection_date": "2025-12-06T00:39:26.228364",
+  "code_ratio": 0.05511811023622047,
+  "table_count": 0,
+  "list_count": 12,
+  "header_count": 11,
+  "max_header_depth": 3,
+  "code_block_count": 2,
+  "nesting_level": 0,
+  "expected_strategy": "structural",
+  "content_hash": "251e5012d15f6b6f80461b902b653867e82d78da2e64ff18b59bf8b2c064b04f",
+  "extra": {}
+}
