@@ -40,6 +40,7 @@ test:
 	@echo "Running all core tests (property + integration)..."
 	@$(PYTHON) -m pytest \
 		tests/test_p0_property_tests.py \
+		tests/test_p1_specification_properties.py \
 		tests/test_domain_properties.py \
 		tests/test_v2_properties.py \
 		tests/test_entry_point.py \
