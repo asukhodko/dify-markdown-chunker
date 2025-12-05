@@ -8,7 +8,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Dify Plugin](https://img.shields.io/badge/dify-1.9.0+-green.svg)](https://dify.ai/)
-[![Tests](https://img.shields.io/badge/tests-1366+-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-445-brightgreen.svg)](#testing)
 
 </div>
 
@@ -51,7 +51,7 @@
 ## ✨ Features
 
 ### 🎯 Adaptive Chunking
-- **6 intelligent strategies** — automatic selection based on content analysis
+- **3 intelligent strategies** — automatic selection based on content analysis
 - **Structure preservation** — headers, lists, tables, and code stay intact
 - **Smart overlap** — configurable context overlap between chunks
 
@@ -61,9 +61,9 @@
 - **Complexity scoring** — optimizes strategy selection
 
 ### 🛡️ Reliability
-- **1366+ tests** — comprehensive test coverage
+- **445 tests** — comprehensive test coverage with property-based testing
 - **Property-Based Testing** — formal correctness guarantees with Hypothesis
-- **4-level fallback** — graceful degradation on errors
+- **Automatic fallback** — graceful degradation on errors
 
 ### 🔌 Integration
 - **Dify Plugin** — ready-to-use in Dify workflows
@@ -260,12 +260,9 @@ The system automatically selects the optimal strategy based on content analysis:
 
 | Strategy | Priority | Activation Conditions | Best For |
 |----------|----------|----------------------|----------|
-| **Code** | 1 (highest) | code_ratio ≥ 30%, ≥1 code block | Technical docs, tutorials |
-| **Mixed** | 2 | code_ratio ≥ 30%, complexity ≥ 0.3 | Balanced content |
-| **List** | 3 | ≥5 lists OR list_ratio > 60% | Task lists, outlines |
-| **Table** | 4 | ≥3 tables OR table_ratio > 40% | Data reports |
-| **Structural** | 5 | ≥3 headers, depth > 1 | Documentation |
-| **Sentences** | 6 (fallback) | Always applicable | Simple text |
+| **Code-Aware** | 1 (highest) | code_ratio ≥ 30% OR has code blocks/tables | Technical docs, API docs |
+| **Structural** | 2 | ≥3 headers | Documentation, guides |
+| **Fallback** | 3 (default) | Always applicable | Simple text, mixed content |
 
 ---
 
@@ -280,21 +277,20 @@ config = ChunkConfig(
     # Size limits
     max_chunk_size=4096,      # Maximum chunk size (chars)
     min_chunk_size=512,       # Minimum chunk size
-    target_chunk_size=2048,   # Target size
     
     # Overlap
-    enable_overlap=True,      # Enable overlap
-    overlap_size=200,         # Overlap size (chars)
+    overlap_size=200,         # Overlap size (0 = disabled)
     
     # Behavior
-    preserve_code_blocks=True,    # Keep code blocks intact
-    preserve_tables=True,         # Keep tables intact
-    preserve_list_hierarchy=True, # Keep list structure
-    allow_oversize=True,          # Allow oversized chunks
+    preserve_atomic_blocks=True,  # Keep code blocks and tables intact
+    extract_preamble=True,        # Extract content before first header
     
-    # Fallback
-    enable_fallback=True,     # Enable fallback strategies
-    max_fallback_level=4,     # Maximum fallback depth
+    # Strategy selection thresholds
+    code_threshold=0.3,       # Code ratio for CodeAwareStrategy
+    structure_threshold=3,    # Min headers for StructuralStrategy
+    
+    # Override
+    strategy_override=None,   # Force specific strategy (code_aware/structural/fallback)
 )
 ```
 
@@ -303,16 +299,9 @@ config = ChunkConfig(
 | Profile | Use Case | Max Size | Overlap |
 |---------|----------|----------|---------|
 | `default()` | General use | 4096 | 200 |
-| `for_code_heavy()` | Code documentation | 6144 | 300 |
-| `for_structured_docs()` | Structured docs | 3072 | 150 |
-| `for_dify_rag()` | Dify RAG systems | 3072 | 150 |
-| `for_api_docs()` | API documentation | 3072 | 150 |
-| `for_code_docs()` | Code docs | 2048 | 100 |
-| `for_chat_context()` | LLM context | 1536 | 200 |
-| `for_search_indexing()` | Search | 1024 | 100 |
-| `for_large_documents()` | Large files | 8192 | 400 |
-| `for_fast_processing()` | Batch processing | 8192 | 100 |
-| `compact()` | Fine-grained | 2048 | 100 |
+| `for_code_heavy()` | Code documentation | 8192 | 100 |
+| `for_structured()` | Structured docs | 4096 | 200 |
+| `minimal()` | Fine-grained | 1024 | 50 |
 
 ### Overlap Handling
 
@@ -426,10 +415,11 @@ class ChunkingResult:
 
 | Module | Description |
 |--------|-------------|
-| `markdown_chunker/parser/` | AST parsing, content analysis, element detection |
-| `markdown_chunker/chunker/` | Chunking strategies, orchestration, validation |
-| `markdown_chunker/chunker/strategies/` | 6 chunking strategy implementations |
-| `markdown_chunker/api/` | REST API adapters, request validation |
+| `markdown_chunker_v2/parser.py` | Markdown parsing and content analysis |
+| `markdown_chunker_v2/chunker.py` | Main chunking orchestration |
+| `markdown_chunker_v2/strategies/` | 3 chunking strategies (code_aware, structural, fallback) |
+| `markdown_chunker_v2/config.py` | Configuration (8 parameters) |
+| `markdown_chunker_v2/types.py` | Core data types |
 | `provider/` | Dify plugin provider |
 | `tools/` | Dify plugin tools |
 
@@ -437,16 +427,16 @@ class ChunkingResult:
 
 ```
 dify-markdown-chunker/
-├── markdown_chunker/          # Core library
-│   ├── parser/                # Parsing and analysis
-│   ├── chunker/               # Chunking logic
-│   │   └── strategies/        # 6 chunking strategies
-│   └── api/                   # API adapters
+├── markdown_chunker_v2/       # Core library (v2.0 redesign)
+│   ├── parser.py              # Markdown parsing
+│   ├── chunker.py             # Main chunking logic
+│   ├── config.py              # Configuration (8 params)
+│   ├── types.py               # Data types
+│   └── strategies/            # 3 chunking strategies
 ├── provider/                  # Dify plugin provider
 ├── tools/                     # Dify plugin tools
-├── tests/                     # Test suite (1366+ tests)
+├── tests/                     # Test suite (445 tests)
 ├── docs/                      # Documentation
-├── examples/                  # Usage examples
 ├── benchmarks/                # Performance benchmarks
 ├── manifest.yaml              # Dify plugin manifest
 └── requirements.txt           # Dependencies
@@ -456,16 +446,6 @@ dify-markdown-chunker/
 
 ## ⚡ Performance
 
-### Benchmarks
-
-| Document Size | Processing Time | Throughput | Chunks |
-|--------------|-----------------|------------|--------|
-| 1 KB | ~800 ms | 1.3 KB/s | 6 |
-| 10 KB | ~150 ms | 66 KB/s | 44 |
-| 50 KB | ~1.9 s | 27 KB/s | 215 |
-| 100 KB | ~7 s | 14 KB/s | 429 |
-
-### Performance Monitoring
 
 ```python
 chunker = MarkdownChunker(enable_performance_monitoring=True)
@@ -484,7 +464,7 @@ print(f"Average time: {stats['chunk']['avg_time']:.3f}s")
 ### Testing
 
 ```bash
-# Run all tests (1366+)
+# Run all tests (445)
 make test
 
 # Verbose output
@@ -567,13 +547,14 @@ MIT License — see [LICENSE](LICENSE)
 
 ## 📝 Changelog
 
-**Current Version:** 2.0.0-a3 (December 2024)
+**Current Version:** 2.0.2-a0 (December 2024)
 
-### Recent Changes
-- Redesigned overlap handling with metadata-based neighbor context
-- Regression and duplication validation
-- Block-based chunking implementation
-- Improved API documentation
+### v2.0.2-a0 - Major Redesign
+- **Simplified architecture**: 3 strategies instead of 6
+- **Simplified configuration**: 8 parameters instead of 32
+- **Consolidated types**: Single types.py module
+- **Improved test suite**: 445 focused property-based tests
+- **Metadata-based overlap**: Context stored in metadata, not merged into content
 
 Full changelog: [CHANGELOG.md](CHANGELOG.md)
 

@@ -28,7 +28,7 @@ For comprehensive development documentation, see **[Developer Guide](docs/guides
 
 ### Testing
 
-We maintain comprehensive test coverage (1366+ tests). Please ensure:
+We maintain comprehensive test coverage (445 tests). Please ensure:
 
 - All existing tests pass
 - New features have corresponding tests

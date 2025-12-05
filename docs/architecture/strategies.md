@@ -1,29 +1,32 @@
 # Chunking Strategies
 
-Detailed documentation for all 6 chunking strategies.
+Detailed documentation for all 3 chunking strategies in v2.0.
 
 ## Overview
 
-The Dify Markdown Chunker uses 6 intelligent strategies to chunk markdown documents. The system automatically selects the best strategy based on content analysis, or you can force a specific strategy.
+The Dify Markdown Chunker v2.0 uses 3 intelligent strategies to chunk markdown documents. The system automatically selects the best strategy based on content analysis, or you can force a specific strategy using `strategy_override`.
 
 ## Strategy Selection
 
 The chunker analyzes content and selects a strategy based on:
 
-- **Code ratio**: Percentage of content that is code
-- **List ratio**: Percentage of content in lists
-- **Table ratio**: Percentage of content in tables
-- **Structure**: Presence and hierarchy of headers
-- **Complexity**: Overall document complexity
+- **Code ratio**: Percentage of content that is code (threshold: 30%)
+- **Code blocks**: Presence of fenced code blocks
+- **Tables**: Presence of markdown tables
+- **Headers**: Number of headers (threshold: 3)
 
-## The 6 Strategies
+## The 3 Strategies
 
-### 1. Code Strategy
+### 1. Code-Aware Strategy
 
-**When Used:** Documents with >30% code content
+**When Used:** 
+- Documents with ≥30% code content
+- Documents with any code blocks
+- Documents with tables
 
 **Behavior:**
 - Preserves code blocks intact (never splits code)
+- Preserves tables intact
 - Groups related code with surrounding text
 - Maintains code-text relationships
 
@@ -31,6 +34,7 @@ The chunker analyzes content and selects a strategy based on:
 - Technical documentation
 - API references with code examples
 - Tutorial content with code samples
+- Data documentation with tables
 
 **Example:**
 ```markdown
@@ -51,131 +55,26 @@ This function is thread-safe.
 
 **Configuration:**
 ```python
-config = ChunkConfig.for_code_docs()
-# or
-config = ChunkConfig(force_strategy="code")
+config = ChunkConfig(strategy_override="code_aware")
+# or use profile
+config = ChunkConfig.for_code_heavy()
 ```
 
-### 2. Mixed Strategy
+### 2. Structural Strategy
 
-**When Used:** Balanced content (10-30% code, mixed elements)
-
-**Behavior:**
-- Balances code preservation with text chunking
-- Handles mixed content types
-- Flexible chunk boundaries
-
-**Best For:**
-- General documentation
-- README files
-- Mixed technical content
-
-**Example:**
-```markdown
-# Overview
-
-This is a description.
-
-## Features
-
-- Feature 1
-- Feature 2
-
-```python
-example_code()
-```
-```
-
-**Chunking Result:**
-- Chunk 1: Overview section
-- Chunk 2: Features list + code
-
-**Configuration:**
-```python
-config = ChunkConfig(force_strategy="mixed")
-```
-
-### 3. List Strategy
-
-**When Used:** Documents with >40% list content
-
-**Behavior:**
-- Preserves list structure
-- Groups related list items
-- Maintains list hierarchy
-
-**Best For:**
-- Feature lists
-- Changelogs
-- Itemized documentation
-
-**Example:**
-```markdown
-# Features
-
-- **Parser Module**
-  - AST parsing
-  - Code extraction
-  
-- **Chunker Module**
-  - 6 strategies
-  - Auto selection
-```
-
-**Chunking Result:**
-- Chunk 1: Header + first main item with sub-items
-- Chunk 2: Second main item with sub-items
-
-**Configuration:**
-```python
-config = ChunkConfig(force_strategy="list")
-```
-
-### 4. Table Strategy
-
-**When Used:** Documents with >30% table content
-
-**Behavior:**
-- Preserves tables intact
-- Groups related tables
-- Maintains table context
-
-**Best For:**
-- Data documentation
-- Comparison tables
-- Specification sheets
-
-**Example:**
-```markdown
-# Performance
-
-| Size | Time | Throughput |
-|------|------|------------|
-| 1KB  | 800ms| 1.3 KB/s   |
-| 10KB | 150ms| 66 KB/s    |
-```
-
-**Chunking Result:**
-- Chunk 1: Header + complete table (never split)
-
-**Configuration:**
-```python
-config = ChunkConfig(force_strategy="table")
-```
-
-### 5. Structural Strategy
-
-**When Used:** Well-structured documents with clear header hierarchy
+**When Used:** Documents with ≥3 headers
 
 **Behavior:**
 - Chunks by sections (headers)
 - Maintains hierarchical structure
 - Preserves section relationships
+- Builds header path for context
 
 **Best For:**
 - Long-form documentation
 - User guides
 - Structured articles
+- README files
 
 **Example:**
 ```markdown
@@ -204,37 +103,44 @@ New chapter.
 
 **Configuration:**
 ```python
-config = ChunkConfig(force_strategy="structural")
+config = ChunkConfig(strategy_override="structural")
+# or use profile
+config = ChunkConfig.for_structured()
 ```
 
-### 6. Sentences Strategy
+### 3. Fallback Strategy
 
-**When Used:** Simple text without special structure (fallback)
+**When Used:** 
+- Simple text without special structure
+- Documents that don't match other strategies
+- Always available as fallback
 
 **Behavior:**
-- Chunks by sentences
+- Chunks by paragraphs
 - Respects paragraph boundaries
 - Simple text splitting
+- Handles any content type
 
 **Best For:**
 - Plain text documents
 - Simple content
-- Fallback for unstructured content
+- Unstructured content
 
 **Example:**
 ```markdown
-This is a simple document. It has multiple sentences. 
-Each sentence is considered for chunking.
+This is a simple document. It has multiple paragraphs.
 
 This is a new paragraph. It continues the content.
+
+Another paragraph here.
 ```
 
 **Chunking Result:**
-- Chunks based on sentence boundaries and size limits
+- Chunks based on paragraph boundaries and size limits
 
 **Configuration:**
 ```python
-config = ChunkConfig(force_strategy="sentences")
+config = ChunkConfig(strategy_override="fallback")
 ```
 
 ## Strategy Selection Algorithm
@@ -242,50 +148,44 @@ config = ChunkConfig(force_strategy="sentences")
 ```
 1. Analyze content:
    - Calculate code_ratio
-   - Calculate list_ratio
-   - Calculate table_ratio
-   - Analyze header structure
-   - Calculate complexity
+   - Count code blocks
+   - Count tables
+   - Count headers
 
 2. Select strategy:
-   if code_ratio > 0.30:
-       use Code Strategy
-   elif table_ratio > 0.30:
-       use Table Strategy
-   elif list_ratio > 0.40:
-       use List Strategy
-   elif has_clear_structure:
-       use Structural Strategy
-   elif code_ratio > 0.10:
-       use Mixed Strategy
+   if code_ratio >= 0.30 OR has_code_blocks OR has_tables:
+       use CodeAwareStrategy
+   elif header_count >= 3:
+       use StructuralStrategy
    else:
-       use Sentences Strategy
+       use FallbackStrategy
 ```
 
 ## Performance Characteristics
 
 | Strategy | Speed | Quality | Best For |
 |----------|-------|---------|----------|
-| Code | Fast | High | Code-heavy docs |
-| Mixed | Medium | High | General docs |
-| List | Fast | High | List-heavy docs |
-| Table | Fast | High | Table-heavy docs |
+| Code-Aware | Fast | High | Code/table-heavy docs |
 | Structural | Medium | Very High | Structured docs |
-| Sentences | Very Fast | Medium | Simple text |
+| Fallback | Very Fast | Medium | Simple text |
 
 ## Forcing a Strategy
 
 You can override automatic selection:
 
 ```python
-from markdown_chunker import MarkdownChunker, ChunkConfig
+from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
 
-# Force code strategy
-config = ChunkConfig(force_strategy="code")
+# Force code-aware strategy
+config = ChunkConfig(strategy_override="code_aware")
 chunker = MarkdownChunker(config)
 
 # Force structural strategy
-config = ChunkConfig(force_strategy="structural")
+config = ChunkConfig(strategy_override="structural")
+chunker = MarkdownChunker(config)
+
+# Force fallback strategy
+config = ChunkConfig(strategy_override="fallback")
 chunker = MarkdownChunker(config)
 ```
 
@@ -307,12 +207,23 @@ def example():
 More text.
 ```
 
-**Code Strategy:** 1 chunk (all together)
+**Code-Aware Strategy:** 1 chunk (code block preserved)
 **Structural Strategy:** 1 chunk (one section)
-**Sentences Strategy:** 2-3 chunks (by sentences)
+**Fallback Strategy:** 2-3 chunks (by paragraphs)
+
+## Migration from v1.x
+
+| v1.x Strategy | v2.0 Strategy |
+|---------------|---------------|
+| Code | CodeAware |
+| Table | CodeAware |
+| Mixed | CodeAware |
+| List | CodeAware |
+| Structural | Structural |
+| Sentences | Fallback |
 
 ## See Also
 
 - [Architecture Overview](README.md) - System architecture
 - [ChunkConfig API](../api/config.md) - Configuration options
-- [Performance Guide](../guides/performance.md) - Performance tips
+- [Migration Guide](../MIGRATION.md) - Migration from v1.x

@@ -65,11 +65,13 @@ dify-markdown-chunker/
 ├── tools/
 │   ├── markdown_chunk_tool.yaml  # Tool configuration
 │   └── markdown_chunk_tool.py    # Chunking logic
-├── markdown_chunker/         # Chunking library
-│   ├── api/
-│   ├── chunker/
-│   └── parser/
-└── tests/                    # Tests
+├── markdown_chunker_v2/      # Chunking library (v2.0)
+│   ├── parser.py             # Markdown parsing
+│   ├── chunker.py            # Main chunking logic
+│   ├── config.py             # Configuration (8 params)
+│   ├── types.py              # Data types
+│   └── strategies/           # 3 chunking strategies
+└── tests/                    # Tests (445 tests)
 ```
 
 ---
@@ -79,7 +81,7 @@ dify-markdown-chunker/
 ### Running Tests
 
 ```bash
-# All tests
+# All tests (445 tests)
 make test
 
 # Quick tests

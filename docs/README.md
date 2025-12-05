@@ -41,7 +41,7 @@ Understand how the system works:
 - **[Architecture Overview](architecture/README.md)** - System architecture and design principles
 - **[Parser Module](architecture/parser.md)** - Markdown parsing and content analysis
 - **[Chunker Module](architecture/chunker.md)** - Chunking logic and processing
-- **[Chunking Strategies](architecture/strategies.md)** - All 6 strategies explained (Code, Mixed, List, Table, Structural, Sentences)
+- **[Chunking Strategies](architecture/strategies.md)** - All 3 strategies explained (Code-Aware, Structural, Fallback)
 - **[Dify Integration](architecture/dify-integration.md)** - How the plugin integrates with Dify
 
 ---

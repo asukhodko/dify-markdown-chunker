@@ -2,22 +2,30 @@
 
 ## Overview
 
-Версия 2.0.0 содержит breaking changes для упрощения API и улучшения производительности. Этот документ описывает все изменения и способы миграции.
+Версия 2.0.0 — это полный редизайн архитектуры с фокусом на упрощение:
+- **Модуль**: `markdown_chunker` → `markdown_chunker_v2`
+- **Стратегии**: 6 → 3 (code_aware, structural, fallback)
+- **Конфигурация**: 32 → 8 параметров
+- **Тесты**: 1366+ → 445 (фокус на property-based тестах)
 
 ## Quick Start
-
-Если вы используете базовый API, миграция минимальна:
 
 ```python
 # v1.x
 from markdown_chunker import MarkdownChunker
 chunker = MarkdownChunker()
-chunks = chunker.chunk(text)  # Returns List[Chunk]
+chunks = chunker.chunk(text)
 
-# v2.0 - тот же код работает!
-from markdown_chunker import MarkdownChunker
+# v2.0 - новый импорт
+from markdown_chunker_v2 import MarkdownChunker
 chunker = MarkdownChunker()
-chunks = chunker.chunk(text)  # Returns List[Chunk]
+chunks = chunker.chunk(text)
+```
+
+Для совместимости можно использовать alias:
+```python
+# В вашем коде
+from markdown_chunker_v2 import MarkdownChunker as MarkdownChunker
 ```
 
 ## Breaking Changes
@@ -130,15 +138,21 @@ chunks = chunker.chunk(text, config)
 
 ### 4. Removed Classes
 
-**Consolidated strategies:**
+**Consolidated strategies (6 → 3):**
 
 | v1.x | v2.0 |
 |------|------|
 | `CodeStrategy` | `CodeAwareStrategy` |
 | `TableStrategy` | `CodeAwareStrategy` |
 | `MixedStrategy` | `CodeAwareStrategy` |
-| `ListStrategy` | Удалена (функциональность в `CodeAwareStrategy`) |
+| `ListStrategy` | `CodeAwareStrategy` |
+| `StructuralStrategy` | `StructuralStrategy` |
 | `SentencesStrategy` | `FallbackStrategy` |
+
+**Removed modules:**
+- `markdown_chunker/api/` — REST API adapters removed
+- `markdown_chunker/chunker/strategies/` — consolidated into `markdown_chunker_v2/strategies/`
+- `markdown_chunker/parser/` — consolidated into `markdown_chunker_v2/parser.py`
 
 ### 5. Metadata Changes
 
