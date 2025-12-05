@@ -39,6 +39,12 @@ help:
 test:
 	@echo "Running all core tests (property + integration)..."
 	@$(PYTHON) -m pytest \
+		tests/test_v2_integration.py \
+		tests/test_v2_strategy_properties.py \
+		tests/test_v2_additional.py \
+		tests/test_v2_chunker_properties.py \
+		tests/test_v2_core_properties.py \
+		tests/test_v2_parser_properties.py \
 		tests/test_p0_property_tests.py \
 		tests/test_p1_specification_properties.py \
 		tests/test_domain_properties.py \

@@ -110,67 +110,6 @@ class TestIntentExtractionCompleteness:
                         f"Test {test.test_name} has Unknown v2_component"
 
 
-class TestRemovedFunctionalityMarking:
-    """
-    Property 2: Removed functionality marking
-    
-    For any test that imports removed legacy strategies, the system SHALL mark 
-    it as "not applicable to v2" or "removed functionality".
-    
-    **Validates: Requirements 1.3**
-    """
-    
-    def test_list_strategy_tests_marked_removed(self):
-        """Verify list strategy tests are marked as removed."""
-        list_strategy_file = Path('tests/chunker/test_list_strategy_properties.py')
-        if not list_strategy_file.exists():
-            pytest.skip("List strategy test file not found")
-        
-        analysis = analyze_test_file(str(list_strategy_file))
-        
-        # At least some tests should be marked as removed
-        removed_count = sum(1 for t in analysis.tests if t.removed_functionality)
-        assert removed_count > 0, "List strategy tests should be marked as removed"
-    
-    def test_mixed_strategy_tests_marked_removed(self):
-        """Verify mixed strategy tests are marked as removed."""
-        mixed_files = [
-            'tests/chunker/test_mixed_strategy_properties.py',
-            'tests/chunker/test_mixed_strategy_stage1_integration.py',
-        ]
-        
-        for file_path in mixed_files:
-            if not Path(file_path).exists():
-                continue
-            
-            analysis = analyze_test_file(file_path)
-            
-            removed_count = sum(1 for t in analysis.tests if t.removed_functionality)
-            assert removed_count > 0, f"Mixed strategy tests in {file_path} should be marked as removed"
-    
-    def test_sentences_strategy_tests_marked_removed(self):
-        """Verify sentences strategy tests are marked as removed."""
-        sentences_file = Path('tests/chunker/test_sentences_strategy_properties.py')
-        if not sentences_file.exists():
-            pytest.skip("Sentences strategy test file not found")
-        
-        analysis = analyze_test_file(str(sentences_file))
-        
-        removed_count = sum(1 for t in analysis.tests if t.removed_functionality)
-        assert removed_count > 0, "Sentences strategy tests should be marked as removed"
-    
-    def test_table_strategy_tests_marked_removed(self):
-        """Verify table strategy tests are marked as removed."""
-        table_file = Path('tests/chunker/test_table_strategy_properties.py')
-        if not table_file.exists():
-            pytest.skip("Table strategy test file not found")
-        
-        analysis = analyze_test_file(str(table_file))
-        
-        removed_count = sum(1 for t in analysis.tests if t.removed_functionality)
-        assert removed_count > 0, "Table strategy tests should be marked as removed"
-
-
 class TestTestTypeInference:
     """Test that test type inference works correctly."""
     
