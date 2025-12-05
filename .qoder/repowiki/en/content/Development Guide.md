@@ -2,655 +2,318 @@
 
 <cite>
 **Referenced Files in This Document**   
-- [DEVELOPMENT.md](file://DEVELOPMENT.md)
 - [CONTRIBUTING.md](file://CONTRIBUTING.md)
-- [requirements.txt](file://requirements.txt)
-- [pytest.ini](file://pytest.ini)
+- [DEVELOPMENT.md](file://DEVELOPMENT.md)
 - [Makefile](file://Makefile)
-- [package.sh](file://package.sh)
-- [package_official.sh](file://package_official.sh)
-- [main.py](file://main.py)
-- [provider/markdown_chunker.py](file://provider/markdown_chunker.py)
-- [scripts/add_typing_imports.py](file://scripts/add_typing_imports.py)
-- [scripts/analyze_unused_components.py](file://scripts/analyze_unused_components.py)
-- [scripts/validate_docs.py](file://scripts/validate_docs.py)
-- [markdown_chunker/chunker/strategies/base.py](file://markdown_chunker/chunker/strategies/base.py)
-- [markdown_chunker/__init__.py](file://markdown_chunker/__init__.py)
-- [tests/conftest.py](file://tests/conftest.py)
-- [tests/chunker/test_chunker.py](file://tests/chunker/test_chunker.py)
-- [docs/architecture-audit/01-module-inventory.md](file://docs/architecture-audit/01-module-inventory.md)
-- [docs/architecture-audit/02-data-flow.md](file://docs/architecture-audit/02-data-flow.md)
-- [docs/architecture-audit/03-strategies.md](file://docs/architecture-audit/03-strategies.md)
-- [docs/architecture-audit/04-configuration.md](file://docs/architecture-audit/04-configuration.md)
-- [docs/architecture-audit/05-test-analysis.md](file://docs/architecture-audit/05-test-analysis.md)
-- [docs/architecture-audit/06-architecture-smells.md](file://docs/architecture-audit/06-architecture-smells.md)
-- [docs/architecture-audit/07-domain-properties.md](file://docs/architecture-audit/07-domain-properties.md)
-- [docs/architecture-audit/08-simplification-recommendations.md](file://docs/architecture-audit/08-simplification-recommendations.md)
-- [docs/guides/developer-guide.md](file://docs/guides/developer-guide.md)
+- [requirements.txt](file://requirements.txt)
+- [MIGRATION.md](file://docs/MIGRATION.md)
+- [developer-guide.md](file://docs/guides/developer-guide.md)
+- [testing-guide.md](file://docs/guides/testing-guide.md)
+- [add_typing_imports.py](file://scripts/add_typing_imports.py)
+- [analyze_unused_components.py](file://scripts/analyze_unused_components.py)
+- [compare_baseline.py](file://scripts/compare_baseline.py)
+- [compare_results.py](file://scripts/compare_results.py)
+- [save_baseline.py](file://scripts/save_baseline.py)
+- [validate_docs.py](file://scripts/validate_docs.py)
+- [benchmark_chunker.py](file://benchmarks/benchmark_chunker.py)
+- [base.py](file://markdown_chunker_v2/strategies/base.py)
+- [chunker.py](file://markdown_chunker_v2/chunker.py)
+- [manifest.yaml](file://manifest.yaml)
 </cite>
 
-## Update Summary
-**Changes Made**   
-- Added new section on Architecture Audit Findings to reflect recent audit documentation
-- Added new section on Documentation Validation Script to cover the new validation tool
-- Updated Additional Resources section to include new architecture audit and developer guide documentation
-- Enhanced source tracking with new architecture audit and script files
-
 ## Table of Contents
-1. [Setting Up the Development Environment](#setting-up-the-development-environment)
-2. [Running Tests and Generating Coverage Reports](#running-tests-and-generating-coverage-reports)
-3. [Build and Packaging Process](#build-and-packaging-process)
-4. [Code Quality Standards](#code-quality-standards)
-5. [Adding or Modifying Chunking Strategies](#adding-or-modifying-chunking-strategies)
-6. [Contribution Workflow](#contribution-workflow)
-7. [Utility Scripts for Code Maintenance](#utility-scripts-for-code-maintenance)
-8. [Architecture Audit Findings](#architecture-audit-findings)
-9. [Documentation Validation Script](#documentation-validation-script)
-10. [Additional Resources](#additional-resources)
+1. [Contribution Workflow](#contribution-workflow)
+2. [Development Environment Setup](#development-environment-setup)
+3. [Implementing New Chunking Strategies](#implementing-new-chunking-strategies)
+4. [Script Utilities](#script-utilities)
+5. [Versioning and Release Process](#versioning-and-release-process)
+6. [Coding Standards and Best Practices](#coding-standards-and-best-practices)
+7. [Testing and Performance Evaluation](#testing-and-performance-evaluation)
 
-## Setting Up the Development Environment
+## Contribution Workflow
 
-To set up the development environment for the Advanced Markdown Chunker plugin, follow these steps:
+The contribution workflow for the Markdown chunker follows a structured process to ensure code quality, maintainability, and consistency across the codebase. Contributors should follow the branching strategy, pull request requirements, and code review process outlined below.
 
-1. Clone the repository:
-```bash
-git clone <repository_url>
-cd dify-markdown-chunker
-```
+The workflow begins with forking the repository and creating a feature branch using the naming convention `feature/your-feature-name`. This ensures that changes are isolated and can be reviewed independently. After implementing changes, contributors must write or update tests as needed, run the test suite, format the code, and validate the structure before submitting a pull request.
 
-2. Create a virtual environment using Python 3.12+:
-```bash
-python3.12 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# or
-venv\Scripts\activate  # Windows
-```
+Pull requests should be focused on a single feature or fix, with clear commit messages following the conventional commit format. The commit message should include a type (feat, fix, docs, style, refactor, test, chore), a subject, and an optional body and footer. This standardized format helps maintain a clean and understandable commit history.
 
-3. Install the required dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-4. Install the dify-plugin CLI tool:
-```bash
-# Linux/Mac
-curl -L https://github.com/langgenius/dify-plugin-daemon/releases/latest/download/dify-plugin-linux-amd64 -o /tmp/dify-plugin
-chmod +x /tmp/dify-plugin
-sudo mv /tmp/dify-plugin /usr/local/bin/dify-plugin
-
-# Verify installation
-dify-plugin version
-```
-
-The project requires Python 3.12 or higher, Git, and the dify-plugin CLI for packaging. The `requirements.txt` file contains all necessary dependencies including core packages like `dify_plugin`, `markdown-it-py`, `pydantic`, `PyYAML`, and development tools such as `pytest`, `hypothesis`, `black`, `isort`, `flake8`, and `mypy`.
+All submissions require code review through GitHub pull requests. Reviewers will evaluate code quality, test coverage, documentation completeness, performance implications, and potential breaking changes. Contributors should respond promptly to review feedback and make necessary adjustments before the changes are merged.
 
 **Section sources**
-- [DEVELOPMENT.md](file://DEVELOPMENT.md#L1-L408)
+- [CONTRIBUTING.md](file://CONTRIBUTING.md#L1-L178)
+- [DEVELOPMENT.md](file://DEVELOPMENT.md#L1-L417)
+
+## Development Environment Setup
+
+Setting up the development environment for the Markdown chunker involves several steps to ensure a consistent and reproducible setup across different systems. The process includes installing dependencies, configuring the development environment, and verifying the setup.
+
+The development environment requires Python 3.12 or later, the dify-plugin CLI for packaging, and Git for version control. After cloning the repository, developers should create a virtual environment to isolate dependencies. This can be done using the built-in `venv` module in Python.
+
+Dependencies are managed through the `requirements.txt` file, which lists all required packages and their versions. The Makefile provides convenient commands for installing dependencies, including a separate command for development tools. Running `make install` installs the core dependencies, while `make install-dev` includes additional tools for linting, formatting, and testing.
+
+The Makefile also includes commands for validating the development environment, such as checking the structure, syntax, and YAML files. These validation steps help catch potential issues early in the development process and ensure that the codebase remains consistent.
+
+```mermaid
+flowchart TD
+A[Clone Repository] --> B[Create Virtual Environment]
+B --> C[Install Dependencies]
+C --> D[Install dify-plugin CLI]
+D --> E[Verify Setup]
+E --> F[Development Ready]
+```
+
+**Diagram sources**
+- [DEVELOPMENT.md](file://DEVELOPMENT.md#L15-L317)
+- [Makefile](file://Makefile#L1-L140)
 - [requirements.txt](file://requirements.txt#L1-L21)
-- [CONTRIBUTING.md](file://CONTRIBUTING.md#L1-L171)
-
-## Running Tests and Generating Coverage Reports
-
-The project uses pytest for testing with comprehensive test coverage (1366+ tests). The test suite includes unit tests, integration tests, property-based tests using Hypothesis, and end-to-end workflow tests.
-
-To run tests, use the following commands:
-
-```bash
-# Run all tests
-make test
-
-# Run quick tests only
-make test-quick
-
-# Run tests with coverage report
-make test-coverage
-
-# Run specific test
-venv/bin/pytest tests/test_manifest.py -v
-```
-
-The pytest configuration is defined in `pytest.ini`, which specifies test discovery paths, output options, warning filters, and markers for different test types (slow, integration, unit). The configuration includes specific filters to ignore warnings from dependencies like gevent and Pydantic.
-
-Property-based testing is implemented using Hypothesis, with custom strategies defined in `tests/conftest.py` for generating various Markdown structures including headers, paragraphs, lists, code blocks, tables, and complete documents with nested structures.
-
-```mermaid
-flowchart TD
-Start["Run Tests"] --> Discovery["Discover test files in /tests"]
-Discovery --> Configuration["Load pytest.ini configuration"]
-Configuration --> Execution["Execute test functions"]
-Execution --> Property["Run property-based tests with Hypothesis"]
-Execution --> Unit["Run unit tests"]
-Execution --> Integration["Run integration tests"]
-Property --> Validation["Validate properties across 100+ examples"]
-Unit --> Assertion["Verify specific functionality"]
-Integration --> Workflow["Test end-to-end workflows"]
-Validation --> Results["Collect results"]
-Assertion --> Results
-Workflow --> Results
-Results --> Coverage["Generate coverage report if requested"]
-Coverage --> Report["Display test results and coverage"]
-```
-
-**Diagram sources**
-- [pytest.ini](file://pytest.ini#L1-L37)
-- [tests/conftest.py](file://tests/conftest.py#L1-L220)
 
 **Section sources**
-- [CONTRIBUTING.md](file://CONTRIBUTING.md#L25-L39)
-- [Makefile](file://Makefile#L38-L51)
-- [pytest.ini](file://pytest.ini#L1-L37)
+- [DEVELOPMENT.md](file://DEVELOPMENT.md#L15-L317)
+- [Makefile](file://Makefile#L1-L140)
+- [requirements.txt](file://requirements.txt#L1-L21)
 
-## Build and Packaging Process
+## Implementing New Chunking Strategies
 
-The build and packaging process uses Makefile commands and shell scripts to create distributable packages for the Dify platform.
+Implementing new chunking strategies in the Markdown chunker requires adherence to specific interface requirements and testing expectations. The system is designed to be extensible, allowing developers to add new strategies that can handle different types of Markdown content.
 
-### Using Makefile Commands
+New strategies should inherit from the `BaseStrategy` class defined in `markdown_chunker_v2/strategies/base.py`. This abstract base class defines the required interface that all strategies must implement, including properties for the strategy name and priority, and methods for determining if the strategy can handle a document and for applying the strategy to produce chunks.
 
-The Makefile provides several targets for the build process:
+The `can_handle` method should evaluate whether the strategy is appropriate for the given document based on content analysis and configuration. This method receives a `ContentAnalysis` object containing metrics about the document's structure and content, and a `ChunkConfig` object with the chunking configuration. The method should return `True` if the strategy can handle the document, and `False` otherwise.
 
-```bash
-# Validate structure, syntax, and YAML
-make validate
+The `apply` method is responsible for actually chunking the Markdown content. It receives the normalized Markdown text, the content analysis results, and the chunking configuration, and returns a list of `Chunk` objects. This method should implement the specific logic for the strategy, such as preserving code blocks, handling tables, or maintaining structural integrity.
 
-# Create package
-make package
+When implementing a new strategy, developers should also consider the metadata that will be attached to each chunk. The base class provides helper methods for creating chunks with strategy-specific metadata, marking oversize chunks, ensuring fence balance, and splitting text to size. These methods help maintain consistency across different strategies and ensure that chunks have the necessary metadata for downstream processing.
 
-# Validate created package
-make validate-package
-
-# Full release build (validate → test → lint → package → validate-package)
-make release
-
-# Clean temporary files
-make clean
-```
-
-The `make release` command executes a complete release pipeline that validates the code, runs tests, lints the code, creates the package, and validates the package.
-
-### Packaging Scripts
-
-Two packaging scripts are available:
-
-1. `package.sh` - Comprehensive script that validates the plugin before packaging:
-   - Checks for the presence of `.env` file (should not be packaged)
-   - Runs structure, syntax, and YAML validation
-   - Executes tests and linting
-   - Creates the package using the official dify-plugin CLI
-   - Validates the created package
-
-2. `package_official.sh` - Simpler script that directly uses the dify-plugin CLI to create the package with timestamped naming.
-
-The packaging process creates a `.difypkg` file named with the pattern `dify-markdown-chunker-official-YYYYMMDD_HHMMSS.difypkg`.
-
-```mermaid
-sequenceDiagram
-participant Developer
-participant Makefile
-participant PackageScript
-participant DifyCLI
-Developer->>Makefile : make release
-Makefile->>Makefile : make validate
-Makefile->>Makefile : make test
-Makefile->>Makefile : make lint
-Makefile->>PackageScript : make package
-PackageScript->>PackageScript : Check for .env file
-PackageScript->>PackageScript : Run validations
-PackageScript->>PackageScript : Run tests and lint
-PackageScript->>DifyCLI : dify-plugin plugin package
-DifyCLI-->>PackageScript : Create .difypkg
-PackageScript->>PackageScript : Move and rename package
-PackageScript->>PackageScript : Validate package
-PackageScript-->>Makefile : Return success/failure
-Makefile-->>Developer : Release complete
-```
-
-**Diagram sources**
-- [Makefile](file://Makefile#L1-L136)
-- [package.sh](file://package.sh#L1-L121)
-- [package_official.sh](file://package_official.sh#L1-L32)
-
-**Section sources**
-- [DEVELOPMENT.md](file://DEVELOPMENT.md#L107-L130)
-- [Makefile](file://Makefile#L1-L136)
-- [package.sh](file://package.sh#L1-L121)
-- [package_official.sh](file://package_official.sh#L1-L32)
-
-## Code Quality Standards
-
-The project enforces strict code quality standards to maintain consistency and reliability.
-
-### Type Hints and Docstring Conventions
-
-All functions must use type hints according to PEP 484. Public APIs require comprehensive docstrings following Google-style format with sections for Args, Returns, Raises, and Examples.
-
-The project uses several utility scripts to maintain code quality:
-- `scripts/add_typing_imports.py` - Adds missing typing imports to strategy files
-- `scripts/analyze_unused_components.py` - Identifies unused components after refactoring
-
-### Linting and Formatting Requirements
-
-The project uses the following tools for code quality:
-
-- **black**: Code formatter with line length of 88
-- **isort**: Import sorter with black profile
-- **flake8**: Linter with max complexity of 10 and line length of 88
-- **mypy**: Type checker with ignore-missing-imports and no-strict-optional flags
-
-Run quality checks with:
-```bash
-# Format code
-make format
-
-# Run linter
-make lint
-
-# Run all quality checks
-make quality-check
-```
-
-The Makefile target `quality-check` runs linting followed by type checking, providing comprehensive code quality validation.
-
-```mermaid
-flowchart TD
-Start["Code Quality Process"] --> Formatting["Format with black"]
-Formatting --> Sorting["Sort imports with isort"]
-Sorting --> Linting["Lint with flake8"]
-Linting --> TypeChecking["Type check with mypy"]
-TypeChecking --> Results["Report quality issues"]
-Results --> Fix["Address issues"]
-Fix --> Complete["Quality check complete"]
-```
-
-**Diagram sources**
-- [Makefile](file://Makefile#L61-L72)
-- [scripts/add_typing_imports.py](file://scripts/add_typing_imports.py#L1-L94)
-- [scripts/analyze_unused_components.py](file://scripts/analyze_unused_components.py#L1-L323)
-
-**Section sources**
-- [CONTRIBUTING.md](file://CONTRIBUTING.md#L41-L52)
-- [Makefile](file://Makefile#L61-L72)
-- [requirements.txt](file://requirements.txt#L15-L21)
-
-## Adding or Modifying Chunking Strategies
-
-Chunking strategies are implemented in the `markdown_chunker/chunker/strategies/` directory. Each strategy inherits from the `BaseStrategy` abstract class and implements the required methods.
-
-### Strategy Implementation Requirements
-
-All strategies must implement:
-- `name`: Human-readable strategy name
-- `priority`: Strategy priority (1=highest, 6=lowest)
-- `can_handle()`: Check if strategy can handle the content
-- `calculate_quality()`: Calculate quality score for strategy selection
-- `apply()`: Apply the strategy to create chunks
-
-The base strategy class provides helper methods:
-- `_create_chunk()`: Create a chunk with standard metadata
-- `_validate_chunks()`: Validate and potentially fix chunks
-- `_split_at_boundary()`: Split content at semantic boundaries (paragraph > sentence > word)
-
-### Adding a New Strategy
-
-To add a new chunking strategy:
-
-1. Create a new Python file in `markdown_chunker/chunker/strategies/`
-2. Implement a class that inherits from `BaseStrategy`
-3. Implement all abstract methods
-4. Add the strategy to the strategy registry
-5. Write comprehensive tests in `tests/chunker/test_strategies/`
-
-The strategy selection process uses a scoring system that combines priority and quality score to determine the optimal strategy for a given document.
+Testing for new strategies should include unit tests, integration tests, and property-based tests. Unit tests should verify the basic functionality of the strategy, including the `can_handle` and `apply` methods. Integration tests should ensure that the strategy works correctly within the overall chunking pipeline. Property-based tests using Hypothesis should verify universal properties, such as idempotence and monotonic ordering.
 
 ```mermaid
 classDiagram
 class BaseStrategy {
-+str name
-+int priority
-+can_handle(analysis, config) bool
-+calculate_quality(analysis) float
-+apply(content, stage1_results, config) List[Chunk]
-+get_metrics(analysis, config) StrategyMetrics
-+_create_chunk(content, start_line, end_line, content_type, **metadata) Chunk
-+_validate_chunks(chunks, config) List[Chunk]
-+_split_at_boundary(content, max_size) List[str]
+<<abstract>>
++name : str
++priority : int
++can_handle(analysis : ContentAnalysis, config : ChunkConfig) bool
++apply(md_text : str, analysis : ContentAnalysis, config : ChunkConfig) List[Chunk]
++_create_chunk(content : str, start_line : int, end_line : int, **metadata) Chunk
++_set_oversize_metadata(chunk : Chunk, reason : str, config : ChunkConfig) None
++_ensure_fence_balance(chunks : List[Chunk]) List[Chunk]
++_split_text_to_size(text : str, start_line : int, config : ChunkConfig) List[Chunk]
 }
-class CodeStrategy {
-+str name
-+int priority
-+can_handle(analysis, config) bool
-+calculate_quality(analysis) float
-+apply(content, stage1_results, config) List[Chunk]
-}
-class ListStrategy {
-+str name
-+int priority
-+can_handle(analysis, config) bool
-+calculate_quality(analysis) float
-+apply(content, stage1_results, config) List[Chunk]
-}
-class TableStrategy {
-+str name
-+int priority
-+can_handle(analysis, config) bool
-+calculate_quality(analysis) float
-+apply(content, stage1_results, config) List[Chunk]
+class CodeAwareStrategy {
++name : str
++priority : int
++can_handle(analysis : ContentAnalysis, config : ChunkConfig) bool
++apply(md_text : str, analysis : ContentAnalysis, config : ChunkConfig) List[Chunk]
 }
 class StructuralStrategy {
-+str name
-+int priority
-+can_handle(analysis, config) bool
-+calculate_quality(analysis) float
-+apply(content, stage1_results, config) List[Chunk]
++name : str
++priority : int
++can_handle(analysis : ContentAnalysis, config : ChunkConfig) bool
++apply(md_text : str, analysis : ContentAnalysis, config : ChunkConfig) List[Chunk]
 }
-BaseStrategy <|-- CodeStrategy
-BaseStrategy <|-- ListStrategy
-BaseStrategy <|-- TableStrategy
+class FallbackStrategy {
++name : str
++priority : int
++can_handle(analysis : ContentAnalysis, config : ChunkConfig) bool
++apply(md_text : str, analysis : ContentAnalysis, config : ChunkConfig) List[Chunk]
+}
+BaseStrategy <|-- CodeAwareStrategy
 BaseStrategy <|-- StructuralStrategy
+BaseStrategy <|-- FallbackStrategy
 ```
 
 **Diagram sources**
-- [markdown_chunker/chunker/strategies/base.py](file://markdown_chunker/chunker/strategies/base.py#L1-L380)
+- [markdown_chunker_v2/strategies/base.py](file://markdown_chunker_v2/strategies/base.py#L1-L233)
+- [markdown_chunker_v2/strategies/code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py)
+- [markdown_chunker_v2/strategies/structural.py](file://markdown_chunker_v2/strategies/structural.py)
+- [markdown_chunker_v2/strategies/fallback.py](file://markdown_chunker_v2/strategies/fallback.py)
 
 **Section sources**
-- [markdown_chunker/chunker/strategies/base.py](file://markdown_chunker/chunker/strategies/base.py#L1-L380)
-- [CONTRIBUTING.md](file://CONTRIBUTING.md#L25-L32)
+- [markdown_chunker_v2/strategies/base.py](file://markdown_chunker_v2/strategies/base.py#L1-L233)
+- [developer-guide.md](file://docs/guides/developer-guide.md#L1-L937)
 
-## Contribution Workflow
+## Script Utilities
 
-The contribution workflow follows a standard fork-branch-pull request model.
+The scripts directory contains various utility scripts that support maintenance tasks and development workflows. These scripts automate common operations, improve code quality, and facilitate testing and validation.
 
-### Getting Started
+The `add_typing_imports.py` script adds missing typing imports to strategy files. It checks each file for the presence of typing imports and adds them if they are missing. This ensures consistent type hinting across the codebase and helps maintain code quality.
 
-1. Fork the repository
-2. Clone your fork: `git clone https://github.com/yourusername/dify-markdown-chunker.git`
-3. Create a virtual environment: `python3 -m venv venv`
-4. Activate it: `source venv/bin/activate` (Linux/Mac) or `venv\Scripts\activate` (Windows)
-5. Install dependencies: `make install`
-6. Create a feature branch: `git checkout -b feature/your-feature-name`
+The `analyze_unused_components.py` script identifies unused components after parser refactoring. It analyzes the codebase to find backward compatibility files, orphaned test files, deprecated functions with no callers, duplicate test coverage, and skipped tests. This helps developers identify code that can be safely removed, reducing technical debt and improving maintainability.
 
-### Making Changes
+The `compare_baseline.py` and `compare_results.py` scripts support the comparison of chunking results against a baseline. These scripts are particularly useful during migration from one version to another, allowing developers to verify that changes do not introduce unexpected differences in chunking behavior. The `save_baseline.py` script creates a baseline of chunking results that can be used for comparison.
 
-1. Make your changes in your feature branch
-2. Write or update tests as needed
-3. Run tests: `make test`
-4. Format code: `make format`
-5. Run linter: `make lint`
-6. Validate structure: `make validate`
+The `validate_docs.py` script validates documentation files for internal link correctness, version consistency, and code example syntax. It checks all Markdown files in the repository for broken links, inconsistent version numbers, and code blocks without language tags. This helps maintain high-quality documentation and ensures that users have access to accurate and up-to-date information.
 
-### Submitting a Pull Request
+These utility scripts are essential for maintaining the health of the codebase and ensuring that development workflows are efficient and effective. They automate repetitive tasks, reduce the potential for human error, and provide valuable insights into the state of the codebase.
 
-1. Update CHANGELOG.md with your changes
-2. Ensure all tests pass
-3. Update documentation as needed
-4. Push to your fork
-5. Create a Pull Request with:
-   - Clear description of changes
-   - Reference to related issues
-   - Test results
-   - Screenshots (if UI changes)
-
-Pull requests should be focused on a single feature or fix. Commit messages should follow the format:
-```
-<type>: <subject>
-
-<body>
-
-<footer>
+```mermaid
+flowchart TD
+A[Script Utilities] --> B[add_typing_imports.py]
+A --> C[analyze_unused_components.py]
+A --> D[compare_baseline.py]
+A --> E[compare_results.py]
+A --> F[save_baseline.py]
+A --> G[validate_docs.py]
+B --> H[Add missing typing imports]
+C --> I[Identify unused components]
+D --> J[Compare against baseline]
+E --> K[Compare current results]
+F --> L[Save baseline results]
+G --> M[Validate documentation]
 ```
 
-Where type is one of: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`.
+**Diagram sources**
+- [scripts/add_typing_imports.py](file://scripts/add_typing_imports.py#L1-L94)
+- [scripts/analyze_unused_components.py](file://scripts/analyze_unused_components.py#L1-L323)
+- [scripts/compare_baseline.py](file://scripts/compare_baseline.py)
+- [scripts/compare_results.py](file://scripts/compare_results.py)
+- [scripts/save_baseline.py](file://scripts/save_baseline.py)
+- [scripts/validate_docs.py](file://scripts/validate_docs.py#L1-L202)
+
+**Section sources**
+- [scripts/add_typing_imports.py](file://scripts/add_typing_imports.py#L1-L94)
+- [scripts/analyze_unused_components.py](file://scripts/analyze_unused_components.py#L1-L323)
+- [scripts/compare_baseline.py](file://scripts/compare_baseline.py)
+- [scripts/compare_results.py](file://scripts/compare_results.py)
+- [scripts/save_baseline.py](file://scripts/save_baseline.py)
+- [scripts/validate_docs.py](file://scripts/validate_docs.py#L1-L202)
+
+## Versioning and Release Process
+
+The versioning and release process for the Markdown chunker follows a structured approach to ensure stability, compatibility, and transparency. Changes are tracked in the MIGRATION.md file, which documents breaking changes, deprecations, and migration paths between versions.
+
+The versioning scheme follows semantic versioning principles, with major, minor, and patch versions. Major versions (e.g., 2.0.0) indicate breaking changes that require migration efforts. Minor versions (e.g., 2.1.0) indicate new features that are backward compatible. Patch versions (e.g., 2.1.1) indicate bug fixes and minor improvements.
+
+The MIGRATION.md file provides detailed guidance for migrating from one version to another. It includes an overview of changes, breaking changes with replacements, removed methods, strategy selection changes, removed classes, and metadata changes. This comprehensive documentation helps users understand the impact of upgrades and plan their migrations accordingly.
+
+The release process is automated through the Makefile, which includes a `release` target that executes a sequence of validation steps. The `make release` command runs validation, tests, linting, packaging, and package validation in sequence. This ensures that only high-quality, well-tested code is released.
+
+Before creating a release, developers should update the version in manifest.yaml and CHANGELOG.md. The version should be updated in both the top-level `version` field and the `meta.version` field. The CHANGELOG.md should include a section for the new version with details of added features, fixed bugs, and any breaking changes.
+
+The packaging process creates a .difypkg file that can be installed in Dify. The package size is limited to 50 MB (uncompressed), and the CLI automatically checks this during packaging. The .gitignore file is used to exclude files from the package, including the virtual environment, cache directories, tests, and markdown files (except README.md).
 
 ```mermaid
 sequenceDiagram
-participant Contributor
-participant GitHub
-participant Maintainer
-Contributor->>GitHub : Fork repository
-GitHub-->>Contributor : Fork created
-Contributor->>Contributor : Clone fork
-Contributor->>Contributor : Create virtual environment
-Contributor->>Contributor : Install dependencies
-Contributor->>Contributor : Create feature branch
-Contributor->>Contributor : Make changes
-Contributor->>Contributor : Write tests
-Contributor->>Contributor : Run tests and lint
-Contributor->>GitHub : Push branch
-GitHub-->>Contributor : Branch pushed
-Contributor->>GitHub : Create Pull Request
-GitHub->>Maintainer : Notify of PR
-Maintainer->>Maintainer : Review code
-Maintainer->>Maintainer : Check tests and quality
-alt Changes needed
-Maintainer->>Contributor : Request changes
-Contributor->>Contributor : Make requested changes
-Contributor->>GitHub : Push updates
-GitHub->>Maintainer : Notify of updates
-else Approved
-Maintainer->>GitHub : Approve and merge
-GitHub-->>Contributor : PR merged
-end
+participant Developer
+participant CI as CI/CD System
+participant Repository
+participant Dify as Dify Platform
+Developer->>Developer : Update version in manifest.yaml
+Developer->>Developer : Update CHANGELOG.md
+Developer->>Developer : Run make release
+Developer->>CI : Push changes to repository
+CI->>CI : Run validation, tests, linting
+CI->>CI : Create package
+CI->>CI : Validate package
+CI->>Repository : Tag release
+Repository->>Dify : Distribute package
 ```
 
 **Diagram sources**
-- [CONTRIBUTING.md](file://CONTRIBUTING.md#L1-L171)
+- [MIGRATION.md](file://docs/MIGRATION.md#L1-L223)
+- [Makefile](file://Makefile#L1-L140)
+- [manifest.yaml](file://manifest.yaml#L1-L48)
 
 **Section sources**
-- [CONTRIBUTING.md](file://CONTRIBUTING.md#L1-L171)
-- [DEVELOPMENT.md](file://DEVELOPMENT.md#L1-L408)
+- [MIGRATION.md](file://docs/MIGRATION.md#L1-L223)
+- [Makefile](file://Makefile#L1-L140)
+- [manifest.yaml](file://manifest.yaml#L1-L48)
 
-## Utility Scripts for Code Maintenance
+## Coding Standards and Best Practices
 
-The project includes several utility scripts to assist with code maintenance and analysis.
+The Markdown chunker project adheres to strict coding standards and best practices to ensure code quality, maintainability, and consistency. These standards cover Python code style, type hints, documentation, and general development practices.
 
-### add_typing_imports.py
+The project follows PEP 8 style guide for Python code, with some modifications to accommodate modern Python features and project-specific requirements. Code should be formatted using Black with a line length of 88 characters, and imports should be sorted using isort with the Black profile. These tools are integrated into the development workflow through the Makefile commands `make format` and `make lint`.
 
-This script automatically adds missing typing imports to strategy files. It checks for the presence of typing imports and adds them if missing, specifically for the strategy files in the chunker/strategies directory.
+Type hints are required for all functions and methods. This improves code readability, enables better IDE support, and helps catch type-related errors early. The project uses the typing module for type annotations, including common types like Any, Dict, List, and Optional. The mypy static type checker is used to verify type correctness, and warnings are treated as non-critical issues.
 
-Usage:
-```bash
-python scripts/add_typing_imports.py
-```
+Documentation is a critical aspect of the project's coding standards. Public APIs should have docstrings that describe the function's purpose, parameters, return values, and exceptions. The project uses Google-style docstrings for consistency. In addition to inline documentation, the project maintains comprehensive external documentation in the docs/ directory, including architecture guides, API references, and user guides.
 
-The script processes the following files:
-- code_strategy.py
-- list_strategy.py
-- structural_strategy.py
-- table_strategy.py
-- sentences_strategy.py
+General development best practices include keeping functions focused and small, using meaningful variable names, and writing tests for all new code. The project emphasizes code readability and maintainability over cleverness or conciseness. When faced with a trade-off between performance and readability, readability should be prioritized unless there is a compelling performance reason to do otherwise.
 
-It adds imports for `Any`, `Dict`, `List`, and `Optional` from the typing module.
-
-### analyze_unused_components.py
-
-This comprehensive analysis script identifies various types of unused components after refactoring:
-
-1. Unused backward compatibility files
-2. Orphaned test files
-3. Deprecated functions with no callers
-4. Skipped tests
-
-The script performs static analysis of the codebase to identify components that can be safely removed, helping to maintain a clean and efficient codebase.
-
-Usage:
-```bash
-python scripts/analyze_unused_components.py
-```
-
-The script provides a detailed report of cleanup opportunities, including unused compatibility files, deprecated functions, orphaned test files, and skipped tests.
+The project also follows the principle of "fail fast" in error handling. Functions should validate their inputs and raise appropriate exceptions when invalid data is provided. This helps catch errors early and makes debugging easier. Error messages should be clear and informative, providing enough context to understand the problem and how to fix it.
 
 ```mermaid
 flowchart TD
-Start["Utility Scripts"] --> AddTyping["add_typing_imports.py"]
-Start --> AnalyzeUnused["analyze_unused_components.py"]
-AddTyping --> Check["Check for missing typing imports"]
-Check --> Find["Find strategy files"]
-Find --> Verify["Verify import presence"]
-Verify --> Add["Add missing imports"]
-Add --> Report["Report fixed files"]
-AnalyzeUnused --> Identify["Identify unused components"]
-Identify --> Compatibility["Check backward compatibility files"]
-Identify --> Deprecated["Find deprecated functions"]
-Identify --> Orphaned["Find orphaned test files"]
-Identify --> Skipped["Find skipped tests"]
-Compatibility --> Report2["Report unused components"]
-Deprecated --> Report2
-Orphaned --> Report2
-Skipped --> Report2
-Report2 --> Summary["Provide cleanup summary"]
+A[Coding Standards] --> B[PEP 8 Style Guide]
+A --> C[Black Formatting]
+A --> D[isort Import Sorting]
+A --> E[Type Hints]
+A --> F[Google-style Docstrings]
+A --> G[Comprehensive External Documentation]
+A --> H[Small, Focused Functions]
+A --> I[Meaningful Variable Names]
+A --> J[Test Coverage]
+A --> K[Fail Fast Error Handling]
+A --> L[Clear Error Messages]
+B --> M[Consistent Code Style]
+C --> N[Automated Formatting]
+D --> O[Consistent Import Order]
+E --> P[Type Safety]
+F --> Q[Inline Documentation]
+G --> R[External Documentation]
+H --> S[Readable Code]
+I --> T[Self-documenting Code]
+J --> U[Reliable Code]
+K --> V[Early Error Detection]
+L --> W[Easier Debugging]
 ```
 
 **Diagram sources**
-- [scripts/add_typing_imports.py](file://scripts/add_typing_imports.py#L1-L94)
-- [scripts/analyze_unused_components.py](file://scripts/analyze_unused_components.py#L1-L323)
+- [CONTRIBUTING.md](file://CONTRIBUTING.md#L47-L51)
+- [Makefile](file://Makefile#L65-L69)
+- [requirements.txt](file://requirements.txt#L16-L21)
 
 **Section sources**
-- [scripts/add_typing_imports.py](file://scripts/add_typing_imports.py#L1-L94)
-- [scripts/analyze_unused_components.py](file://scripts/analyze_unused_components.py#L1-L323)
+- [CONTRIBUTING.md](file://CONTRIBUTING.md#L47-L51)
+- [Makefile](file://Makefile#L65-L69)
+- [requirements.txt](file://requirements.txt#L16-L21)
 
-## Architecture Audit Findings
+## Testing and Performance Evaluation
 
-The architecture audit has identified several key issues and recommendations for improving the codebase structure and maintainability.
+Testing and performance evaluation are critical components of the development process for the Markdown chunker. The project maintains comprehensive test coverage with over 1366 tests, ensuring the reliability and correctness of the codebase.
 
-### Key Findings
+The testing strategy includes unit tests, integration tests, and property-based tests. Unit tests focus on individual components and functions, verifying their behavior in isolation. Integration tests cover end-to-end workflows, ensuring that components work together correctly. Property-based tests using Hypothesis verify universal properties, such as idempotence, monotonic ordering, and data preservation.
 
-1. **Excessive File Count**: The project contains 55 Python files for a relatively simple task, leading to unnecessary complexity.
-2. **Overly Large Files**: Several files exceed 700 lines, particularly `structural_strategy.py` (1720 lines) and `types.py` files (1079 and 931 lines).
-3. **Configuration Complexity**: The `ChunkConfig` class has 32 parameters, making it difficult to understand and configure.
-4. **Duplicate Functionality**: Multiple mechanisms exist for overlap handling and post-processing, creating maintenance challenges.
-5. **Technical Debt**: The codebase shows signs of iterative fixes (Phase 1, Phase 2, MC-* fixes) rather than systematic design.
+The Makefile provides convenient commands for running tests. The `make test` command runs all tests, while `make test-quick` runs only quick tests. The `make test-coverage` command runs tests with coverage reporting, generating an HTML report in the htmlcov/ directory. The `make test-verbose` command runs tests with verbose output, which is useful for debugging failing tests.
 
-### Critical Architecture Smells
+Performance benchmarks are used to evaluate the efficiency of the chunking algorithms and identify potential bottlenecks. The benchmarks measure performance across different document sizes and content types, providing insights into how the system scales. The benchmark results are saved to a JSON file for comparison across versions.
 
-- **SMELL-1**: Too many files (55) for the functionality provided
-- **SMELL-2**: Overly large files (6 files > 700 lines)
-- **SMELL-3**: 32 configuration parameters in ChunkConfig
-- **SMELL-5**: Dual overlap mechanisms (legacy and block-based)
-- **SMELL-6**: Duplicate post-processing pipelines
-- **SMELL-12**: Layered fixes (Phase 1, Phase 2, MC-* fixes) indicating design debt
+The benchmark suite includes tests for document size and content type. The document size tests measure performance for documents of various sizes, from 1KB to 500KB. The content type tests measure performance for different types of content, including text, code, mixed content, lists, and tables. These benchmarks help ensure that the system performs well across a wide range of use cases.
 
-### Recommended Simplifications
-
-1. Reduce file count from 55 to approximately 12 by consolidating related functionality
-2. Decrease configuration parameters from 32 to 8 by removing unused and redundant options
-3. Consolidate the 6 chunking strategies into 4 by merging similar functionality
-4. Eliminate duplicate validation and post-processing logic
-5. Remove deprecated code and backward compatibility layers
+Before submitting changes, developers should run the full test suite and performance benchmarks to ensure that their changes do not introduce regressions. The `make release` command includes test execution as one of its steps, ensuring that only well-tested code is released.
 
 ```mermaid
 flowchart TD
-INPUT[/"md_text: str"/]
-subgraph Core["markdown_chunker"]
-CHUNKER[MarkdownChunker]
-PARSER[Parser]
-SELECTOR[Strategy Selector]
-end
-subgraph Strategies["strategies/"]
-CODE[CodeAwareStrategy]
-STRUCT[StructuralStrategy]
-TABLE[TableStrategy]
-FALLBACK[FallbackStrategy]
-end
-INPUT --> CHUNKER
-CHUNKER --> PARSER
-PARSER --> |ContentAnalysis| SELECTOR
-SELECTOR --> CODE
-SELECTOR --> STRUCT
-SELECTOR --> TABLE
-SELECTOR --> FALLBACK
-CODE --> OUTPUT
-STRUCT --> OUTPUT
-TABLE --> OUTPUT
-FALLBACK --> OUTPUT
-OUTPUT[/"List[Chunk]"/]
+A[Testing and Performance] --> B[Unit Tests]
+A --> C[Integration Tests]
+A --> D[Property-based Tests]
+A --> E[Performance Benchmarks]
+B --> F[Component-level Testing]
+C --> G[End-to-end Workflows]
+D --> H[Universal Properties]
+E --> I[Document Size Tests]
+E --> J[Content Type Tests]
+F --> K[Isolated Component Behavior]
+G --> L[System Integration]
+H --> M[Idempotence, Monotonic Ordering]
+I --> N[1KB to 500KB Documents]
+J --> O[Text, Code, Mixed, Lists, Tables]
+A --> P[Makefile Commands]
+P --> Q[make test]
+P --> R[make test-quick]
+P --> S[make test-coverage]
+P --> T[make test-verbose]
+P --> U[make benchmark]
 ```
 
 **Diagram sources**
-- [docs/architecture-audit/06-architecture-smells.md](file://docs/architecture-audit/06-architecture-smells.md#L244-L258)
-- [docs/architecture-audit/08-simplification-recommendations.md](file://docs/architecture-audit/08-simplification-recommendations.md#L206-L237)
+- [testing-guide.md](file://docs/guides/testing-guide.md#L1-L32)
+- [Makefile](file://Makefile#L38-L140)
+- [benchmark_chunker.py](file://benchmarks/benchmark_chunker.py#L1-L195)
 
 **Section sources**
-- [docs/architecture-audit/01-module-inventory.md](file://docs/architecture-audit/01-module-inventory.md#L1-L290)
-- [docs/architecture-audit/06-architecture-smells.md](file://docs/architecture-audit/06-architecture-smells.md#L1-L271)
-- [docs/architecture-audit/08-simplification-recommendations.md](file://docs/architecture-audit/08-simplification-recommendations.md#L1-L292)
-
-## Documentation Validation Script
-
-A new documentation validation script has been added to ensure the quality and consistency of project documentation.
-
-### Purpose and Functionality
-
-The `scripts/validate_docs.py` script performs the following validation checks:
-
-1. **Internal Link Validation**: Checks that all internal markdown links point to existing files
-2. **Version Consistency**: Ensures version numbers are consistent across key files
-3. **Code Block Syntax**: Validates that code blocks have appropriate language tags
-4. **Documentation Accuracy**: Verifies that documentation references valid files and paths
-
-### Usage
-
-The script can be run manually or integrated into CI/CD pipelines:
-
-```bash
-python scripts/validate_docs.py
-```
-
-### Validation Process
-
-The script performs the following steps:
-
-1. Discovers all markdown files in the project
-2. Validates internal links to ensure they point to existing files
-3. Checks code blocks for proper syntax and language tags
-4. Verifies version consistency across key files (README.md, CHANGELOG.md, manifest.yaml, DEVELOPMENT.md)
-5. Reports any errors or warnings found
-
-### Integration with Development Workflow
-
-The validation script should be run:
-- Before committing documentation changes
-- As part of the CI/CD pipeline
-- Before creating a new release
-- When updating version numbers
-
-```mermaid
-flowchart TD
-Start["Documentation Validation"] --> Discovery["Find all markdown files"]
-Discovery --> Links["Validate internal links"]
-Links --> CodeBlocks["Check code block syntax"]
-CodeBlocks --> Versions["Verify version consistency"]
-Versions --> Report["Generate validation report"]
-Report --> Results["Display errors and warnings"]
-```
-
-**Diagram sources**
-- [scripts/validate_docs.py](file://scripts/validate_docs.py#L21-L202)
-
-**Section sources**
-- [scripts/validate_docs.py](file://scripts/validate_docs.py#L1-L202)
-- [DEVELOPMENT.md](file://DEVELOPMENT.md#L1-L408)
-
-## Additional Resources
-
-For additional information and policy details, refer to the following documentation files:
-
-- **DEVELOPMENT.md**: Comprehensive development guide covering setup, testing, packaging, and troubleshooting
-- **CONTRIBUTING.md**: Contribution guidelines including workflow, code style, documentation standards, and community expectations
-- **CHANGELOG.md**: Record of changes for each version
-- **README.md**: Project overview and usage examples
-- **docs/guides/developer-guide.md**: Comprehensive developer guide with architecture, coding standards, and workflows
-- **docs/architecture-audit/**: Detailed audit findings and recommendations for architecture improvements
-
-The project also includes example files in the `examples/` directory demonstrating various use cases:
-- `basic_usage.py`: Basic usage of the markdown chunker
-- `api_usage.py`: API usage examples
-- `dify_integration.py`: Dify platform integration
-- `rag_integration.py`: RAG system integration
-
-The architecture audit documentation in `docs/architecture-audit/` provides detailed analysis of the current codebase structure and recommendations for simplification and improvement.
-
-**Section sources**
-- [DEVELOPMENT.md](file://DEVELOPMENT.md#L1-L408)
-- [CONTRIBUTING.md](file://CONTRIBUTING.md#L1-L171)
-- [examples/](file://examples/)
-- [docs/guides/developer-guide.md](file://docs/guides/developer-guide.md)
-- [docs/architecture-audit/](file://docs/architecture-audit/)
+- [testing-guide.md](file://docs/guides/testing-guide.md#L1-L32)
+- [Makefile](file://Makefile#L38-L140)
+- [benchmark_chunker.py](file://benchmarks/benchmark_chunker.py#L1-L195)

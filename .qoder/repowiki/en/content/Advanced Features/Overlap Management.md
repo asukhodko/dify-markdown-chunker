@@ -1,470 +1,359 @@
 # Overlap Management
 
 <cite>
-**Referenced Files in This Document**
-- [overlap_manager.py](file://markdown_chunker/chunker/components/overlap_manager.py)
+**Referenced Files in This Document**   
+- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py)
+- [orchestrator.py](file://markdown_chunker_legacy/chunker/orchestrator.py)
+- [block_overlap_manager.py](file://markdown_chunker_legacy/chunker/block_overlap_manager.py)
+- [types.py](file://markdown_chunker_legacy/chunker/types.py)
 - [test_overlap_manager.py](file://tests/chunker/test_components/test_overlap_manager.py)
-- [test_overlap_properties.py](file://tests/chunker/test_overlap_properties.py)
-- [types.py](file://markdown_chunker/chunker/types.py)
-- [rag_integration.py](file://examples/rag_integration.py)
-- [blog_post.md](file://tests/fixtures/real_documents/blog_post.md)
+- [test_overlap_redesign_integration.py](file://tests/integration/test_overlap_redesign_integration.py)
 </cite>
 
 ## Table of Contents
 1. [Introduction](#introduction)
-2. [System Architecture](#system-architecture)
-3. [Core Components](#core-components)
-4. [Configuration Options](#configuration-options)
-5. [Overlap Extraction Methods](#overlap-extraction-methods)
-6. [Sentence Boundary Preservation](#sentence-boundary-preservation)
-7. [Edge Case Handling](#edge-case-handling)
-8. [RAG Application Integration](#rag-application-integration)
-9. [Performance Considerations](#performance-considerations)
-10. [Best Practices](#best-practices)
-11. [Troubleshooting Guide](#troubleshooting-guide)
+2. [OverlapManager Implementation](#overlapmanager-implementation)
+3. [Overlap Handling Modes](#overlap-handling-modes)
+4. [Overlap Size Calculation and Enforcement](#overlap-size-calculation-and-enforcement)
+5. [Overlap Processing in the Pipeline](#overlap-processing-in-the-pipeline)
+6. [Block-Based Overlap](#block-based-overlap)
+7. [Common Issues and Solutions](#common-issues-and-solutions)
+8. [Configuration Examples](#configuration-examples)
+9. [Conclusion](#conclusion)
 
 ## Introduction
+The overlap management system in the Markdown chunker is designed to maintain context continuity between adjacent chunks, which is crucial for applications like Retrieval-Augmented Generation (RAG) where context preservation enhances information retrieval and processing. This system ensures that chunks are not isolated fragments but maintain connections with their neighboring content, improving readability and semantic coherence. The core component responsible for this functionality is the OverlapManager class, which operates within the broader chunking pipeline orchestrated by the ChunkingOrchestrator. The system supports multiple overlap handling modes, configurable overlap sizes, and sophisticated block-aware overlap strategies that preserve structural integrity while preventing content duplication.
 
-The OverlapManager class is a sophisticated component within the markdown chunking system that maintains contextual continuity between adjacent chunks. It creates sentence-based overlap between consecutive chunks to ensure that when chunks are processed independently (as in Retrieval-Augmented Generation applications), the semantic flow and contextual information are preserved.
+**Section sources**
+- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py#L1-L927)
+- [orchestrator.py](file://markdown_chunker_legacy/chunker/orchestrator.py#L1-L666)
 
-Overlap management is crucial for RAG (Retrieval-Augmented Generation) applications where documents are split into smaller chunks for efficient processing and retrieval. Without proper overlap, important context that spans chunk boundaries would be lost, leading to reduced accuracy in downstream AI applications.
+## OverlapManager Implementation
+The OverlapManager class is the central component responsible for creating overlapping content between adjacent chunks. It implements a sophisticated block-aware approach that aligns overlap boundaries with structural elements in the Markdown content, ensuring that overlaps respect natural content boundaries rather than cutting through paragraphs, code blocks, or tables. The class provides two primary modes of operation: metadata mode and legacy mode, allowing flexibility in how overlap context is stored and accessed.
 
-## System Architecture
+The implementation uses a block-based approach where content is first parsed into logical blocks (paragraphs, headers, lists, code blocks, and tables) before overlap is applied. This ensures that overlaps consist of complete blocks rather than partial content, preserving the integrity of structural elements. The class includes methods for extracting suffix context from the end of one chunk and prefix context from the beginning of the next chunk, which are then applied according to the configured mode.
 
-The overlap management system operates as a pipeline component that processes chunks after they've been created by individual chunking strategies. The system maintains strict control over overlap size, preserves sentence boundaries, and ensures code block integrity.
+```mermaid
+classDiagram
+class OverlapManager {
++config : ChunkConfig
++apply_overlap(chunks : List[Chunk], include_metadata : bool) : List[Chunk]
++_calculate_effective_overlap(chunks : List[Chunk]) : int
++_extract_suffix_context(chunk : Chunk, target_size : int) : str
++_extract_prefix_context(chunk : Chunk, target_size : int) : str
++_add_context_to_metadata(chunk : Chunk, previous_content : str, next_content : str, previous_chunk_index : Optional[int], next_chunk_index : Optional[int]) : Chunk
++_merge_context_into_content(chunk : Chunk, previous_content : str, next_content : str) : Chunk
++_extract_blocks_from_content(content : str) : List[ContentBlock]
++_parse_text_blocks(text : str, offset : int) : List[ContentBlock]
++_extract_block_aligned_overlap(chunk : Chunk, target_size : int) : Optional[str]
+}
+class ContentBlock {
++content : str
++block_type : str
++start_pos : int
++end_pos : int
++is_header : bool
++size : int
+}
+class ChunkConfig {
++enable_overlap : bool
++overlap_size : int
++overlap_percentage : float
++max_chunk_size : int
+}
+class Chunk {
++content : str
++start_line : int
++end_line : int
++metadata : Dict[str, Any]
+}
+OverlapManager --> ChunkConfig : "uses"
+OverlapManager --> Chunk : "processes"
+OverlapManager --> ContentBlock : "creates"
+ContentBlock --> Chunk : "extracted from"
+```
+
+**Diagram sources **
+- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py#L38-L800)
+
+**Section sources**
+- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py#L38-L800)
+
+## Overlap Handling Modes
+The overlap management system supports two distinct modes for handling overlap context: metadata mode and legacy mode. These modes provide different approaches to storing and accessing contextual information, allowing users to choose the most appropriate method for their specific use case.
+
+### Metadata Mode
+In metadata mode, the overlap context is stored in the chunk's metadata rather than being merged into the content itself. This approach keeps the core content clean and unmodified while making contextual information available through metadata fields. When enabled, the system adds `previous_content` and `next_content` fields to the chunk metadata, containing the contextual text from adjacent chunks. This mode also includes `previous_chunk_index` and `next_chunk_index` fields to indicate the positional relationship between chunks.
+
+The primary advantage of metadata mode is that it preserves the original content structure while providing access to contextual information. This is particularly useful for applications that need to distinguish between core content and contextual information or that perform additional processing on the content before using the context.
+
+### Legacy Mode
+Legacy mode follows the traditional approach of merging the overlap context directly into the chunk content. In this mode, the previous chunk's context is prepended to the current chunk, and the next chunk's context is appended, creating a single content string that includes both the core content and its context. This approach results in larger content strings but provides a simpler interface for downstream consumers that expect all relevant text to be in the content field.
+
+The legacy mode includes safeguards to prevent content duplication and ensure that the merged content does not exceed size limits. If the merged content would exceed the maximum chunk size, the system truncates the overlap context to fit within the constraints while preserving as much context as possible.
 
 ```mermaid
 flowchart TD
-A["Input Chunks"] --> B["OverlapManager.apply_overlap()"]
-B --> C{"Single chunk or empty?"}
-C --> |Yes| D["Return unchanged"]
-C --> |No| E{"Overlap enabled?"}
-E --> |No| D
-E --> |Yes| F["Process each chunk"]
-F --> G{"First chunk?"}
-G --> |Yes| H["Add to result"]
-G --> |No| I["Extract overlap from previous"]
-I --> J{"Unbalanced fences?"}
-J --> |Yes| K["Skip overlap"]
-J --> |No| L["Add overlap prefix"]
-K --> H
-L --> H
-H --> M["Continue to next"]
-M --> N{"More chunks?"}
-N --> |Yes| F
-N --> |No| O["Return overlapped chunks"]
+Start([Start Overlap Processing]) --> CheckMode{"Mode Selection"}
+CheckMode --> |Metadata Mode| StoreMetadata["Store context in metadata fields"]
+CheckMode --> |Legacy Mode| MergeContent["Merge context into content"]
+StoreMetadata --> AddFields["Add previous_content, next_content<br/>previous_chunk_index, next_chunk_index"]
+AddFields --> ValidateIntegrity["Validate code fence integrity"]
+AddFields --> EnforceSize["Enforce 50% total overlap limit"]
+ValidateIntegrity --> ReturnChunks["Return chunks with metadata"]
+MergeContent --> BuildContent["Build: previous + core + next"]
+BuildContent --> CheckFences["Check for unbalanced code fences"]
+CheckFences --> |Unbalanced| ReturnOriginal["Return original chunk"]
+CheckFences --> |Balanced| CheckSize["Check if merged content exceeds max size"]
+CheckSize --> |Exceeds| Truncate["Truncate contexts to fit"]
+Truncate --> Rebuild["Rebuild merged content"]
+Rebuild --> ReturnChunks
+CheckSize --> |Fits| ReturnChunks
+style Start fill:#f9f,stroke:#333
+style ReturnChunks fill:#bbf,stroke:#333
 ```
 
-**Diagram sources**
-- [overlap_manager.py](file://markdown_chunker/chunker/components/overlap_manager.py#L37-L79)
+**Diagram sources **
+- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py#L63-L137)
+- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py#L343-L477)
 
 **Section sources**
-- [overlap_manager.py](file://markdown_chunker/chunker/components/overlap_manager.py#L13-L35)
+- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py#L63-L477)
 
-## Core Components
+## Overlap Size Calculation and Enforcement
+The overlap management system employs a sophisticated approach to calculate and enforce overlap size, balancing configuration parameters with content characteristics to ensure optimal context preservation while maintaining performance and structural integrity.
 
-### OverlapManager Class
+### Size Calculation
+The effective overlap size is determined through a hierarchical calculation process that considers both fixed-size and percentage-based configurations. The system first checks if a fixed `overlap_size` is specified in the configuration. If present and greater than zero, this value takes precedence. Otherwise, the system calculates a percentage-based overlap using the `overlap_percentage` parameter and the average chunk size across all chunks.
 
-The OverlapManager serves as the central orchestrator for all overlap-related operations. It maintains configuration state and provides methods for extracting, validating, and applying overlap between chunks.
+The calculation also incorporates a maximum ratio constraint of 40% relative to the source chunk size, preventing overlaps from consuming an excessive portion of any single chunk. This ensures that the core content remains the primary focus while still providing sufficient context. For very small chunks, the system applies a minimum threshold of 50 characters to ensure meaningful context is provided.
 
-Key responsibilities include:
-- Managing overlap configuration and validation
-- Extracting sentence-based overlap from chunks
-- Preserving code block integrity during overlap creation
-- Ensuring overlap size constraints are met
-- Updating chunk metadata with overlap information
+### Size Enforcement
+The system enforces strict limits on overlap size to prevent performance issues and maintain usability. A critical constraint is the 50% total overlap limit, which ensures that the combined size of previous and next context does not exceed half of the final chunk size. This prevents situations where context dominates the content, which could negatively impact downstream processing.
 
-### Sentence Boundary Detection
-
-The system uses sophisticated sentence boundary detection to maintain readability and semantic coherence. It employs regular expressions to identify sentence-ending punctuation while being careful to avoid false positives with abbreviations and special cases.
-
-### Fence Integrity Validation
-
-For code-heavy documents, the system includes critical protection against unbalanced code fences. It checks for proper opening and closing of code blocks to prevent corruption of executable code during overlap operations.
-
-**Section sources**
-- [overlap_manager.py](file://markdown_chunker/chunker/components/overlap_manager.py#L13-L35)
-
-## Configuration Options
-
-The overlap system provides flexible configuration through the ChunkConfig class, offering multiple approaches to define overlap behavior.
-
-### Primary Configuration Parameters
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `enable_overlap` | bool | True | Enables or disables overlap creation |
-| `overlap_size` | int | 200 | Fixed-size overlap in characters |
-| `overlap_percentage` | float | 0.1 | Percentage of chunk size for overlap (0.0-1.0) |
-
-### Configuration Interaction Logic
-
-The overlap system follows a priority-based approach for determining overlap size:
-
-1. **Fixed-size priority**: If `overlap_size > 0`, it takes precedence over percentage-based overlap
-2. **Percentage fallback**: If `overlap_size = 0` and `overlap_percentage > 0`, calculates overlap as `chunk_size × overlap_percentage`
-3. **Disabled overlap**: If both are zero, no overlap is created
-
-### Size Constraints
-
-The system enforces several critical size constraints to maintain chunk quality:
-
-- **Maximum overlap constraint**: Never exceeds 40% of the source chunk size
-- **Ratio constraint**: Final overlap ratio never exceeds 50% of the combined chunk size
-- **Space availability**: Respects maximum chunk size limits
+When merging context in legacy mode, the system performs additional validation to ensure the merged content does not exceed the maximum chunk size. If the combined content would exceed this limit, the system truncates the overlap contexts using word-boundary truncation to maintain readability while fitting within constraints.
 
 ```mermaid
 flowchart TD
-A["Calculate Target Overlap"] --> B{"overlap_size > 0?"}
-B --> |Yes| C["Use fixed size"]
-B --> |No| D{"overlap_percentage > 0?"}
-D --> |Yes| E["Calculate percentage"]
-D --> |No| F["No overlap"]
-C --> G["Apply 40% max constraint"]
-E --> G
-G --> H["Apply ratio constraint"]
-H --> I["Final overlap size"]
+StartCalc["Calculate Effective Overlap"] --> CheckFixed{"Fixed size > 0?"}
+CheckFixed --> |Yes| UseFixed["Use overlap_size value"]
+CheckFixed --> |No| CheckPercentage{"Percentage > 0?"}
+CheckPercentage --> |Yes| CalculateAvg["Calculate average chunk size"]
+CalculateAvg --> ComputePct["overlap_size = avg_size × overlap_percentage"]
+ComputePct --> ApplyMax["Apply 40% max ratio"]
+ApplyMax --> MinCheck["Ensure ≥ 50 chars"]
+MinCheck --> FinalSize["Final effective overlap size"]
+UseFixed --> ApplyMax
+CheckPercentage --> |No| ZeroSize["Overlap = 0"]
+style StartCalc fill:#f9f,stroke:#333
+style FinalSize fill:#bbf,stroke:#333
+style ZeroSize fill:#f96,stroke:#333
 ```
 
-**Diagram sources**
-- [overlap_manager.py](file://markdown_chunker/chunker/components/overlap_manager.py#L125-L140)
+**Diagram sources **
+- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py#L139-L157)
+- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py#L179-L182)
 
 **Section sources**
-- [types.py](file://markdown_chunker/chunker/types.py#L579-L582)
-- [overlap_manager.py](file://markdown_chunker/chunker/components/overlap_manager.py#L125-L140)
+- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py#L139-L182)
 
-## Overlap Extraction Methods
+## Overlap Processing in the Pipeline
+The overlap processing is an integral part of the overall chunking pipeline, coordinated by the ChunkingOrchestrator. It occurs after the initial chunking strategy has been applied and before final validation and post-processing steps. This positioning ensures that overlap is applied to semantically meaningful chunks rather than raw text segments.
 
-### _extract_overlap Method
+The ChunkingOrchestrator manages the entire chunking process, from initial analysis through strategy selection, chunking, and final post-processing. When overlap is enabled, the orchestrator invokes the appropriate overlap management components after the primary chunking strategy has generated the initial set of chunks. The orchestrator also handles error conditions and fallback scenarios, ensuring that the chunking process can continue even if overlap processing encounters issues.
 
-The `_extract_overlap` method serves as the primary interface for overlap extraction, determining whether to extract from the beginning or end of a chunk based on the `is_suffix` parameter.
+In the current implementation, the orchestrator supports both the traditional OverlapManager and the newer BlockOverlapManager, allowing for different approaches to overlap calculation based on configuration. The block-based approach is preferred as it better preserves structural integrity by aligning overlap boundaries with content blocks.
 
-This method handles the initial overlap calculation and performs essential validations before proceeding to specific extraction logic.
+```mermaid
+sequenceDiagram
+participant Client as "Client Application"
+participant Orchestrator as "ChunkingOrchestrator"
+participant Strategy as "Chunking Strategy"
+participant Overlap as "OverlapManager"
+participant Validator as "DedupValidator"
+Client->>Orchestrator : chunk_with_strategy()
+Orchestrator->>Orchestrator : _run_stage1_analysis()
+Orchestrator->>Orchestrator : _select_and_apply_strategy()
+Orchestrator->>Strategy : apply()
+Strategy-->>Orchestrator : Initial chunks
+Orchestrator->>Orchestrator : _apply_block_based_postprocessing()
+Orchestrator->>Overlap : apply_overlap()
+Overlap-->>Orchestrator : Chunks with overlap
+Orchestrator->>Validator : validate_no_excessive_duplication()
+Validator-->>Orchestrator : Validation results
+Orchestrator->>Orchestrator : _validate_size_compliance()
+Orchestrator-->>Client : Final ChunkingResult
+Note over Orchestrator,Overlap : Overlap processing occurs<br/>after initial chunking<br/>and before final validation
+```
 
-### Suffix Overlap Extraction
-
-The `_extract_suffix_overlap` method extracts overlap from the end of content while preserving sentence boundaries. It implements sophisticated logic to ensure that:
-
-- Sentence boundaries are respected whenever possible
-- The target overlap size is approached but not exceeded
-- Edge cases with short content are handled gracefully
-- Unbalanced code fences are detected and prevented
-
-Key algorithmic features:
-- Iterates through sentences in reverse order
-- Accumulates sentences until target size is reached
-- Applies tolerance for the first sentence when appropriate
-- Implements safety truncation for oversized results
-
-### Prefix Overlap Extraction
-
-The `_extract_prefix_overlap` method mirrors the suffix extraction logic but works from the beginning of content. It ensures that:
-
-- Content starts with complete sentences when possible
-- Sentence boundaries are maintained
-- Character-based fallback is available for content without clear boundaries
-
-### _truncate_preserving_sentences Method
-
-This utility method provides intelligent text truncation that attempts to preserve sentence boundaries while respecting size limits. It implements a multi-stage approach:
-
-1. **Boundary preservation**: Checks if text already ends with sentence punctuation
-2. **Backward search**: Scans backward from the target size to find the nearest sentence boundary
-3. **Word boundary fallback**: Falls back to word boundaries when sentence boundaries aren't available
-4. **Hard truncation**: Last resort for content that cannot be sensibly truncated
+**Diagram sources **
+- [orchestrator.py](file://markdown_chunker_legacy/chunker/orchestrator.py#L86-L190)
+- [orchestrator.py](file://markdown_chunker_legacy/chunker/orchestrator.py#L485-L597)
 
 **Section sources**
-- [overlap_manager.py](file://markdown_chunker/chunker/components/overlap_manager.py#L109-L153)
-- [overlap_manager.py](file://markdown_chunker/chunker/components/overlap_manager.py#L155-L239)
-- [overlap_manager.py](file://markdown_chunker/chunker/components/overlap_manager.py#L241-L284)
+- [orchestrator.py](file://markdown_chunker_legacy/chunker/orchestrator.py#L86-L597)
 
-## Sentence Boundary Preservation
+## Block-Based Overlap
+The block-based overlap system represents a significant advancement over character-based approaches, addressing key issues related to structural integrity and content preservation. This approach treats content as a sequence of atomic blocks rather than a continuous stream of characters, ensuring that overlaps respect natural content boundaries.
 
-### Sentence Detection Algorithm
+The BlockOverlapManager implements this approach by first parsing each chunk into discrete blocks of different types: paragraphs, headers, lists, code blocks, and tables. When calculating overlap, it only includes complete blocks rather than partial content, preventing situations where a paragraph or code block is split across chunks. This is particularly important for maintaining the readability and functionality of code examples and tables.
 
-The system uses a sophisticated sentence detection mechanism that balances accuracy with practicality. The `_split_into_sentences` method employs regular expressions to identify sentence boundaries while avoiding common pitfalls.
+A critical feature of the block-based system is its handling of special block types. Headers are excluded from overlap to prevent cross-section contamination, ensuring that context from one section doesn't bleed into another. Similarly, code blocks and tables are excluded from overlap regions to maintain their atomic integrity and prevent syntax errors or data corruption.
 
-Detection patterns:
-- Standard sentence endings: `.`, `!`, `?` followed by whitespace
-- Handles abbreviations and special cases
-- Preserves punctuation within sentences
-- Maintains sentence context for overlap extraction
+```mermaid
+classDiagram
+class BlockOverlapManager {
++config : ChunkConfig
++apply_block_overlap(chunks : List[Chunk], blocks_by_chunk : Optional[List[List[Block]]]) : List[Chunk]
++_extract_overlap_blocks(chunk : Chunk, blocks : Optional[List[Block]]) : List[Block]
++_validate_overlap_boundaries(overlap_blocks : List[Block], next_chunk : Chunk) : bool
++_add_overlap_to_chunk(chunk : Chunk, overlap_blocks : List[Block], prev_chunk_index : int) : Chunk
+}
+class Block {
++content : str
++type : BlockType
++size : int
+}
+class BlockType {
++HEADER
++PARAGRAPH
++CODE
++TABLE
++LIST
++BLANK
+}
+class ChunkConfig {
++block_based_overlap : bool
++overlap_size : int
+}
+class Chunk {
++content : str
++start_line : int
++end_line : int
++metadata : Dict[str, Any]
+}
+BlockOverlapManager --> ChunkConfig : "uses"
+BlockOverlapManager --> Chunk : "processes"
+BlockOverlapManager --> Block : "creates"
+Block --> BlockType : "has type"
+```
 
-### Boundary Preservation Strategies
-
-When extracting overlap, the system employs multiple strategies to maintain sentence integrity:
-
-1. **Complete sentence inclusion**: Full sentences are included when they fit within size constraints
-2. **Partial sentence allowance**: First sentences may be partially included with tolerance
-3. **Character fallback**: When no sentence boundaries exist, character-based extraction is used
-4. **Safety truncation**: Final validation ensures overlap doesn't exceed limits
-
-### Edge Case Handling
-
-The sentence boundary preservation system handles numerous edge cases:
-
-- **Empty or whitespace-only content**: Returns empty list for character-based extraction
-- **Content without sentence punctuation**: Falls back to character-based extraction
-- **Very short sentences**: May be included entirely or excluded based on size constraints
-- **Mixed content types**: Adapts detection based on content characteristics
+**Diagram sources **
+- [block_overlap_manager.py](file://markdown_chunker_legacy/chunker/block_overlap_manager.py#L16-L264)
 
 **Section sources**
-- [overlap_manager.py](file://markdown_chunker/chunker/components/overlap_manager.py#L286-L317)
+- [block_overlap_manager.py](file://markdown_chunker_legacy/chunker/block_overlap_manager.py#L16-L264)
 
-## Edge Case Handling
+## Common Issues and Solutions
+The overlap management system addresses several common issues that arise in chunking applications, particularly those related to content integrity, duplication, and structural preservation. These solutions are implemented through a combination of algorithmic improvements, configuration options, and validation mechanisms.
 
-### Short Chunk Handling
+### Phantom Content in Overlaps
+One common issue is the appearance of "phantom content" in overlaps, where text appears in multiple chunks due to structural requirements rather than intentional overlap. This can occur when headers or other structural elements are included in multiple chunks to maintain context. The system addresses this through careful boundary detection and the use of block-based overlap, which minimizes unnecessary duplication by only including complete blocks in overlap regions.
 
-The overlap system implements robust handling for short chunks that might not contain enough content to satisfy overlap requirements:
+The integration tests in `test_overlap_redesign_integration.py` specifically verify that context is properly tracked and that there is no unintended duplication beyond what is necessary for structural integrity. The tests validate that previous_content is a genuine suffix of the previous chunk and that next_content is a prefix of the subsequent chunk.
 
-- **Minimum size enforcement**: Ensures overlap isn't disproportionately large compared to chunk size
-- **Graceful degradation**: Falls back to character-based extraction when sentence boundaries aren't available
-- **Size ratio protection**: Prevents overlap from dominating small chunks
+### Code Block Integrity
+A critical issue in code-heavy documents is maintaining the integrity of code blocks across chunk boundaries. Splitting a code block can result in syntax errors and render the code unusable. The system prevents this by excluding code blocks from overlap regions and by using the block-based approach that treats code blocks as atomic units.
 
-### Code Block Protection
+The tests in `test_overlap_redesign_integration.py` verify that code blocks maintain balanced fences (equal numbers of opening and closing triple backticks) in both the chunk content and any overlap context. This ensures that code blocks remain syntactically valid even when they appear in overlap regions.
 
-Critical protection mechanisms ensure code block integrity:
+### Performance Considerations
+Large documents with extensive overlap requirements can impact performance due to the additional processing required. The system addresses this through several optimizations, including the 40% maximum ratio constraint that limits the amount of content processed for overlap, and the use of efficient block extraction algorithms.
 
-- **Fence counting**: Monitors opening and closing code fence markers
-- **Unbalanced detection**: Identifies when overlap would create unbalanced code blocks
-- **Skip logic**: Prevents overlap application when code integrity would be compromised
-
-### Multiline Content Management
-
-The system handles multiline content effectively:
-
-- **Line structure preservation**: Maintains newline patterns when possible
-- **Paragraph boundary respect**: Respects paragraph breaks in overlap extraction
-- **Indentation preservation**: Maintains indentation levels in code and formatted content
-
-### Empty and Null Content
-
-Robust handling of edge cases:
-
-- **Empty chunk lists**: Returns empty list immediately
-- **Whitespace-only content**: Treated as empty for overlap purposes
-- **Null or invalid content**: Validated and handled gracefully
+The validation system also includes performance safeguards, such as skipping duplication checks for documents larger than 50KB, to prevent performance degradation on very large inputs while still providing validation for typical document sizes.
 
 ```mermaid
 flowchart TD
-A["Process Chunk"] --> B{"Empty content?"}
-B --> |Yes| C["Return empty overlap"]
-B --> |No| D{"Short content?"}
-D --> |Yes| E["Character-based extraction"]
-D --> |No| F{"Contains code?"}
-F --> |Yes| G{"Unbalanced fences?"}
-G --> |Yes| H["Skip overlap"]
-G --> |No| I["Proceed with overlap"]
-F --> |No| J{"Sentence boundaries?"}
-J --> |Yes| K["Sentence-based extraction"]
-J --> |No| E
-K --> L["Apply size constraints"]
-I --> L
-L --> M["Return overlap text"]
-E --> L
-H --> M
+Issue1["Phantom Content in Overlaps"] --> Solution1["Block-based overlap with complete blocks only"]
+Issue2["Code Block Integrity"] --> Solution2["Exclude code blocks from overlap regions"]
+Issue3["Table Splitting"] --> Solution3["Treat tables as atomic units"]
+Issue4["Performance Issues"] --> Solution4["40% max ratio constraint and selective validation"]
+Issue5["Cross-Section Contamination"] --> Solution5["Exclude headers from overlap"]
+style Issue1 fill:#f96,stroke:#333
+style Issue2 fill:#f96,stroke:#333
+style Issue3 fill:#f96,stroke:#333
+style Issue4 fill:#f96,stroke:#333
+style Issue5 fill:#f96,stroke:#333
+style Solution1 fill:#6f9,stroke:#333
+style Solution2 fill:#6f9,stroke:#333
+style Solution3 fill:#6f9,stroke:#333
+style Solution4 fill:#6f9,stroke:#333
+style Solution5 fill:#6f9,stroke:#333
 ```
 
-**Diagram sources**
-- [overlap_manager.py](file://markdown_chunker/chunker/components/overlap_manager.py#L109-L153)
+**Diagram sources **
+- [test_overlap_redesign_integration.py](file://tests/integration/test_overlap_redesign_integration.py#L242-L284)
+- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py#L179-L182)
 
 **Section sources**
-- [test_overlap_manager.py](file://tests/chunker/test_components/test_overlap_manager.py#L216-L234)
-- [overlap_manager.py](file://markdown_chunker/chunker/components/overlap_manager.py#L97-L107)
+- [test_overlap_redesign_integration.py](file://tests/integration/test_overlap_redesign_integration.py#L242-L284)
+- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py#L179-L182)
 
-## RAG Application Integration
+## Configuration Examples
+The overlap management system provides flexible configuration options that can be optimized for different document types and use cases. The ChunkConfig class includes parameters for controlling overlap behavior, allowing users to fine-tune the system for their specific requirements.
 
-### Context Window Creation
-
-The overlap system enables sophisticated context window creation for RAG applications. By maintaining overlap between chunks, the system allows for dynamic context construction around target query points.
-
-Example integration pattern:
-- **Chunk preparation**: Process documents with overlap enabled
-- **Embedding generation**: Create vector embeddings for each overlapped chunk
-- **Context retrieval**: Build context windows around query-relevant chunks
-- **Quality assurance**: Verify that context windows maintain semantic coherence
-
-### Embedding Optimization
-
-Overlap-enhanced chunks provide significant benefits for embedding-based retrieval:
-
-- **Improved semantic coverage**: Context from previous chunks enhances query relevance
-- **Reduced context loss**: Important information spanning boundaries remains accessible
-- **Enhanced retrieval accuracy**: Better representation of document semantics
-
-### Multi-Document Processing
-
-The system scales effectively across multiple documents:
-
-- **Consistent chunking**: Same overlap configuration applies across all documents
-- **Metadata preservation**: Chunk metadata includes source document information
-- **Cross-document context**: Related information across documents becomes retrievable
-
-### Real-World Applications
-
-The overlap management system has been successfully deployed in various RAG scenarios:
-
-- **Technical documentation**: Maintains code context across function boundaries
-- **API documentation**: Preserves parameter and method relationships
-- **Educational materials**: Maintains instructional flow between sections
-- **Legal documents**: Preserves argumentative structure across paragraphs
-
-**Section sources**
-- [rag_integration.py](file://examples/rag_integration.py#L101-L136)
-- [blog_post.md](file://tests/fixtures/real_documents/blog_post.md#L57-L118)
-
-## Performance Considerations
-
-### Computational Efficiency
-
-The overlap system is designed for efficiency while maintaining quality:
-
-- **Linear complexity**: Sentence boundary detection operates in linear time
-- **Memory optimization**: Minimal additional memory overhead per chunk
-- **Early termination**: Processing stops when overlap constraints are met
-
-### Scalability Factors
-
-Performance characteristics scale with:
-
-- **Content size**: Larger documents require more processing time
-- **Overlap size**: Larger overlaps increase computational requirements
-- **Sentence complexity**: Documents with complex sentence structures require more analysis
-
-### Memory Management
-
-The system implements careful memory management:
-
-- **Streaming support**: Can process large documents incrementally
-- **Chunk isolation**: Each chunk's overlap is computed independently
-- **Garbage collection**: Temporary data structures are efficiently managed
-
-### Optimization Strategies
-
-Several optimization strategies enhance performance:
-
-- **Lazy evaluation**: Overlap is calculated only when needed
-- **Caching**: Sentence boundary detection results may be cached
-- **Batch processing**: Multiple chunks can be processed together efficiently
-
-## Best Practices
-
-### Optimal Overlap Size Calculation
-
-Determining the ideal overlap size depends on several factors:
-
-**Content Type Guidelines:**
-- **Code-heavy documents**: 300-500 characters overlap for context preservation
-- **Text documents**: 150-300 characters for readability balance
-- **Mixed content**: 200-400 characters to accommodate both text and code
-
-**Document Characteristics:**
-- **Sentence density**: Higher density allows larger overlap
-- **Paragraph structure**: Well-structured documents benefit from smaller overlap
-- **Domain specificity**: Specialized domains may require larger context windows
-
-**Application Requirements:**
-- **Retrieval accuracy**: Higher accuracy often requires larger overlap
-- **Processing speed**: Smaller overlap improves performance
-- **Storage constraints**: Larger overlap increases storage requirements
-
-### Configuration Recommendations
-
-**Default Settings:**
+### General Documentation
+For general documentation with mixed content types, a balanced configuration provides good results:
 ```python
 config = ChunkConfig(
+    max_chunk_size=2048,
     enable_overlap=True,
-    overlap_size=200,  # Fixed size for consistency
-    overlap_percentage=0.1  # Percentage fallback
+    overlap_size=200,
+    overlap_percentage=0.1
 )
 ```
+This configuration creates chunks of approximately 2KB with 200-character overlaps, providing sufficient context while maintaining reasonable chunk sizes.
 
-**RAG-Optimized Settings:**
+### Code-Heavy Documents
+For code-heavy documents such as API references or technical tutorials, a configuration that accommodates larger code blocks is appropriate:
 ```python
-config = ChunkConfig.for_dify_rag()  # Pre-configured for RAG applications
+config = ChunkConfig(
+    max_chunk_size=6144,
+    target_chunk_size=3072,
+    code_ratio_threshold=0.5,
+    min_code_blocks=2,
+    allow_oversize=True,
+    preserve_code_blocks=True,
+    overlap_size=300
+)
 ```
+This configuration increases the maximum chunk size to accommodate complete code examples, uses a more aggressive code detection threshold, and provides larger overlaps to maintain code context.
 
-**Code Documentation Settings:**
+### Structured Documentation
+For well-structured documentation with clear sections and hierarchies, a configuration that emphasizes structural integrity works best:
 ```python
-config = ChunkConfig.for_code_heavy()  # Optimized for code contexts
+config = ChunkConfig(
+    max_chunk_size=3072,
+    target_chunk_size=1536,
+    header_count_threshold=2,
+    preserve_list_hierarchy=True,
+    overlap_size=150,
+    block_based_overlap=True
+)
 ```
+This configuration creates smaller chunks that respect section boundaries, preserves list structure, and uses block-based overlap for better structural integrity.
 
-### Quality Assurance
-
-Implement these practices for optimal results:
-
-- **Validation testing**: Verify overlap preserves sentence boundaries
-- **Content integrity**: Ensure code blocks remain functional
-- **Performance monitoring**: Track processing time and memory usage
-- **Accuracy measurement**: Test retrieval accuracy with different overlap settings
-
-### Integration Patterns
-
-Successful integration follows established patterns:
-
-- **Pipeline consistency**: Apply same overlap configuration across processing stages
-- **Metadata preservation**: Maintain source information for debugging
-- **Error handling**: Gracefully handle edge cases and malformed content
-- **Monitoring**: Track overlap effectiveness in production environments
-
-## Troubleshooting Guide
-
-### Common Issues and Solutions
-
-**Issue: Overlap creates unbalanced code fences**
-- **Cause**: Overlap includes partial code block closures
-- **Solution**: The system automatically skips overlap in such cases
-- **Prevention**: Monitor code block integrity in test documents
-
-**Issue: Overlap size exceeds chunk limits**
-- **Cause**: Overlap size calculations exceed maximum chunk size
-- **Solution**: The system applies automatic truncation and ratio constraints
-- **Prevention**: Use appropriate overlap size relative to chunk size
-
-**Issue: Sentence boundaries not preserved**
-- **Cause**: Content lacks clear sentence punctuation or is too short
-- **Solution**: The system falls back to character-based extraction
-- **Prevention**: Ensure content has sufficient sentence structure
-
-**Issue: Poor retrieval accuracy despite overlap**
-- **Cause**: Insufficient overlap size or poor content structure
-- **Solution**: Increase overlap size or improve content organization
-- **Prevention**: Test overlap effectiveness with representative queries
-
-### Debugging Techniques
-
-**Overlap Inspection:**
-- Examine chunk metadata for overlap information
-- Verify overlap size and type in chunk metadata
-- Check for unbalanced fences in problematic chunks
-
-**Content Analysis:**
-- Review sentence boundary detection accuracy
-- Analyze overlap content for readability
-- Monitor code block integrity preservation
-
-**Performance Monitoring:**
-- Track processing time for overlap operations
-- Monitor memory usage during chunk processing
-- Measure overlap effectiveness in retrieval tasks
-
-### Validation Procedures
-
-**Automated Testing:**
-- Run overlap property tests to verify constraints
-- Test edge cases with empty, short, and malformed content
-- Validate sentence boundary preservation across content types
-
-**Manual Verification:**
-- Review sample chunks for overlap quality
-- Test retrieval accuracy with overlapped content
-- Compare performance with and without overlap
-
-**Production Monitoring:**
-- Track overlap effectiveness in live applications
-- Monitor error rates and edge case handling
-- Analyze retrieval performance improvements
+### RAG Optimization
+For Retrieval-Augmented Generation applications, where context preservation is critical:
+```python
+config = ChunkConfig(
+    max_chunk_size=4096,
+    enable_overlap=True,
+    overlap_size=400,
+    overlap_percentage=0.15,
+    enable_content_validation=True,
+    block_based_overlap=True
+)
+```
+This configuration prioritizes context preservation with larger overlaps and enables content validation to ensure no information is lost during chunking.
 
 **Section sources**
-- [test_overlap_properties.py](file://tests/chunker/test_overlap_properties.py#L270-L291)
-- [test_overlap_manager.py](file://tests/chunker/test_components/test_overlap_manager.py#L370-L396)
+- [types.py](file://markdown_chunker_legacy/chunker/types.py#L501-L800)
+- [basic_usage.py](file://examples/basic_usage.py#L116-L121)
+
+## Conclusion
+The overlap management system in the Markdown chunker provides a sophisticated solution for maintaining context continuity between adjacent chunks. Through the OverlapManager class and its block-based counterpart, the system ensures that chunks are not isolated fragments but maintain connections with their neighboring content, enhancing readability and semantic coherence. The implementation supports multiple modes of operation, flexible configuration options, and robust safeguards against common issues like content duplication and structural corruption.
+
+The system's integration into the broader chunking pipeline, coordinated by the ChunkingOrchestrator, ensures that overlap processing occurs at the appropriate stage and benefits from the results of earlier analysis and chunking stages. The block-based approach represents a significant advancement over character-based methods, preserving the integrity of structural elements like code blocks and tables while still providing meaningful context.
+
+By providing configurable overlap sizes, multiple handling modes, and comprehensive validation, the system offers a flexible and reliable solution for applications that require context-preserving chunking, particularly in RAG systems and other information retrieval applications.

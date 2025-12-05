@@ -2,641 +2,601 @@
 
 <cite>
 **Referenced Files in This Document**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py)
-- [base.py](file://markdown_chunker/chunker/strategies/base.py)
-- [selector.py](file://markdown_chunker/chunker/selector.py)
-- [types.py](file://markdown_chunker/chunker/types.py)
+- [list_strategy.py](file://markdown_chunker_legacy/chunker/strategies/list_strategy.py)
 - [test_list_strategy.py](file://tests/chunker/test_strategies/test_list_strategy.py)
 - [test_list_strategy_properties.py](file://tests/chunker/test_list_strategy_properties.py)
+- [types.py](file://markdown_chunker_legacy/chunker/types.py)
 - [list_heavy.md](file://tests/fixtures/list_heavy.md)
-- [types.py](file://markdown_chunker/parser/types.py)
+- [mixed_list_types.md](file://tests/parser/fixtures/edge_cases/mixed_list_types.md)
+- [task_list.md](file://tests/parser/fixtures/edge_cases/task_list.md)
+- [list_in_list.md](file://tests/parser/fixtures/nested/list_in_list.md)
 </cite>
 
 ## Table of Contents
 1. [Introduction](#introduction)
-2. [Strategy Purpose and Design](#strategy-purpose-and-design)
-3. [Core Components](#core-components)
-4. [Implementation Architecture](#implementation-architecture)
-5. [Content Analysis and Selection Criteria](#content-analysis-and-selection-criteria)
-6. [List Extraction and Parsing](#list-extraction-and-parsing)
-7. [Hierarchy Building and Structure Management](#hierarchy-building-and-structure-management)
-8. [Chunk Creation and Grouping](#chunk-creation-and-grouping)
-9. [Quality Scoring and Strategy Evaluation](#quality-scoring-and-strategy-evaluation)
-10. [Common Issues and Mitigation Strategies](#common-issues-and-mitigation-strategies)
-11. [Usage Guidelines and Best Practices](#usage-guidelines-and-best-practices)
+2. [Activation Conditions](#activation-conditions)
+3. [Priority Level](#priority-level)
+4. [Core Architecture](#core-architecture)
+5. [List Detection and Parsing](#list-detection-and-parsing)
+6. [Hierarchy Preservation](#hierarchy-preservation)
+7. [Chunk Creation Process](#chunk-creation-process)
+8. [Mixed Content Handling](#mixed-content-handling)
+9. [Performance Considerations](#performance-considerations)
+10. [Configuration Examples](#configuration-examples)
+11. [Common Issues and Solutions](#common-issues-and-solutions)
 12. [Testing and Validation](#testing-and-validation)
-13. [Performance Considerations](#performance-considerations)
-14. [Troubleshooting Guide](#troubleshooting-guide)
+13. [Troubleshooting Guide](#troubleshooting-guide)
 
 ## Introduction
 
-The List Strategy is a specialized chunking strategy designed specifically for documents containing significant amounts of list content. Unlike other strategies that focus on code blocks, tables, or structural elements, the List Strategy prioritizes preserving list hierarchy and maintaining parent-child relationships between list items. This makes it particularly effective for documents like shopping lists, task checklists, procedural instructions, and any content where the hierarchical nature of lists is crucial for comprehension.
+The List Strategy is a specialized chunking strategy designed for documents containing significant amounts of list content. It intelligently preserves list hierarchy, maintains parent-child relationships, and handles various list types including ordered lists, unordered lists, and task lists with checkboxes.
 
-The strategy operates under the principle that list items should be treated as atomic units that maintain their structural relationships during chunking. This ensures that users can understand the complete context of each list item, including its position within the hierarchy and its relationship to parent and child items.
+Unlike other strategies that focus on code blocks, tables, or structural elements, the List Strategy recognizes when a document is primarily composed of lists and applies list-aware chunking techniques to maintain the semantic structure of the content.
 
-## Strategy Purpose and Design
+## Activation Conditions
 
-### Primary Objectives
+The List Strategy activates under specific conditions that indicate the document contains substantial list content:
 
-The List Strategy serves several key purposes:
+### Threshold-Based Activation
 
-1. **Preserve List Hierarchy**: Maintain the nested structure of lists where parent items contain child items
-2. **Maintain Atomicity**: Treat list items as indivisible units that shouldn't be split across chunks
-3. **Handle Mixed List Types**: Support ordered lists, unordered lists, and task lists with checkboxes
-4. **Optimize for List Density**: Activate automatically when documents contain sufficient list content
-5. **Minimize Micro-Chunks**: Prevent single-item chunks that would fragment the list structure
+The strategy evaluates two primary criteria:
 
-### Design Philosophy
+1. **List Count Threshold**: Documents with 5 or more lists automatically qualify
+2. **List Ratio Threshold**: Documents where lists constitute 60% or more of the content qualify
 
-The strategy follows a hierarchical approach to chunking, recognizing that lists represent natural groupings of related information. Instead of treating each list item independently, it considers the entire list structure, ensuring that related items remain together in the same chunk whenever possible.
+These thresholds are configurable through the `ChunkConfig` parameters:
+
+- `list_count_threshold`: Minimum number of lists required (default: 5)
+- `list_ratio_threshold`: Minimum list content ratio (default: 0.6)
+
+### Quality Scoring
+
+The strategy calculates a quality score based on content characteristics:
 
 ```mermaid
 flowchart TD
-A["Document Analysis"] --> B{"List Content Detected?"}
-B --> |No| C["Use Alternative Strategy"]
-B --> |Yes| D["Evaluate List Density"]
-D --> E{"Sufficient Lists?"}
-E --> |No| C
-E --> |Yes| F["Extract List Items"]
-F --> G["Build Hierarchy"]
-G --> H["Group into Chunks"]
-H --> I["Apply Size Constraints"]
-I --> J["Create Final Chunks"]
-style A fill:#e1f5fe
-style F fill:#f3e5f5
-style G fill:#f3e5f5
-style H fill:#e8f5e8
-style J fill:#fff3e0
+A["Content Analysis"] --> B{"List Count ≥ 5?"}
+B --> |Yes| C["Score +0.6"]
+B --> |No| D{"List Ratio ≥ 60%?"}
+D --> |Yes| E["Score +0.6"]
+D --> |No| F["Score = 0"]
+G["Additional Factors"] --> H["Nested Lists Bonus +0.2"]
+I["High List Count"] --> J["Higher Score"]
+C --> K["Final Quality Score"]
+E --> K
+H --> K
+J --> K
 ```
 
 **Diagram sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L135-L169)
+- [list_strategy.py](file://markdown_chunker_legacy/chunker/strategies/list_strategy.py#L102-L133)
 
-## Core Components
+**Section sources**
+- [list_strategy.py](file://markdown_chunker_legacy/chunker/strategies/list_strategy.py#L89-L100)
+- [types.py](file://markdown_chunker_legacy/chunker/types.py#L588-L592)
 
-### ListItemInfo Class
+## Priority Level
 
-The `ListItemInfo` class serves as the fundamental data structure for representing list items throughout the strategy. It encapsulates all necessary information about a list item while maintaining its hierarchical relationships.
+The List Strategy operates with a priority level of 4, which places it in the medium-high priority category. This priority designation reflects several important characteristics:
+
+### Priority Context
+
+- **Medium-High Priority**: The strategy is considered medium priority because it's specifically designed for list-heavy documents and isn't part of the automatic strategy selection process
+- **Excluded from Auto Mode**: The strategy is intentionally excluded from automatic mode to prevent inappropriate activation on documents that merely contain lists but aren't truly list-heavy
+- **Manual Override Capability**: Despite the priority level, the strategy can still be manually forced using `ChunkConfig.force_strategy="list"`
+
+### Strategy Selection Impact
+
+The priority level influences how the strategy competes with other strategies during automatic selection. While it has sufficient priority to activate when appropriate, it won't dominate the selection process for documents that could benefit from other strategies.
+
+**Section sources**
+- [list_strategy.py](file://markdown_chunker_legacy/chunker/strategies/list_strategy.py#L85-L87)
+
+## Core Architecture
+
+The List Strategy consists of several interconnected components that work together to provide intelligent list-aware chunking:
 
 ```mermaid
 classDiagram
-class ListItemInfo {
-+string content
-+int level
-+string list_type
-+string marker
-+Optional~int~ number
-+Optional~bool~ is_checked
-+int start_line
-+int end_line
-+Optional~List~ children
-+Optional~ListItemInfo~ parent
-+__post_init__()
-}
 class ListStrategy {
-+string name
-+int priority
++name : str
++priority : int
++LIST_PATTERNS : dict
 +can_handle(analysis, config) bool
 +calculate_quality(analysis) float
 +apply(content, stage1_results, config) Chunk[]
 -_extract_list_items(content, stage1_results) ListItemInfo[]
 -_build_list_hierarchy(list_items) ListItemInfo[]
 -_create_chunks_from_lists(list_hierarchy, content, config) Chunk[]
--_format_list_item(item, level_offset) string
--_count_items(item) int
--_calculate_max_nesting(item) int
+-_calculate_item_size(item) int
+-_format_list_item(item, level_offset) str
+}
+class ListItemInfo {
++content : str
++level : int
++list_type : str
++marker : str
++number : Optional~int~
++is_checked : Optional~bool~
++start_line : int
++end_line : int
++children : ListItemInfo[]
++parent : Optional~ListItemInfo~
 }
 class ListGroup {
-+ListItemInfo[] items
-+int size
-+int start_line
-+int end_line
-+bool is_continuation
-+string parent_context
++items : ListItemInfo[]
++size : int
++start_line : int
++end_line : int
++is_continuation : bool
++parent_context : str
 }
-ListStrategy --> ListItemInfo : "manages"
-ListStrategy --> ListGroup : "creates"
-ListItemInfo --> ListItemInfo : "parent/child"
+class Chunk {
++content : str
++start_line : int
++end_line : int
++metadata : Dict
+}
+ListStrategy --> ListItemInfo : creates
+ListStrategy --> ListGroup : manages
+ListGroup --> ListItemInfo : contains
+ListStrategy --> Chunk : produces
+ListItemInfo --> ListItemInfo : parent-child
 ```
 
 **Diagram sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L26-L56)
+- [list_strategy.py](file://markdown_chunker_legacy/chunker/strategies/list_strategy.py#L26-L56)
+- [types.py](file://markdown_chunker_legacy/chunker/types.py#L36-L60)
 
-### ListGroup Class
+### Key Components
 
-The `ListGroup` class represents a collection of list items that fit within size constraints. It provides the mechanism for grouping related list items together while maintaining the ability to handle large lists that exceed chunk size limits.
-
-**Section sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L26-L56)
-
-## Implementation Architecture
-
-### Strategy Selection and Activation
-
-The List Strategy operates through a multi-stage process that begins with content analysis and ends with chunk creation. The strategy is activated when documents meet specific criteria related to list density and content composition.
-
-```mermaid
-sequenceDiagram
-participant CA as Content Analysis
-participant SS as Strategy Selector
-participant LS as List Strategy
-participant PR as Parser Results
-CA->>SS : Provide content metrics
-SS->>LS : Evaluate can_handle()
-LS->>LS : Check list_count >= threshold
-LS->>LS : Check list_ratio >= threshold
-LS-->>SS : Return suitability score
-SS->>LS : Call apply() if selected
-LS->>PR : Extract list items
-PR-->>LS : Return list data
-LS->>LS : Build hierarchy
-LS->>LS : Create chunks
-LS-->>SS : Return chunks
-```
-
-**Diagram sources**
-- [selector.py](file://markdown_chunker/chunker/selector.py#L58-L98)
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L89-L101)
-
-### Priority and Quality Scoring
-
-The List Strategy operates with a medium-high priority (priority 3) and employs a sophisticated quality scoring system that considers multiple factors:
-
-| Factor | Weight | Description |
-|--------|--------|-------------|
-| List Count | 0.6-0.8 | Number of lists in document (≥10: highest, ≥5: high, ≥3: moderate) |
-| List Ratio | 0.3-0.3 | Proportion of content that is list items (≥70%: highest, ≥50%: high, ≥30%: moderate) |
-| Nested Lists | +0.2 | Bonus for documents with complex nested structures |
-| Total Score | Max 1.0 | Combined score for strategy selection |
+1. **ListItemInfo**: Represents individual list items with complete metadata including hierarchy information
+2. **ListGroup**: Groups related list items that fit within size constraints
+3. **ListStrategy**: Orchestrates the entire chunking process with sophisticated algorithms
 
 **Section sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L89-L133)
+- [list_strategy.py](file://markdown_chunker_legacy/chunker/strategies/list_strategy.py#L26-L56)
 
-## Content Analysis and Selection Criteria
+## List Detection and Parsing
 
-### Threshold Configuration
+The strategy employs multiple approaches to detect and parse list items, ensuring robust handling of various list formats:
 
-The strategy uses configurable thresholds to determine when it should be activated:
+### List Pattern Recognition
 
-| Parameter | Default Value | Purpose |
-|-----------|---------------|---------|
-| `list_count_threshold` | 5 | Minimum number of lists required |
-| `list_ratio_threshold` | 0.6 | Minimum proportion of content that is lists |
+The strategy uses regular expressions to identify different list types:
 
-These thresholds can be adjusted based on specific use cases and document characteristics. For example, documentation-heavy sites might use lower thresholds, while code-heavy repositories might use higher thresholds.
+| List Type | Pattern | Example |
+|-----------|---------|---------|
+| Ordered | `^(\s*)(\d+)\.\s+(.+)$` | `1. Item content` |
+| Unordered | `^(\s*)([-*+])\s+(.+)$` | `- Item content` |
+| Task | `^(\s*)([-*+])\s+\[([ xX])\]\s+(.+)$` | `- [x] Completed task` |
 
-### Selection Logic
-
-The strategy evaluates content using a dual-criteria approach:
-
-1. **Absolute Count**: Documents with 5 or more lists automatically qualify
-2. **Proportional Coverage**: Documents where 60% or more of the content consists of lists qualify
-3. **Nested Structure Bonus**: Documents with complex nesting receive additional scoring
+### Parsing Process
 
 ```mermaid
 flowchart TD
-A["Content Analysis"] --> B{"list_count >= 5?"}
-B --> |Yes| C["Activate Strategy"]
-B --> |No| D{"list_ratio >= 0.6?"}
-D --> |Yes| C
-D --> |No| E["Skip Strategy"]
-C --> F{"has_nested_lists?"}
-F --> |Yes| G["+0.2 bonus to score"]
-F --> |No| H["Standard score"]
-G --> I["Final Quality Score"]
-H --> I
-E --> J["Try Next Strategy"]
-```
-
-**Diagram sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L89-L133)
-
-**Section sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L89-L133)
-
-## List Extraction and Parsing
-
-### Stage 1 Integration
-
-The strategy first attempts to leverage Stage 1 results for list extraction, falling back to manual parsing when necessary. This approach optimizes performance by utilizing pre-processed data when available.
-
-```mermaid
-flowchart TD
-A["Extract List Items"] --> B{"Stage 1 Available?"}
-B --> |Yes| C["Access stage1_results.elements.lists"]
-C --> D{"Valid List Data?"}
-D --> |Yes| E["Convert to ListItemInfo"]
-D --> |No| F["Manual Parsing"]
-B --> |No| F
-F --> G["Parse Lines Manually"]
-G --> H["Apply Regex Patterns"]
-H --> I["Create ListItemInfo Objects"]
-E --> J["Return List Items"]
+A["Input Text"] --> B{"Stage 1 Available?"}
+B --> |Yes| C["Extract from Stage 1 Results"]
+B --> |No| D["Manual Parsing"]
+C --> E["Convert to ListItemInfo"]
+D --> F["Regex Pattern Matching"]
+F --> G["Parse Indentation Level"]
+G --> H["Determine List Type"]
+H --> I["Create ListItemInfo"]
+E --> J["Build List Hierarchy"]
 I --> J
+J --> K["Apply Chunking Logic"]
 ```
 
 **Diagram sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L171-L218)
+- [list_strategy.py](file://markdown_chunker_legacy/chunker/strategies/list_strategy.py#L171-L217)
 
-### Manual Parsing Patterns
+### Advanced Parsing Features
 
-When Stage 1 data is unavailable, the strategy employs sophisticated regex patterns to detect and parse list items:
-
-| Pattern Type | Regex Pattern | Example Match |
-|--------------|---------------|---------------|
-| Task List | `^(\s*)([-*+])\s+\[([ xX])\]\s+(.+)$` | `- [x] Complete task` |
-| Ordered List | `^(\s*)(\d+)\.\s+(.+)$` | `1. Step one` |
-| Unordered List | `^(\s*)([-*+])\s+(.+)$` | `- Item with asterisk` |
-
-### List Type Detection
-
-The strategy automatically detects list types based on markers and content patterns:
-
-```mermaid
-flowchart TD
-A["Parse List Line"] --> B{"Contains [ ] pattern?"}
-B --> |Yes| C["Task List"]
-B --> |No| D{"Marker starts with digit?"}
-D --> |Yes| E["Ordered List"]
-D --> |No| F["Unordered List"]
-C --> G["Set is_checked flag"]
-E --> H["Extract number"]
-F --> I["Use original marker"]
-G --> J["Create ListItemInfo"]
-H --> J
-I --> J
-```
-
-**Diagram sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L351-L371)
+1. **Indentation Detection**: Automatically determines list nesting level based on leading whitespace
+2. **Type Inference**: Smart detection of list types from both markers and content patterns
+3. **Fallback Mechanism**: Graceful degradation when Stage 1 data is unavailable
 
 **Section sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L171-L218)
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L270-L371)
+- [list_strategy.py](file://markdown_chunker_legacy/chunker/strategies/list_strategy.py#L72-L77)
+- [list_strategy.py](file://markdown_chunker_legacy/chunker/strategies/list_strategy.py#L270-L349)
 
-## Hierarchy Building and Structure Management
+## Hierarchy Preservation
 
-### Hierarchical Structure Construction
+One of the List Strategy's core strengths is its ability to maintain list hierarchy and parent-child relationships:
 
-The strategy builds a tree-like structure from flat list items using a stack-based approach that respects nesting levels:
+### Hierarchical Structure Building
+
+The strategy builds a tree-like structure using a stack-based approach:
 
 ```mermaid
 flowchart TD
-A["Flat List Items"] --> B["Initialize Empty Stack"]
+A["List Items Array"] --> B["Initialize Empty Stack"]
 B --> C["Process Each Item"]
-C --> D{"Current Item Level > Stack Top?"}
-D --> |Yes| E["Push to Stack"]
-D --> |No| F["Pop from Stack"]
-F --> G{"Stack Empty?"}
-G --> |No| D
-G --> |Yes| E
-E --> H{"More Items?"}
-H --> |Yes| C
-H --> |No| I["Build Tree Structure"]
-I --> J["Return Root Items"]
+C --> D{"Current Item Level ≤ Stack Top?"}
+D --> |Yes| E["Pop Stack Until Condition Met"]
+D --> |No| F{"Stack Empty?"}
+F --> |Yes| G["Add as Root Item"]
+F --> |No| H["Add as Child to Stack Top"]
+E --> H
+G --> I["Push Item to Stack"]
+H --> I
+I --> J{"More Items?"}
+J --> |Yes| C
+J --> |No| K["Return Root Items"]
 ```
 
 **Diagram sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L373-L407)
+- [list_strategy.py](file://markdown_chunker_legacy/chunker/strategies/list_strategy.py#L373-L407)
 
-### Parent-Child Relationships
+### Preservation Features
 
-The hierarchy construction ensures that parent-child relationships are maintained:
+1. **Level Tracking**: Maintains accurate nesting levels for all list items
+2. **Parent-Child Links**: Establishes bidirectional relationships between parent and child items
+3. **Recursive Processing**: Handles arbitrarily deep nesting structures
 
-1. **Level Tracking**: Each item tracks its nesting level (0-based)
-2. **Stack Management**: Uses a stack to track current parent items
-3. **Relationship Assignment**: Automatically assigns children to parents
-4. **Circular Reference Prevention**: Ensures no circular relationships form
+### Example Hierarchy
 
-### Nested List Handling
+Consider this nested list structure:
+```
+- Root Item 1
+  - Child Item 1.1
+  - Child Item 1.2
+    - Grandchild 1.2.1
+- Root Item 2
+```
 
-The strategy gracefully handles deeply nested lists with multiple levels of indentation:
-
-| Level | Indentation | Marker Example |
-|-------|-------------|----------------|
-| 0 | 0 spaces | `- Main item` |
-| 1 | 2 spaces | `  - Child item` |
-| 2 | 4 spaces | `    - Grandchild` |
-| 3 | 6 spaces | `      - Great-grandchild` |
+The strategy preserves this exact hierarchy in the chunked output, ensuring that the relationship between items remains intact.
 
 **Section sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L373-L407)
+- [list_strategy.py](file://markdown_chunker_legacy/chunker/strategies/list_strategy.py#L373-L407)
 
-## Chunk Creation and Grouping
+## Chunk Creation Process
 
-### Grouping Strategy
+The chunk creation process involves sophisticated algorithms to balance content preservation with size constraints:
 
-The strategy employs intelligent grouping to minimize micro-chunks while respecting size constraints:
+### Chunking Algorithm
 
 ```mermaid
 flowchart TD
-A["List Hierarchy"] --> B["Group Root Items"]
-B --> C{"Item Fits in Current Group?"}
-C --> |Yes| D["Add to Group"]
-C --> |No| E["Create New Group"]
-D --> F{"More Items?"}
-E --> F
-F --> |Yes| G["Process Next Item"]
-F --> |No| H["Create Chunks from Groups"]
-G --> C
-H --> I["Handle Oversized Items"]
-I --> J["Split Large Lists"]
-J --> K["Create Continuation Chunks"]
+A["List Hierarchy"] --> B["Calculate Total Size"]
+B --> C{"Total Size ≤ Max Chunk Size?"}
+C --> |Yes| D["Single Chunk"]
+C --> |No| E["Split Strategy"]
+E --> F["Group Items Together"]
+F --> G{"Can Group Items?"}
+G --> |Yes| H["Multiple Item Chunk"]
+G --> |No| I["Individual Item Splitting"]
+I --> J["Create Continuation Chunks"]
+J --> K["Add Parent Context"]
+D --> L["Format and Metadata"]
+H --> L
+K --> L
+L --> M["Validate Chunks"]
+M --> N["Return Final Chunks"]
 ```
 
 **Diagram sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L409-L452)
+- [list_strategy.py](file://markdown_chunker_legacy/chunker/strategies/list_strategy.py#L409-L500)
 
 ### Size Calculation
 
-The strategy calculates item sizes accurately, accounting for:
+The strategy calculates item sizes considering both content and formatting overhead:
 
-1. **Content Length**: Actual text content of the item
-2. **Formatting**: Marker characters and spacing
-3. **Children**: Recursive calculation of all descendant items
-4. **Overhead**: Additional characters for list formatting
+- **Base Size**: Length of content + marker + formatting overhead (approximately 10 characters)
+- **Recursive Addition**: Size of all child items is included in the parent's total size
+- **Formatting Overhead**: Additional space for indentation and list markers
 
-### Chunk Metadata
+### Chunk Types
 
-Each chunk created by the List Strategy includes comprehensive metadata:
-
-| Metadata Field | Description | Example Value |
-|----------------|-------------|---------------|
-| `list_type` | Type of list (ordered, unordered, task) | `"ordered"` |
-| `item_count` | Total number of items in chunk | `5` |
-| `max_nesting` | Maximum nesting level | `3` |
-| `has_nested_items` | Whether chunk contains nested lists | `true` |
-| `is_continuation` | Whether chunk continues from previous | `false` |
-| `grouped_items` | Number of items grouped together | `3` |
+1. **Single Item Chunks**: Individual list items that fit within size constraints
+2. **Multi-Item Chunks**: Groups of related items that fit together
+3. **Continuation Chunks**: Split portions of large items with parent context preserved
 
 **Section sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L409-L452)
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L454-L498)
+- [list_strategy.py](file://markdown_chunker_legacy/chunker/strategies/list_strategy.py#L502-L589)
 
-## Quality Scoring and Strategy Evaluation
+## Mixed Content Handling
 
-### Quality Metrics
+The List Strategy excels at handling documents that contain mixed content types:
 
-The strategy evaluation system considers multiple factors to determine the optimal strategy for a given document:
+### Content Integration
 
-```mermaid
-graph TD
-A["Content Analysis"] --> B["List Count Score"]
-A --> C["List Ratio Score"]
-A --> D["Nested Structure Bonus"]
-B --> E["Score Calculation"]
-C --> E
-D --> E
-E --> F["Final Quality Score"]
-F --> G{"Score >= Threshold?"}
-G --> |Yes| H["Strategy Selected"]
-G --> |No| I["Try Next Strategy"]
-style A fill:#e3f2fd
-style E fill:#f3e5f5
-style H fill:#e8f5e8
-style I fill:#ffebee
+Documents often contain a mix of:
+- List items
+- Regular text paragraphs
+- Headers
+- Code blocks
+
+The strategy intelligently groups related content while maintaining list structure integrity.
+
+### Task List Support
+
+Special handling for task lists with checkboxes:
+- **Checked Status**: Preserves completion state ([x] for completed, [ ] for pending)
+- **Mixed Content**: Handles task lists alongside other list types
+- **Visual Consistency**: Maintains proper checkbox formatting in chunks
+
+### Example Mixed Document
+
+```markdown
+# Project Tasks
+
+## Development Phase
+- [ ] Setup project structure
+- [x] Configure build system
+- [ ] Implement core features
+
+This phase focuses on establishing the foundation.
+
+## Testing Phase
+1. Unit tests implementation
+2. Integration testing
 ```
 
-**Diagram sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L102-L133)
-
-### Scoring Formula
-
-The quality score calculation follows this formula:
-
-```
-Score = (List Count Contribution) + (List Ratio Contribution) + (Nested Bonus)
-```
-
-Where:
-- **List Count Contribution**: 0.8 for ≥10 lists, 0.6 for ≥5 lists, 0.4 for ≥3 lists
-- **List Ratio Contribution**: 0.3 for ≥70% ratio, 0.2 for ≥50% ratio, 0.1 for ≥30% ratio
-- **Nested Bonus**: +0.2 if document has nested list structures
-
-### Strategy Selection Process
-
-The StrategySelector evaluates all applicable strategies using either strict or weighted selection modes:
-
-1. **Strict Mode**: Selects the first strategy by priority that can handle the content
-2. **Weighted Mode**: Calculates combined priority × quality scores and selects the highest
+The strategy would create chunks that preserve the task list structure while maintaining the relationship between tasks and their descriptions.
 
 **Section sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L102-L133)
-- [selector.py](file://markdown_chunker/chunker/selector.py#L58-L133)
-
-## Common Issues and Mitigation Strategies
-
-### Single-Item Micro-Chunks
-
-One of the primary challenges addressed by the List Strategy is the creation of single-item micro-chunks that fragment list structures. The strategy implements several mitigation techniques:
-
-#### Grouping Multiple Items Together
-
-The strategy groups multiple root items together when they fit within size constraints:
-
-```mermaid
-flowchart TD
-A["Root Item 1"] --> B{"Fits with Next Item?"}
-B --> |Yes| C["Add to Group"]
-B --> |No| D["Create Separate Chunk"]
-C --> E{"More Items?"}
-E --> |Yes| F["Continue Grouping"]
-E --> |No| G["Create Multi-Item Chunk"]
-F --> B
-D --> H["Process Next Item"]
-G --> I["Optimal Chunk"]
-```
-
-**Diagram sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L428-L451)
-
-#### Minimum Item Threshold
-
-The strategy enforces a minimum number of items per chunk to prevent fragmentation:
-
-- **Default Minimum**: 2 items per chunk
-- **Last Item Handling**: Special logic for the final item in a group
-- **Size Flexibility**: Allows slight overage for the last item to avoid single-item chunks
-
-### Oversized List Items
-
-Large list items that exceed chunk size limits are handled through intelligent splitting:
-
-1. **Parent Context Preservation**: Continuation chunks include parent item information
-2. **Hierarchical Continuation**: Maintains the relationship between parent and child chunks
-3. **Context Injection**: Adds appropriate indentation and formatting for continuation
-
-### Mixed Content Handling
-
-Documents with mixed content types require careful balancing:
-
-- **List Dominance**: Lists take precedence when they constitute a significant portion of content
-- **Content Type Awareness**: Considers the overall document structure
-- **Fallback Protection**: Ensures alternative strategies are available when lists aren't dominant
-
-**Section sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L428-L451)
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L454-L498)
-
-## Usage Guidelines and Best Practices
-
-### When to Use the List Strategy
-
-The List Strategy is most effective for:
-
-1. **Documentation with Lists**: Technical documentation containing procedural steps
-2. **Task Management**: Documents with task lists and checklists
-3. **Instructional Content**: Tutorials and how-to guides with numbered steps
-4. **Shopping Lists**: Grocery lists and inventory management documents
-5. **Comparison Tables**: Documents that compare features using list structures
-
-### Configuration Recommendations
-
-For optimal results, consider these configuration adjustments:
-
-| Scenario | Recommended Settings | Rationale |
-|----------|---------------------|-----------|
-| Code Documentation | `list_count_threshold=3, list_ratio_threshold=0.4` | Lower thresholds for mixed content |
-| Technical Manuals | `preserve_list_hierarchy=True` | Maintain complex structures |
-| API References | `max_chunk_size=3000` | Balance readability with size |
-| Chat Applications | `enable_overlap=True` | Maintain context across messages |
-
-### Force Strategy Selection
-
-While the strategy selection is generally automatic, you can force the List Strategy in specific scenarios:
-
-```python
-# Force List Strategy for list-heavy documents
-config = ChunkConfig(
-    list_count_threshold=1,  # Very low threshold
-    list_ratio_threshold=0.1  # Minimal list requirement
-)
-```
-
-### Integration with Other Strategies
-
-The List Strategy works best when combined with other strategies:
-
-1. **Fallback Chain**: Use as fallback for documents with moderate list content
-2. **Mixed Content**: Combine with Mixed Strategy for documents containing multiple content types
-3. **Structural Strategy**: Coordinate with Structural Strategy for documents with headers and lists
-
-**Section sources**
-- [types.py](file://markdown_chunker/chunker/types.py#L588-L589)
-
-## Testing and Validation
-
-### Property-Based Testing
-
-The strategy includes comprehensive property-based tests that verify:
-
-1. **List Structure Preservation**: List items are not reordered or lost
-2. **Hierarchy Maintenance**: Nested list structures are preserved
-3. **Atomicity**: Individual list items remain intact across chunks
-4. **Metadata Accuracy**: Proper metadata is attached to list chunks
-5. **Task List Detection**: Checkbox markers are correctly identified
-
-### Test Coverage Areas
-
-The testing framework covers:
-
-- **Basic List Types**: Unordered, ordered, and task lists
-- **Nested Structures**: Deeply nested list hierarchies
-- **Edge Cases**: Empty lists, single items, and malformed content
-- **Performance**: Large documents with thousands of list items
-- **Integration**: Interaction with other strategies and components
-
-### Validation Metrics
-
-Key validation metrics include:
-
-| Metric | Expected Range | Purpose |
-|--------|----------------|---------|
-| Item Preservation | ≥95% | Ensure no list items are lost |
-| Hierarchy Integrity | 100% | Verify nested structures are maintained |
-| Chunk Size Compliance | ≤max_chunk_size | Respect size constraints |
-| Metadata Accuracy | 100% | Ensure proper metadata assignment |
-
-**Section sources**
-- [test_list_strategy_properties.py](file://tests/chunker/test_list_strategy_properties.py#L1-386)
+- [list_strategy.py](file://markdown_chunker_legacy/chunker/strategies/list_strategy.py#L301-L371)
+- [task_list.md](file://tests/parser/fixtures/edge_cases/task_list.md#L1-L6)
 
 ## Performance Considerations
 
-### Memory Efficiency
+The List Strategy is designed to handle documents with varying degrees of complexity:
 
-The strategy is designed with memory efficiency in mind:
+### Scalability Factors
 
-1. **Streaming Processing**: Processes lists in batches rather than loading entire documents
-2. **Lazy Evaluation**: Builds hierarchy only when needed
-3. **Size Calculation**: Optimizes size calculations to avoid redundant computations
+1. **List Depth**: Deeply nested lists require more recursive processing
+2. **Item Count**: Large numbers of list items increase processing time
+3. **Content Length**: Longer list item content affects size calculations
 
-### Processing Speed
+### Optimization Strategies
 
-Performance optimizations include:
+1. **Early Termination**: Stops processing when size constraints are met
+2. **Efficient Parsing**: Uses optimized regular expressions for list detection
+3. **Memory Management**: Minimizes memory usage through iterative processing
 
-- **Regex Compilation**: Pre-compiles regex patterns for faster matching
-- **Early Termination**: Stops processing when size constraints are met
-- **Batch Operations**: Groups similar operations together
+### Performance Guidelines
 
-### Scalability
+- **Small Lists (< 20 items)**: Processed in milliseconds
+- **Medium Lists (20-100 items)**: Processed in tens of milliseconds
+- **Large Lists (> 100 items)**: May take hundreds of milliseconds, but scales linearly
 
-The strategy scales effectively with:
+### Deep Nesting Considerations
 
-- **Document Size**: Linear scaling with document length
-- **List Complexity**: Polynomial scaling with nesting depth
-- **Memory Usage**: Constant memory overhead per list item
+The strategy handles deep nesting gracefully, but extremely deep structures (beyond 10-15 levels) may impact performance. For typical use cases, the strategy performs efficiently even with moderately deep nesting.
+
+**Section sources**
+- [list_strategy.py](file://markdown_chunker_legacy/chunker/strategies/list_strategy.py#L782-L798)
+- [test_list_strategy.py](file://tests/chunker/test_strategies/test_list_strategy.py#L604-L626)
+
+## Configuration Examples
+
+### Basic Configuration
+
+```python
+from markdown_chunker.chunker.types import ChunkConfig
+
+# Standard list strategy configuration
+config = ChunkConfig(
+    max_chunk_size=4096,
+    list_count_threshold=5,
+    list_ratio_threshold=0.6
+)
+```
+
+### Force List Strategy
+
+```python
+# Force list strategy regardless of content analysis
+config = ChunkConfig(
+    max_chunk_size=4096,
+    force_strategy="list"
+)
+```
+
+### Optimized for Chat Context
+
+```python
+# Smaller chunks suitable for chat contexts
+config = ChunkConfig.for_chat_context()
+# Adjusts list thresholds for smaller chunks
+```
+
+### Search Indexing Configuration
+
+```python
+# Configuration optimized for search indexing
+config = ChunkConfig.for_search_indexing()
+# Includes list hierarchy preservation
+```
+
+### Custom Thresholds
+
+```python
+# Custom thresholds for specific use cases
+config = ChunkConfig(
+    max_chunk_size=2048,
+    list_count_threshold=3,  # Lower threshold for more sensitive detection
+    list_ratio_threshold=0.4  # Lower ratio threshold
+)
+```
+
+**Section sources**
+- [types.py](file://markdown_chunker_legacy/chunker/types.py#L980-L1014)
+
+## Common Issues and Solutions
+
+### Issue: Lists Not Being Chunked
+
+**Symptoms**: Documents with many lists aren't being processed by the List Strategy
+
+**Causes**:
+1. Insufficient list count or ratio thresholds
+2. Content analysis misclassification
+3. Configuration conflicts
+
+**Solutions**:
+1. Lower the thresholds: `list_count_threshold=3, list_ratio_threshold=0.4`
+2. Force the strategy: `force_strategy="list"`
+3. Verify content analysis results
+
+### Issue: Poor Chunk Boundaries
+
+**Symptoms**: List items being split awkwardly or chunks containing unrelated content
+
+**Causes**:
+1. Size constraints too restrictive
+2. Complex nested structures
+3. Mixed content types
+
+**Solutions**:
+1. Increase `max_chunk_size`
+2. Use `preserve_list_hierarchy=True` (default)
+3. Review content structure for optimization
+
+### Issue: Performance Problems with Large Lists
+
+**Symptoms**: Slow processing times with large list documents
+
+**Causes**:
+1. Very large list counts
+2. Deep nesting structures
+3. Complex content within list items
+
+**Solutions**:
+1. Process lists in smaller batches
+2. Consider alternative strategies for extremely large lists
+3. Optimize content structure
+
+### Issue: Task List Formatting Loss
+
+**Symptoms**: Checkbox formatting disappearing in chunks
+
+**Causes**:
+1. Improper list type detection
+2. Content modification during chunking
+
+**Solutions**:
+1. Verify task list patterns are correctly recognized
+2. Check for content filtering issues
+3. Ensure proper metadata preservation
+
+**Section sources**
+- [test_list_strategy.py](file://tests/chunker/test_strategies/test_list_strategy.py#L127-L137)
+- [test_list_strategy.py](file://tests/chunker/test_strategies/test_list_strategy.py#L432-L458)
+
+## Testing and Validation
+
+The List Strategy includes comprehensive testing to ensure reliability and correctness:
+
+### Test Categories
+
+1. **Unit Tests**: Individual component testing
+2. **Integration Tests**: End-to-end functionality
+3. **Property-Based Tests**: Mathematical guarantees
+4. **Edge Case Tests**: Boundary condition handling
+
+### Key Test Scenarios
+
+#### Basic List Processing
+- Simple unordered lists
+- Ordered lists with numbering
+- Task lists with checkboxes
+
+#### Complex Structures
+- Deeply nested lists
+- Mixed list types
+- Large list collections
+
+#### Edge Cases
+- Empty lists
+- Single-item lists
+- Lists with special characters
+
+### Property-Based Testing
+
+The strategy includes property-based tests that verify mathematical guarantees:
+
+```python
+# Example property: List structure preservation
+@given(markdown_text=markdown_with_lists(min_items=5, max_items=20))
+def test_property_list_structure_preserved(self, markdown_text):
+    # Verifies that no list items are lost or reordered
+    chunks = chunker.chunk(markdown_text)
+    original_items = extract_list_items(markdown_text)
+    chunk_items = extract_list_items_from_chunks(chunks)
+    assert len(chunk_items) >= len(original_items)
+```
+
+### Validation Metrics
+
+The strategy provides comprehensive validation metrics:
+- **Item Count Accuracy**: Ensures all list items are preserved
+- **Hierarchy Integrity**: Validates parent-child relationships
+- **Content Completeness**: Verifies no content is lost
+- **Metadata Accuracy**: Confirms proper metadata assignment
+
+**Section sources**
+- [test_list_strategy_properties.py](file://tests/chunker/test_list_strategy_properties.py#L108-L388)
+- [test_list_strategy.py](file://tests/chunker/test_strategies/test_list_strategy.py#L1-L802)
 
 ## Troubleshooting Guide
 
-### Common Issues and Solutions
+### Debugging List Strategy Issues
 
-#### Issue: Strategy Not Activating
+#### Enable Debug Logging
 
-**Symptoms**: List Strategy not being selected despite having lists
-**Causes**: 
-- Insufficient list count or ratio
-- Configuration thresholds too high
-- Stage 1 data unavailable
+```python
+import logging
+logging.getLogger('markdown_chunker.chunker.strategies.list_strategy').setLevel(logging.DEBUG)
+```
 
-**Solutions**:
-1. Lower `list_count_threshold` and `list_ratio_threshold`
-2. Verify Stage 1 results are available
-3. Check content analysis metrics
+#### Common Debug Information
 
-#### Issue: Fragmented List Chunks
+1. **Selection Reason**: Why the strategy was chosen or rejected
+2. **Quality Score**: Numerical evaluation of strategy suitability
+3. **Processing Steps**: Detailed breakdown of chunking process
+4. **Size Calculations**: How item sizes were determined
 
-**Symptoms**: Single-item chunks breaking up list structures
-**Causes**:
-- Strict size constraints
-- Poor grouping decisions
-- Inadequate minimum item thresholds
+#### Diagnostic Commands
 
-**Solutions**:
-1. Increase `min_chunk_size` relative to typical list item size
-2. Adjust grouping logic parameters
-3. Review chunk size distribution
+```python
+# Check strategy selection
+result = chunker.chunk_with_analysis(content)
+print(f"Strategy used: {result.strategy_used}")
+print(f"Selection reason: {result.selection_reason}")
 
-#### Issue: Incorrect List Type Detection
+# Analyze list statistics
+stats = strategy.get_list_statistics(result.chunks)
+print(f"List chunks: {stats['total_chunks']}")
+print(f"List types: {stats['list_types']}")
+```
 
-**Symptoms**: Task lists misidentified as regular lists
-**Causes**:
-- Malformed checkbox syntax
-- Complex nested content
-- Encoding issues
+### Performance Tuning
 
-**Solutions**:
-1. Verify checkbox syntax follows `- [x]` or `- [ ]` patterns
-2. Check for encoding problems in input text
-3. Review regex patterns for edge cases
+#### Memory Usage Optimization
+- Monitor chunk count for large documents
+- Consider batch processing for very large lists
+- Use appropriate `max_chunk_size` values
 
-### Debugging Tools
+#### Processing Speed Optimization
+- Profile chunking operations for bottlenecks
+- Consider alternative strategies for specific content types
+- Optimize content structure for better chunking
 
-The strategy provides several debugging capabilities:
+### Configuration Validation
 
-1. **Selection Reason**: Detailed explanation of strategy selection
-2. **Content Analysis**: Breakdown of list metrics and thresholds
-3. **Chunk Statistics**: Information about chunk distribution and quality
-4. **Hierarchy Validation**: Verification of list structure integrity
+#### Common Configuration Issues
+1. **Threshold Conflicts**: Overlapping criteria causing unexpected behavior
+2. **Size Constraints**: Too restrictive or too loose size limits
+3. **Force Strategy Conflicts**: Manual forcing overriding automatic selection
+
+#### Validation Steps
+1. Verify configuration parameters are within valid ranges
+2. Test with representative content samples
+3. Monitor strategy selection behavior
+4. Validate chunk quality and completeness
 
 **Section sources**
-- [list_strategy.py](file://markdown_chunker/chunker/strategies/list_strategy.py#L796-L817)
+- [list_strategy.py](file://markdown_chunker_legacy/chunker/strategies/list_strategy.py#L800-L817)

@@ -2,630 +2,986 @@
 
 <cite>
 **Referenced Files in This Document**
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py)
-- [selector.py](file://markdown_chunker/chunker/selector.py)
-- [base.py](file://markdown_chunker/chunker/strategies/base.py)
-- [logical_blocks.py](file://markdown_chunker/chunker/logical_blocks.py)
-- [analyzer.py](file://markdown_chunker/parser/analyzer.py)
-- [core.py](file://markdown_chunker/chunker/core.py)
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py)
+- [test_mixed_strategy.py](file://tests/chunker/test_strategies/test_mixed_strategy.py)
 - [test_mixed_strategy_properties.py](file://tests/chunker/test_mixed_strategy_properties.py)
-- [test_mixed_strategy_stage1_integration.py](file://tests/chunker/test_mixed_strategy_stage1_integration.py)
 - [mixed.md](file://tests/fixtures/mixed.md)
-- [list_heavy.md](file://tests/fixtures/list_heavy.md)
-- [code_heavy.md](file://tests/fixtures/code_heavy.md)
+- [mixed_content.md](file://tests/parser/fixtures/nested/mixed_content.md)
+- [base.py](file://markdown_chunker_legacy/chunker/strategies/base.py)
+- [selector.py](file://markdown_chunker_legacy/chunker/selector.py)
+- [types.py](file://markdown_chunker_legacy/chunker/types.py)
+- [core.py](file://markdown_chunker_legacy/chunker/core.py)
 </cite>
 
 ## Table of Contents
 1. [Introduction](#introduction)
-2. [Purpose and Design Philosophy](#purpose-and-design-philosophy)
-3. [Core Components](#core-components)
-4. [Strategy Selection Logic](#strategy-selection-logic)
-5. [Content Detection and Analysis](#content-detection-and-analysis)
-6. [Element Processing Pipeline](#element-processing-pipeline)
-7. [Section Building and Chunking](#section-building-and-chunking)
-8. [Error Handling and Fallback Mechanisms](#error-handling-and-fallback-mechanisms)
-9. [Integration with Strategy Selector](#integration-with-strategy-selector)
-10. [Performance Considerations](#performance-considerations)
-11. [Common Issues and Solutions](#common-issues-and-solutions)
-12. [Best Practices](#best-practices)
-13. [Conclusion](#conclusion)
+2. [Strategy Overview](#strategy-overview)
+3. [Activation Conditions](#activation-conditions)
+4. [Priority Level](#priority-level)
+5. [Core Components](#core-components)
+6. [Implementation Details](#implementation-details)
+7. [Content Detection and Analysis](#content-detection-and-analysis)
+8. [Chunk Creation Process](#chunk-creation-process)
+9. [Handling Mixed Content Types](#handling-mixed-content-types)
+10. [Configuration Examples](#configuration-examples)
+11. [Performance Considerations](#performance-considerations)
+12. [Common Issues and Solutions](#common-issues-and-solutions)
+13. [Testing and Validation](#testing-and-validation)
+14. [Best Practices](#best-practices)
 
 ## Introduction
 
-The Mixed Strategy is a sophisticated chunking approach designed specifically for documents containing multiple content types in significant proportions. Unlike specialized strategies that focus on single content types (code, lists, tables), the Mixed Strategy intelligently handles documents with diverse semantic elements while preserving their inherent relationships and structure.
+The Mixed Strategy is a sophisticated chunking strategy designed to handle documents containing multiple content types in significant proportions. Unlike specialized strategies that focus on single content types (code, lists, tables), the Mixed Strategy intelligently manages documents with diverse semantic elements, preserving their relationships while creating semantically meaningful chunks.
 
-This strategy serves as the cornerstone for documents that don't fit neatly into specialized categories, enabling semantic-aware chunking that maintains the integrity of complex markdown documents containing code blocks, lists, tables, and text paragraphs in varying proportions.
+This strategy serves as a bridge between specialized strategies, providing flexibility for general documentation that combines text, code blocks, lists, and tables within the same document. It balances code preservation with text chunking, ensuring that each content type maintains its integrity while contributing to cohesive chunks.
 
-## Purpose and Design Philosophy
+## Strategy Overview
 
-### Core Mission
+The Mixed Strategy operates on the principle that documents with mixed content types require a nuanced approach to chunking. It identifies multiple content elements within a document and groups them logically, respecting semantic boundaries while optimizing for content preservation and readability.
 
-The Mixed Strategy's primary purpose is to provide intelligent, semantic-aware chunking for documents with mixed content types. It recognizes that many real-world markdown documents contain multiple element types that work together to convey information, and it preserves these relationships during the chunking process.
+### Key Characteristics
 
-### Design Principles
+- **Multi-type Support**: Handles documents with code blocks, lists, tables, and text in significant proportions
+- **Semantic Preservation**: Maintains relationships between related content elements
+- **Intelligent Splitting**: Splits around indivisible elements while balancing chunk sizes
+- **Flexible Configuration**: Adapts to various document structures and content distributions
 
-1. **Semantic Preservation**: Maintain relationships between related content elements
-2. **Intelligent Detection**: Automatically identify and categorize different content types
-3. **Flexible Processing**: Adapt to various content combinations and proportions
-4. **Robust Fallbacks**: Gracefully handle parsing failures and edge cases
-5. **Structure Awareness**: Respect document hierarchy and logical organization
+```mermaid
+flowchart TD
+A["Input Document"] --> B["Content Analysis"]
+B --> C{"Mixed Content?"}
+C --> |Yes| D["Mixed Strategy"]
+C --> |No| E["Other Strategy"]
+D --> F["Detect Elements"]
+F --> G["Group Sections"]
+G --> H["Create Chunks"]
+H --> I["Validate Integrity"]
+I --> J["Output Chunks"]
+E --> K["Strategy-Specific Processing"]
+K --> J
+```
 
-### Ideal Use Cases
+**Diagram sources**
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L172-L201)
+- [base.py](file://markdown_chunker_legacy/chunker/strategies/base.py#L16-L45)
 
-The Mixed Strategy is ideal for:
-- Technical documentation with code examples, lists, and tables
-- API reference materials with examples and parameter descriptions
-- Tutorial documents combining explanations with code snippets
-- Documentation that includes both narrative text and structured data
-- Complex documents with multiple content types in significant proportions
+## Activation Conditions
+
+The Mixed Strategy activates under specific conditions that indicate the presence of mixed content requiring intelligent handling. These conditions are carefully balanced to ensure the strategy is applied appropriately.
+
+### Primary Activation Criteria
+
+The strategy evaluates several factors to determine activation:
+
+1. **Code Ratio Constraint**: `0.1 < code_ratio < 0.7`
+   - Ensures code doesn't dominate (which would trigger CodeStrategy)
+   - Allows moderate code presence (at least 10%, but less than 70%)
+
+2. **Content Diversity**: `(list_ratio > 0.1 or table_ratio > 0.1)`
+   - Requires significant presence of either lists or tables
+   - Prevents activation for purely text-heavy documents
+
+3. **Text Proportion**: `text_ratio > 0.2`
+   - Maintains minimum text content requirement
+   - Ensures substantial prose content exists
+
+4. **Complexity Threshold**: `complexity_score >= min_complexity`
+   - Requires sufficient document complexity
+   - Prevents activation for simple documents
+
+### Quality Scoring
+
+The strategy calculates a quality score that influences selection probability:
+
+```mermaid
+flowchart TD
+A["Quality Calculation"] --> B["Anti-pattern Penalty"]
+A --> C["Mixed Content Bonus"]
+A --> D["Balanced Code Bonus"]
+A --> E["Element Diversity Bonus"]
+B --> F["Dominant Type Penalty<br/>Score: 0.2"]
+C --> G["Mixed Content Bonus<br/>Score: 0.7"]
+D --> H["Optimal Range Bonus<br/>Score: 0.3"]
+E --> I["Diversity Bonus<br/>Score: 0.2-0.1"]
+F --> J["Final Quality Score"]
+G --> J
+H --> J
+I --> J
+```
+
+**Diagram sources**
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L120-L170)
+
+**Section sources**
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L99-L118)
+- [test_mixed_strategy.py](file://tests/chunker/test_strategies/test_mixed_strategy.py#L102-L144)
+
+## Priority Level
+
+The Mixed Strategy operates with a priority level of 3, positioning it as a medium-priority strategy in the selection hierarchy. This priority reflects its role as a general-purpose solution that should be considered after more specialized strategies but before fallback options.
+
+### Priority Context
+
+According to Requirement 6.5, the priority hierarchy follows this order:
+1. **Highest Priority**: Specialized strategies (Code, List, Table)
+2. **Medium Priority**: Mixed Strategy (Priority 3)
+3. **Low Priority**: Structural and Sentences strategies
+
+This prioritization ensures that:
+- Documents with clear single-content-type characteristics use specialized strategies
+- Mixed documents receive appropriate treatment without unnecessary fallbacks
+- The system maintains predictable strategy selection behavior
+
+### Priority Impact on Selection
+
+The priority level affects the final selection score calculation:
+
+```mermaid
+graph LR
+A["Priority: 3"] --> B["Weight: 1/3 ≈ 0.33"]
+C["Quality Score: 0.8"] --> D["Weight: 0.5"]
+B --> E["Final Score: (0.33 × 0.5) + (0.8 × 0.5)"]
+D --> E
+E --> F["Combined Score: ~0.465"]
+```
+
+**Diagram sources**
+- [base.py](file://markdown_chunker_legacy/chunker/strategies/base.py#L112-L116)
+
+**Section sources**
+- [test_mixed_strategy.py](file://tests/chunker/test_strategies/test_mixed_strategy.py#L95-L100)
+- [selector.py](file://markdown_chunker_legacy/chunker/selector.py#L248-L255)
 
 ## Core Components
 
-The Mixed Strategy consists of several interconnected components that work together to achieve semantic-aware chunking:
+The Mixed Strategy consists of several interconnected components that work together to provide comprehensive mixed content handling.
+
+### ContentElement Class
+
+Represents individual content elements with type and position information:
 
 ```mermaid
 classDiagram
-class MixedStrategy {
+class ContentElement {
++string element_type
++string content
++int start_line
++int end_line
++bool is_indivisible
++dict metadata
++__post_init__()
+}
+class LogicalSection {
++ContentElement header
++ContentElement[] elements
++int start_line
++int end_line
++calculate_size() int
++get_element_types() Set~str~
+}
+ContentElement --> LogicalSection : "groups into"
+```
+
+**Diagram sources**
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L31-L73)
+
+### Strategy Implementation
+
+The main MixedStrategy class inherits from BaseStrategy and implements the core chunking logic:
+
+```mermaid
+classDiagram
+class BaseStrategy {
+<<abstract>>
 +string name
 +int priority
++can_handle(analysis, config) bool
++calculate_quality(analysis) float
++apply(content, stage1_results, config) Chunk[]
++get_metrics(analysis, config) StrategyMetrics
+}
+class MixedStrategy {
++string name = "mixed"
++int priority = 3
 +can_handle(analysis, config) bool
 +calculate_quality(analysis) float
 +apply(content, stage1_results, config) Chunk[]
 -_detect_all_elements(content, stage1_results) ContentElement[]
 -_group_into_logical_sections(elements) LogicalSection[]
 -_process_sections(sections, config) Chunk[]
--_detect_lists_regex(lines) ContentElement[]
--_detect_tables_regex(lines) ContentElement[]
--_reconstruct_list_content(markdown_list) string
--_reconstruct_table_content(table) string
+-_has_indivisible_elements(section) bool
+-_split_around_indivisible(section, config) List[]ContentElement~~
 }
-class ContentElement {
-+string element_type
-+string content
-+int start_line
-+int end_line
-+bool is_indivisible
-+dict metadata
-}
-class LogicalSection {
-+ContentElement header
-+ContentElement[] elements
-+int start_line
-+int end_line
-+calculate_size() int
-+get_element_types() Set~string~
-}
-class StrategySelector {
-+BaseStrategy[] strategies
-+select_strategy(analysis, config) BaseStrategy
-+get_applicable_strategies(analysis, config) List
-}
-MixedStrategy --> ContentElement : creates
-MixedStrategy --> LogicalSection : builds
-LogicalSection --> ContentElement : contains
-StrategySelector --> MixedStrategy : selects
+BaseStrategy <|-- MixedStrategy
 ```
 
 **Diagram sources**
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L31-L73)
-- [selector.py](file://markdown_chunker/chunker/selector.py#L24-L322)
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L75-L97)
+- [base.py](file://markdown_chunker_legacy/chunker/strategies/base.py#L16-L45)
 
 **Section sources**
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L31-L73)
-- [base.py](file://markdown_chunker/chunker/strategies/base.py#L16-L380)
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L31-L73)
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L75-L97)
 
-## Strategy Selection Logic
+## Implementation Details
 
-### Content Analysis Metrics
+The Mixed Strategy employs a multi-stage approach to handle complex documents effectively.
 
-The Mixed Strategy evaluates documents based on several key metrics extracted from Stage 1 analysis:
+### Element Detection Process
 
-| Metric | Threshold | Purpose |
-|--------|-----------|---------|
-| Code Ratio | 0.1 < ratio < 0.7 | Ensures mixed content isn't dominated by code |
-| List Ratio | > 0.1 | Indicates presence of structured content |
-| Table Ratio | > 0.1 | Indicates tabular data presence |
-| Text Ratio | > 0.2 | Ensures sufficient narrative content |
-| Complexity Score | ≥ min_complexity | Validates document complexity |
+The strategy begins by detecting all content elements in the document:
 
-### Selection Criteria
+```mermaid
+sequenceDiagram
+participant MS as MixedStrategy
+participant ContentAnalyzer as Content Analyzer
+participant Stage1 as Stage 1 Results
+participant Regex as Regex Detector
+MS->>ContentAnalyzer : _detect_all_elements(content, stage1_results)
+ContentAnalyzer->>Stage1 : Check for fenced blocks
+Stage1-->>ContentAnalyzer : Code blocks
+ContentAnalyzer->>Stage1 : Check for lists
+Stage1-->>ContentAnalyzer : List elements
+ContentAnalyzer->>Stage1 : Check for tables
+Stage1-->>ContentAnalyzer : Table elements
+ContentAnalyzer->>Regex : Fallback detection
+Regex-->>ContentAnalyzer : Additional elements
+ContentAnalyzer-->>MS : Sorted ContentElements
+```
 
-The strategy determines applicability using the following logic:
+**Diagram sources**
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L203-L359)
+
+### Logical Section Grouping
+
+After detection, elements are grouped into logical sections based on headers:
 
 ```mermaid
 flowchart TD
-Start([Document Analysis]) --> CheckMixed{"Mixed Content<br/>Detected?"}
-CheckMixed --> |No| Reject[Reject: Not Mixed]
-CheckMixed --> |Yes| CheckComplexity{"Complexity >=<br/>min_complexity?"}
-CheckComplexity --> |No| Reject
-CheckComplexity --> |Yes| CheckDominance{"Single Type<br/>Dominates?"}
-CheckDominance --> |Yes| Reject
-CheckDominance --> |No| Approve[Approve: Mixed Strategy]
-Approve --> QualityCalc[Calculate Quality Score]
-QualityCalc --> FinalDecision[Final Selection Decision]
+A["Detected Elements"] --> B["Sort by Position"]
+B --> C["Group by Headers"]
+C --> D["Create LogicalSections"]
+D --> E["Calculate Section Sizes"]
+E --> F["Validate Section Integrity"]
+G["Header Element"] --> H["New Section Starts"]
+I["Non-Header Element"] --> J["Add to Current Section"]
+H --> K["Update Section Boundaries"]
+J --> K
 ```
 
 **Diagram sources**
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L99-L118)
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L469-L513)
 
-### Quality Scoring Algorithm
+### Chunk Creation Algorithm
 
-The Mixed Strategy calculates quality scores based on content balance and diversity:
+The strategy creates chunks using intelligent splitting logic:
 
 ```mermaid
 flowchart TD
-Start([Quality Calculation]) --> CheckDominance{"Dominant Type<br/>Present?"}
-CheckDominance --> |Yes| LowScore[Score = 0.2]
-CheckDominance --> |No| CheckMixed{"Truly Mixed<br/>Content?"}
-CheckMixed --> |No| LowScore
-CheckMixed --> |Yes| AddMixedBonus[Add 0.7 for Mixed Content]
-AddMixedBonus --> CheckBalance{"Balanced Code<br/>Ratio?"}
-CheckBalance --> |0.3-0.7| AddMediumBonus[Add 0.3]
-CheckBalance --> |0.1-0.3| AddSmallBonus[Add 0.2]
-CheckBalance --> |Other| NoBonus[No Bonus]
-AddMediumBonus --> CheckElements{"Element<br/>Diversity?"}
-AddSmallBonus --> CheckElements
-NoBonus --> CheckElements
-CheckElements --> ThreeTypes{"≥ 3 Element<br/>Types?"}
-ThreeTypes --> |Yes| AddBigBonus[Add 0.2]
-ThreeTypes --> |No| TwoTypes{"≥ 2 Element<br/>Types?"}
-TwoTypes --> |Yes| AddSmallBonus2[Add 0.1]
-TwoTypes --> |No| FinalScore[Final Score ≤ 1.0]
-AddBigBonus --> FinalScore
-AddSmallBonus2 --> FinalScore
-LowScore --> FinalScore
-FinalScore --> End([Quality Score])
+A["Process Sections"] --> B{"Section Size ≤ Max?"}
+B --> |Yes| C["Single Chunk"]
+B --> |No| D{"Has Indivisible Elements?"}
+D --> |Yes| E["Split Around Indivisibles"]
+D --> |No| F["Regular Text Splitting"]
+E --> G["Create Separate Chunks"]
+F --> H["Apply Size Constraints"]
+C --> I["Validate Chunks"]
+G --> I
+H --> I
+I --> J["Add Metadata"]
+J --> K["Return Chunks"]
 ```
 
 **Diagram sources**
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L120-L170)
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L515-L552)
 
 **Section sources**
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L99-L170)
-- [analyzer.py](file://markdown_chunker/parser/analyzer.py#L224-L294)
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L203-L359)
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L469-L552)
 
 ## Content Detection and Analysis
 
-### Element Detection Pipeline
+The Mixed Strategy employs sophisticated content detection mechanisms to identify and categorize different element types within documents.
 
-The Mixed Strategy employs a sophisticated multi-stage detection pipeline that prioritizes Stage 1 data while maintaining robust fallback mechanisms:
+### Element Type Recognition
+
+The strategy recognizes six primary content types:
+
+| Element Type | Detection Method | Indivisibility | Metadata |
+|--------------|------------------|----------------|----------|
+| **Header** | Regex pattern `^#{1,6}\s+` | No | Level, content |
+| **Code** | Stage 1 fenced blocks | Yes | Language, fence type |
+| **List** | Stage 1 lists or regex | Yes | Type, item count, nesting |
+| **Table** | Stage 1 tables or regex | Yes | Columns, rows, alignment |
+| **Text** | Paragraph gaps | No | Content only |
+| **Indivisible** | Atomic elements | Yes | Type-specific |
+
+### Detection Fallback Mechanism
+
+The strategy implements a robust fallback system:
+
+```mermaid
+flowchart TD
+A["Stage 1 Available?"] --> B{"Success?"}
+B --> |Yes| C["Use Stage 1 Data"]
+B --> |No| D["Regex Fallback"]
+C --> E["Validate Results"]
+D --> F["Parse Content"]
+E --> G{"Validation Passed?"}
+G --> |Yes| H["Use Results"]
+G --> |No| D
+F --> I["Reconstruct Objects"]
+I --> J["Fallback Complete"]
+H --> J
+```
+
+**Diagram sources**
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L255-L351)
+
+### Content Reconstruction
+
+For Stage 1 elements, the strategy reconstructs content to maintain integrity:
 
 ```mermaid
 sequenceDiagram
 participant MS as MixedStrategy
-participant S1 as Stage 1 Results
-participant Regex as Regex Detector
-participant Logger as Logger
-MS->>MS : _detect_all_elements()
-MS->>S1 : Check for fenced_blocks
-alt Stage 1 Available
-S1-->>MS : Return fenced_blocks
-MS->>MS : Process code elements
-else Stage 1 Unavailable
-MS->>Regex : _detect_lists_regex()
-Regex-->>MS : Fallback list detection
-end
-MS->>S1 : Check for lists
-alt Stage 1 Available
-S1-->>MS : Return lists
-MS->>MS : Process list elements
-else Stage 1 Unavailable
-MS->>Logger : Log fallback warning
-MS->>Regex : _detect_lists_regex()
-Regex-->>MS : Fallback list detection
-end
-MS->>S1 : Check for tables
-alt Stage 1 Available
-S1-->>MS : Return tables
-MS->>MS : Process table elements
-else Stage 1 Unavailable
-MS->>Logger : Log fallback warning
-MS->>Regex : _detect_tables_regex()
-Regex-->>MS : Fallback table detection
-end
-MS->>MS : Sort elements by position
-MS->>MS : _insert_text_paragraphs()
-MS-->>MS : Return ordered elements
+participant Stage1 as Stage 1 Objects
+participant Reconstructor as Content Reconstructor
+MS->>Stage1 : Access list/table objects
+Stage1-->>MS : Raw elements
+MS->>Reconstructor : _reconstruct_list_content()
+Reconstructor->>Stage1 : Extract items
+Stage1-->>Reconstructor : Item data
+Reconstructor->>Reconstructor : Build list structure
+Reconstructor-->>MS : Formatted list content
+MS->>Reconstructor : _reconstruct_table_content()
+Reconstructor->>Stage1 : Extract table data
+Stage1-->>Reconstructor : Table structure
+Reconstructor->>Reconstructor : Build table format
+Reconstructor-->>MS : Formatted table content
 ```
 
 **Diagram sources**
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L203-L359)
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L361-L402)
 
-### Content Element Types
+**Section sources**
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L203-L359)
+- [test_mixed_strategy.py](file://tests/chunker/test_strategies/test_mixed_strategy.py#L498-L560)
 
-The strategy recognizes six distinct content element types, each with specific processing characteristics:
+## Chunk Creation Process
 
-| Element Type | Indivisible | Metadata | Processing Notes |
-|--------------|-------------|----------|------------------|
-| Header | No | Level, Text | Starts new logical sections |
-| Code | Yes | Language, Fence type | Atomic, cannot be split |
-| List | Yes | Type, Item count, Nesting | Atomic, preserves structure |
-| Table | Yes | Columns, Rows, Headers | Atomic, preserves layout |
-| Text | No | None | Paragraph-level content |
+The Mixed Strategy implements a sophisticated chunk creation process that balances content preservation with size constraints.
 
-### Stage 1 Integration
+### Section-Based Processing
 
-The Mixed Strategy leverages Stage 1 analysis data when available, falling back to regex detection when necessary:
+The strategy processes documents section by section, respecting semantic boundaries:
 
 ```mermaid
 flowchart TD
-Start([Element Detection]) --> CheckStage1{"Stage 1 Data<br/>Available?"}
-CheckStage1 --> |Yes| ProcessStage1[Process Stage 1 Elements]
-CheckStage1 --> |No| UseRegex[Use Regex Fallback]
-ProcessStage1 --> CheckErrors{"Processing<br/>Errors?"}
-CheckErrors --> |Yes| LogWarning[Log Warning]
-CheckErrors --> |No| Success[Success]
-LogWarning --> UseRegex
-UseRegex --> DetectHeaders[Detect Headers]
-DetectHeaders --> DetectCode[Detect Code Blocks]
-DetectCode --> DetectLists[Detect Lists]
-DetectLists --> DetectTables[Detect Tables]
-DetectTables --> SortPosition[Sort by Position]
-SortPosition --> InsertText[Insert Text Paragraphs]
-InsertText --> Complete[Complete]
-Success --> Complete
-Complete --> End([Processed Elements])
+A["Input Document"] --> B["Detect Elements"]
+B --> C["Group into Sections"]
+C --> D["Process Each Section"]
+D --> E{"Section Size Check"}
+E --> |Within Limits| F["Single Chunk"]
+E --> |Too Large| G{"Has Indivisibles?"}
+G --> |Yes| H["Split Around Indivisibles"]
+G --> |No| I["Regular Splitting"]
+H --> J["Multiple Chunks"]
+I --> K["Size-Constrained Chunks"]
+F --> L["Validate Chunks"]
+J --> L
+K --> L
+L --> M["Add Metadata"]
+M --> N["Return Chunks"]
 ```
 
 **Diagram sources**
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L203-L359)
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L515-L552)
 
-**Section sources**
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L203-L359)
+### Indivisible Element Handling
 
-## Element Processing Pipeline
-
-### Content Element Reconstruction
-
-For Stage 1 elements, the Mixed Strategy reconstructs content to preserve formatting and structure:
-
-#### List Reconstruction
-- Maintains indentation levels
-- Preserves task list checkboxes
-- Recreates original list markers
-- Handles nested list structures
-
-#### Table Reconstruction
-- Preserves column alignments
-- Maintains header structure
-- Restores separator rows
-- Keeps data cell formatting
-
-### Text Paragraph Insertion
-
-The strategy intelligently inserts text paragraphs between other elements to maintain document flow:
+The strategy treats certain elements as indivisible to maintain content integrity:
 
 ```mermaid
 flowchart TD
-Start([Elements List]) --> HasElements{"Elements<br/>Present?"}
-HasElements --> |No| CreateTextOnly[Create Single Text Element]
-HasElements --> |Yes| InitVars[Initialize Variables]
-InitVars --> ProcessLoop[Process Each Element]
-ProcessLoop --> CalcTextBefore{"Text Before<br/>Element?"}
-CalcTextBefore --> |Yes| CreateTextBefore[Create Text Element]
-CalcTextBefore --> |No| AddCurrent[Add Current Element]
-CreateTextBefore --> AddCurrent
-AddCurrent --> NextElement{"More<br/>Elements?"}
-NextElement --> |Yes| ProcessLoop
-NextElement --> |No| CalcTextAfter{"Text After<br/>Last Element?"}
-CalcTextAfter --> |Yes| CreateTextAfter[Create Text Element]
-CalcTextAfter --> |No| Return[Return Elements]
-CreateTextAfter --> Return
-CreateTextOnly --> Return
-Return --> End([Complete List])
+A["Section Processing"] --> B["Check for Indivisibles"]
+B --> C{"Contains Indivisible?"}
+C --> |Yes| D["Split Around Indivisibles"]
+C --> |No| E["Regular Text Splitting"]
+D --> F["Preserve Atomic Blocks"]
+F --> G["Create Separate Chunks"]
+E --> H["Apply Size Constraints"]
+G --> I["Maintain Semantic Boundaries"]
+H --> J["Optimize Text Flow"]
+I --> K["Final Chunk Set"]
+J --> K
 ```
 
 **Diagram sources**
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L404-L467)
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L554-L605)
+
+### Metadata Enrichment
+
+Each chunk receives comprehensive metadata for downstream processing:
+
+| Metadata Field | Purpose | Example Values |
+|----------------|---------|----------------|
+| **content_type** | Strategy identification | "mixed" |
+| **element_types** | Content composition | "code,list,text" |
+| **element_count** | Total elements | 5 |
+| **has_code** | Presence indicator | true/false |
+| **has_list** | Presence indicator | true/false |
+| **has_table** | Presence indicator | true/false |
+| **allow_oversize** | Size exception flag | true/false |
+| **oversize_reason** | Exception reason | "indivisible_element" |
 
 **Section sources**
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L361-L403)
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L404-L467)
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L515-L702)
+- [test_mixed_strategy.py](file://tests/chunker/test_strategies/test_mixed_strategy.py#L239-L242)
 
-## Section Building and Chunking
+## Handling Mixed Content Types
 
-### Logical Section Formation
+The Mixed Strategy excels at managing documents with complex content combinations, particularly those with mixed elements like code blocks within list items or tables in sections.
 
-The Mixed Strategy groups related elements into logical sections based on document structure:
+### Code Blocks in Lists
 
-```mermaid
-classDiagram
-class LogicalSection {
-+ContentElement header
-+ContentElement[] elements
-+int start_line
-+int end_line
-+calculate_size() int
-+get_element_types() Set~string~
-}
-class ContentElement {
-+string element_type
-+string content
-+int start_line
-+int end_line
-+bool is_indivisible
-+dict metadata
-}
-LogicalSection --> ContentElement : contains
-LogicalSection --> ContentElement : starts_with
-```
-
-**Diagram sources**
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L47-L73)
-
-### Section Processing Strategies
-
-The Mixed Strategy applies different processing approaches based on section characteristics:
-
-#### Small Sections (≤ max_chunk_size)
-- Processed as single chunks
-- Preserves all content relationships
-- Maintains semantic integrity
-
-#### Large Sections (> max_chunk_size)
-- Split based on indivisible elements
-- Prevents breaking atomic content
-- Maintains logical boundaries
-
-```mermaid
-flowchart TD
-Start([Section Processing]) --> CheckSize{"Section Size<br/>≤ Max Size?"}
-CheckSize --> |Yes| SingleChunk[Create Single Chunk]
-CheckSize --> |No| CheckIndivisible{"Has Indivisible<br/>Elements?"}
-CheckIndivisible --> |Yes| SplitAround[Split Around Indivisible]
-CheckIndivisible --> |No| RegularSplit[Regular Text Splitting]
-SplitAround --> ProcessParts[Process Each Part]
-RegularSplit --> ProcessParts
-ProcessParts --> CreateChunks[Create Individual Chunks]
-SingleChunk --> CreateChunks
-CreateChunks --> End([Final Chunks])
-```
-
-**Diagram sources**
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L515-L552)
-
-### Chunk Creation and Metadata
-
-Each chunk receives comprehensive metadata to support downstream processing:
-
-| Metadata Field | Purpose | Example |
-|----------------|---------|---------|
-| element_types | Comma-separated types | "code,list,table,text" |
-| element_count | Total element count | 5 |
-| has_code | Boolean flag | true |
-| has_list | Boolean flag | true |
-| has_table | Boolean flag | true |
-| strategy | Strategy name | "mixed" |
-| content_type | Content type | "mixed" |
-
-**Section sources**
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L470-L552)
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L644-L702)
-
-## Error Handling and Fallback Mechanisms
-
-### Robust Error Recovery
-
-The Mixed Strategy implements comprehensive error handling to ensure reliable operation:
-
-#### Stage 1 Processing Failures
-- **Attribute Errors**: Gracefully handle missing fields in Stage 1 objects
-- **Type Errors**: Validate object types before processing
-- **Partial Failures**: Continue processing available elements when some fail
-
-#### Regex Fallback Strategy
-When Stage 1 data is unavailable or corrupted, the Mixed Strategy falls back to regex-based detection:
-
-```mermaid
-flowchart TD
-Start([Element Processing]) --> TryStage1[Attempt Stage 1 Processing]
-TryStage1 --> Success{"Success?"}
-Success --> |Yes| UseStage1[Use Stage 1 Data]
-Success --> |No| LogError[Log Error Details]
-LogError --> ClearPartial[Clear Partial Results]
-ClearPartial --> UseRegex[Use Regex Fallback]
-UseRegex --> DetectLists[Detect Lists with Regex]
-DetectLists --> DetectTables[Detect Tables with Regex]
-DetectTables --> DetectHeaders[Detect Headers with Regex]
-DetectHeaders --> SortByPosition[Sort by Line Position]
-SortByPosition --> Complete[Complete Processing]
-UseStage1 --> Complete
-Complete --> End([Processed Elements])
-```
-
-**Diagram sources**
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L255-L359)
-
-### Malformed Content Handling
-
-The strategy includes specific mechanisms for handling malformed content:
-
-#### Malformed Lists
-- **Nested Issues**: Handle improperly nested list items
-- **Marker Variations**: Support various list marker formats
-- **Indentation Problems**: Gracefully handle inconsistent indentation
-
-#### Malformed Tables
-- **Missing Headers**: Create placeholder headers when absent
-- **Alignment Issues**: Infer alignment from content patterns
-- **Row Mismatches**: Handle tables with varying column counts
-
-**Section sources**
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L255-L359)
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L704-L849)
-
-## Integration with Strategy Selector
-
-### Strategy Selection Process
-
-The Mixed Strategy participates in the broader strategy selection ecosystem:
+Documents with code blocks embedded within list items require careful handling to maintain both list structure and code integrity:
 
 ```mermaid
 sequenceDiagram
-participant CS as ContentAnalyzer
-participant SS as StrategySelector
+participant Doc as Document
 participant MS as MixedStrategy
-participant Other as Other Strategies
-CS->>SS : StrategySelection(analysis, config)
-SS->>MS : can_handle(analysis, config)
-MS-->>SS : True/False
-SS->>Other : can_handle(analysis, config)
-Other-->>SS : True/False
-SS->>MS : calculate_quality(analysis)
-MS-->>SS : Quality Score
-SS->>Other : calculate_quality(analysis)
-Other-->>SS : Quality Scores
-SS->>SS : Select Best Strategy
-SS-->>CS : Selected Strategy
-CS->>MS : apply(content, stage1_results, config)
-MS-->>CS : List of Chunks
+participant List as List Handler
+participant Code as Code Handler
+Doc->>MS : Mixed content with code in list
+MS->>List : Detect list structure
+List-->>MS : List items with code blocks
+MS->>Code : Process code blocks
+Code-->>MS : Formatted code content
+MS->>MS : Group by semantic boundaries
+MS->>MS : Create chunks respecting list/code relationships
+MS-->>Doc : Well-formed chunks
 ```
 
 **Diagram sources**
-- [selector.py](file://markdown_chunker/chunker/selector.py#L58-L133)
+- [mixed_content.md](file://tests/parser/fixtures/nested/mixed_content.md#L1-L35)
 
-### Priority and Competition
+### Table Integration Challenges
 
-The Mixed Strategy operates with a priority of 2, positioning it as a high-priority option that competes with other strategies:
+Tables present unique challenges in mixed content scenarios:
 
-| Strategy | Priority | Competitors | Mixed Strategy Role |
-|----------|----------|-------------|-------------------|
-| CodeStrategy | 1 | MixedStrategy | Specialized vs. General |
-| MixedStrategy | 2 | CodeStrategy, ListStrategy, TableStrategy | General-purpose fallback |
-| ListStrategy | 3 | MixedStrategy | List-focused specialization |
-| TableStrategy | 4 | MixedStrategy | Table-focused specialization |
-| StructuralStrategy | 5 | MixedStrategy | Structure-focused specialization |
-| SentencesStrategy | 6 | All others | Universal fallback |
+```mermaid
+flowchart TD
+A["Table Detection"] --> B["Structure Analysis"]
+B --> C{"Complex Table?"}
+C --> |Yes| D["Preserve Full Structure"]
+C --> |No| E["Standard Processing"]
+D --> F["Atomic Chunk Creation"]
+E --> G["Size-Constrained Splitting"]
+F --> H["Maintain Alignment"]
+G --> I["Optimize Readability"]
+H --> J["Final Table Chunk"]
+I --> K["Standard Text Chunk"]
+```
 
-**Section sources**
-- [selector.py](file://markdown_chunker/chunker/selector.py#L24-L322)
-- [mixed_strategy.py](file://markdown_chunker/chunker/strategies/mixed_strategy.py#L75-L98)
+**Diagram sources**
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L310-L331)
 
-## Performance Considerations
+### Section Boundary Preservation
 
-### Computational Complexity
+The strategy maintains semantic boundaries while allowing flexibility for mixed content:
 
-The Mixed Strategy's complexity varies based on document characteristics:
+```mermaid
+graph TD
+A["Document Structure"] --> B["Header Detection"]
+B --> C["Section Creation"]
+C --> D["Element Grouping"]
+D --> E["Boundary Respect"]
+E --> F["Chunk Creation"]
+G["Header"] --> H["New Section"]
+I["List"] --> J["Continued Section"]
+K["Table"] --> L["Continued Section"]
+M["Code"] --> N["Potential Split"]
+H --> O["Section 1"]
+J --> O
+L --> O
+N --> P["Section 2"]
+```
 
-#### Time Complexity
-- **Element Detection**: O(n) where n is document lines
-- **Section Building**: O(m) where m is detected elements
-- **Chunking**: O(k) where k is section count
-
-#### Space Complexity
-- **Element Storage**: O(m) for detected elements
-- **Section Memory**: O(k) for section structures
-- **Metadata**: O(p) for chunk metadata
-
-### Optimization Strategies
-
-The strategy implements several optimization techniques:
-
-1. **Early Termination**: Stop processing when document doesn't meet criteria
-2. **Lazy Loading**: Defer expensive operations until needed
-3. **Caching**: Reuse computed values when possible
-4. **Batch Processing**: Process multiple elements efficiently
-
-### Performance Monitoring
-
-The Mixed Strategy integrates with the chunker's performance monitoring system to track:
-- Detection timing
-- Processing throughput
-- Memory usage
-- Error rates
-
-## Common Issues and Solutions
-
-### Issue Categories
-
-#### Content Detection Problems
-**Problem**: Incorrect element type identification
-**Solution**: Implement regex fallback with confidence scoring
-
-#### Section Boundary Issues
-**Problem**: Poor section segmentation
-**Solution**: Enhance header detection and text paragraph insertion
-
-#### Chunk Size Violations
-**Problem**: Chunks exceeding size limits
-**Solution**: Implement smarter splitting around indivisible elements
-
-#### Metadata Loss
-**Problem**: Important information missing from chunks
-**Solution**: Comprehensive metadata tracking and validation
-
-### Debugging Strategies
-
-#### Logging and Monitoring
-- Enable detailed logging for element detection
-- Monitor strategy selection decisions
-- Track performance metrics
-
-#### Validation Tools
-- Content completeness validation
-- Semantic relationship preservation checking
-- Cross-validation with other strategies
+**Diagram sources**
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L469-L513)
 
 **Section sources**
-- [test_mixed_strategy_properties.py](file://tests/chunker/test_mixed_strategy_properties.py#L197-L557)
-- [test_mixed_strategy_stage1_integration.py](file://tests/chunker/test_mixed_strategy_stage1_integration.py#L1-449)
+- [mixed.md](file://tests/fixtures/mixed.md#L1-L51)
+- [mixed_content.md](file://tests/parser/fixtures/nested/mixed_content.md#L1-L35)
 
-## Best Practices
+## Configuration Examples
 
-### When to Use Mixed Strategy
+The Mixed Strategy responds to various configuration parameters that influence its behavior and effectiveness.
 
-#### Recommended Scenarios
-- Documents with multiple content types in significant proportions
-- Technical documentation with examples and explanations
-- API reference materials with code, lists, and tables
-- Tutorial documents combining narrative with practical examples
+### Standard Mixed Content Configuration
 
-#### Avoid When
-- Document is predominantly one content type (use specialized strategies)
-- Document is extremely simple (use SentencesStrategy)
-- Performance is critical and semantic preservation isn't needed
-
-### Configuration Guidelines
-
-#### Optimal Settings
 ```python
+from markdown_chunker import ChunkConfig
+
+# Basic mixed content configuration
 config = ChunkConfig(
-    max_chunk_size=2048,  # Balance size and semantic integrity
-    min_chunk_size=256,   # Minimum meaningful content
-    enable_overlap=True,   # Preserve context across chunks
-    min_complexity=0.3    # Minimum complexity threshold
+    max_chunk_size=2048,      # Moderate chunk size
+    min_chunk_size=256,       # Minimum size constraint
+    target_chunk_size=1024,   # Target size
+    min_complexity=0.3,       # Minimum complexity threshold
+    allow_oversize=True,      # Allow oversized chunks
+    preserve_code_blocks=True, # Preserve code integrity
+    preserve_tables=True,     # Maintain table structure
+    preserve_list_hierarchy=True # Keep list structure
 )
 ```
 
-#### Strategy Override
+### Code-Heavy Mixed Documents
+
+For documents with significant code content but mixed elements:
+
 ```python
-# Force Mixed Strategy for specific documents
-chunker = MarkdownChunker(config)
-chunks = chunker.chunk(document, strategy="mixed")
+# Configuration optimized for code-heavy mixed documents
+config = ChunkConfig(
+    max_chunk_size=3072,      # Larger chunks for code
+    min_complexity=0.4,       # Higher complexity threshold
+    code_ratio_threshold=0.3, # Lower code threshold for mixed
+    preserve_code_blocks=True,
+    overlap_size=150          # Moderate overlap
+)
+```
+
+### Documentation-Focused Configuration
+
+For general documentation with balanced content types:
+
+```python
+# Documentation-focused mixed strategy
+config = ChunkConfig(
+    max_chunk_size=2500,      # Balanced chunk size
+    min_complexity=0.2,       # Lower complexity threshold
+    preserve_code_blocks=True,
+    preserve_tables=True,
+    preserve_list_hierarchy=True,
+    enable_overlap=True,      # Enable overlap for context
+    overlap_size=100         # Small overlap
+)
+```
+
+### Performance-Optimized Configuration
+
+For large documents requiring efficient processing:
+
+```python
+# Performance-optimized mixed strategy
+config = ChunkConfig(
+    max_chunk_size=4096,      # Maximum chunk size
+    min_complexity=0.5,       # Higher complexity requirement
+    allow_oversize=True,      # Allow oversized chunks
+    enable_fallback=False,    # Disable fallback for speed
+    block_based_splitting=True # Use block-based splitting
+)
+```
+
+**Section sources**
+- [types.py](file://markdown_chunker_legacy/chunker/types.py#L500-L626)
+
+## Performance Considerations
+
+The Mixed Strategy implements several performance optimizations to handle complex documents efficiently while maintaining accuracy.
+
+### Complexity Management
+
+The strategy employs complexity scoring to manage computational overhead:
+
+```mermaid
+flowchart TD
+A["Document Analysis"] --> B["Calculate Complexity Score"]
+B --> C{"Score ≥ Min Complexity?"}
+C --> |Yes| D["Full Mixed Processing"]
+C --> |No| E["Skip Mixed Strategy"]
+D --> F["Element Detection"]
+F --> G["Section Grouping"]
+G --> H["Chunk Creation"]
+E --> I["Try Other Strategies"]
+H --> J["Performance Metrics"]
+I --> J
+```
+
+**Diagram sources**
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L115-L118)
+
+### Memory Optimization
+
+The strategy minimizes memory usage through efficient data structures:
+
+| Optimization Technique | Benefit | Implementation |
+|----------------------|---------|----------------|
+| **Lazy Loading** | Reduced startup time | Elements processed on-demand |
+| **Streaming Processing** | Lower memory footprint | Sections processed individually |
+| **Efficient Sorting** | Faster element grouping | Optimized sorting algorithms |
+| **Metadata Caching** | Reduced computation | Cached element type information |
+
+### Processing Time Optimization
+
+The strategy implements several techniques to minimize processing time:
+
+```mermaid
+sequenceDiagram
+participant Input as Input Document
+participant Cache as Element Cache
+participant Processor as Content Processor
+participant Validator as Validator
+Input->>Cache : Check cached elements
+Cache-->>Processor : Cached results or null
+Processor->>Processor : Process new elements
+Processor->>Validator : Validate results
+Validator-->>Processor : Validation status
+Processor->>Cache : Store results
+Cache-->>Input : Processed document
+```
+
+**Diagram sources**
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L203-L359)
+
+### Scalability Considerations
+
+The strategy scales effectively with document size:
+
+- **Linear Element Detection**: O(n) complexity for element identification
+- **Logarithmic Sorting**: O(n log n) for element ordering
+- **Constant-Time Metadata**: O(1) access to element metadata
+- **Adaptive Chunking**: Scales with content complexity
+
+**Section sources**
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L203-L359)
+- [test_mixed_strategy_properties.py](file://tests/chunker/test_mixed_strategy_properties.py#L521-L558)
+
+## Common Issues and Solutions
+
+The Mixed Strategy addresses several common challenges encountered when processing mixed content documents.
+
+### Optimal Chunk Boundary Determination
+
+Determining optimal chunk boundaries in heterogeneous content presents several challenges:
+
+#### Challenge: Semantic vs. Size Constraints
+
+**Problem**: Balancing semantic boundaries with size constraints can lead to unnatural splits.
+
+**Solution**: The strategy prioritizes semantic boundaries while allowing controlled size violations for indivisible elements.
+
+```mermaid
+flowchart TD
+A["Boundary Detection"] --> B{"Semantic Boundary?"}
+B --> |Yes| C["Respect Boundary"]
+B --> |No| D{"Size Constraint?"}
+D --> |Violates Limit| E{"Is Indivisible?"}
+D --> |Within Limit| F["Accept Size"]
+E --> |Yes| G["Allow Oversize"]
+E --> |No| H["Force Split"]
+C --> I["Natural Chunk"]
+F --> I
+G --> J["Oversized Chunk"]
+H --> K["Forced Split"]
+```
+
+**Diagram sources**
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L533-L552)
+
+#### Challenge: Code Block Integrity
+
+**Problem**: Code blocks may be split across chunks, breaking syntax validity.
+
+**Solution**: Code blocks are treated as indivisible elements, preventing splitting.
+
+### Content Loss Prevention
+
+The strategy implements multiple safeguards to prevent content loss:
+
+```mermaid
+flowchart TD
+A["Content Processing"] --> B["Fence Balance Check"]
+B --> C{"Unbalanced Fences?"}
+C --> |Yes| D["Mark as Error"]
+C --> |No| E["Continue Processing"]
+D --> F["Prevent Splitting"]
+E --> G["Element Validation"]
+G --> H{"Valid Elements?"}
+H --> |No| I["Fallback Processing"]
+H --> |Yes| J["Normal Processing"]
+F --> K["Safe Chunk Creation"]
+I --> K
+J --> K
+```
+
+**Diagram sources**
+- [base.py](file://markdown_chunker_legacy/chunker/strategies/base.py#L261-L294)
+
+### Mixed Content Type Conflicts
+
+Different content types may conflict in mixed documents:
+
+#### List-Code Conflicts
+
+**Issue**: Lists containing code blocks require careful handling to maintain both structures.
+
+**Resolution**: The strategy detects nested content and creates appropriate chunk boundaries.
+
+#### Table-Code Conflicts
+
+**Issue**: Tables with code cells need special handling to preserve formatting.
+
+**Resolution**: Tables are processed as atomic units, with code cells maintained within table structure.
+
+### Performance Optimization Issues
+
+#### Large Document Handling
+
+**Challenge**: Processing very large mixed documents efficiently.
+
+**Solution**: The strategy implements streaming processing and lazy evaluation to handle large documents without excessive memory usage.
+
+#### Complex Document Structures
+
+**Challenge**: Documents with deeply nested or complex structures.
+
+**Solution**: The strategy uses iterative processing with configurable depth limits and timeout mechanisms.
+
+**Section sources**
+- [mixed_strategy.py](file://markdown_chunker_legacy/chunker/strategies/mixed_strategy.py#L199-L201)
+- [base.py](file://markdown_chunker_legacy/chunker/strategies/base.py#L180-L241)
+
+## Testing and Validation
+
+The Mixed Strategy undergoes comprehensive testing to ensure reliability and accuracy across diverse document types.
+
+### Unit Testing Framework
+
+The strategy includes extensive unit tests covering core functionality:
+
+```mermaid
+classDiagram
+class TestMixedStrategy {
++test_strategy_properties()
++test_can_handle_mixed_content()
++test_can_handle_code_dominates()
++test_calculate_quality_high_mixed()
++test_apply_simple_mixed_content()
++test_group_into_logical_sections()
++test_has_indivisible_elements()
+}
+class TestMixedStrategyIntegration {
++test_realistic_tutorial_document()
++test_mixed_content_with_indivisible_elements()
++test_real_stage1_list_and_table_integration()
+}
+class TestMixedStrategyRealObjects {
++test_list_processing_no_attribute_error()
++test_table_processing_no_attribute_error()
+}
+TestMixedStrategy --> TestMixedStrategyIntegration
+TestMixedStrategyIntegration --> TestMixedStrategyRealObjects
+```
+
+**Diagram sources**
+- [test_mixed_strategy.py](file://tests/chunker/test_strategies/test_mixed_strategy.py#L92-L560)
+
+### Property-Based Testing
+
+The strategy employs property-based testing to validate correctness across a wide range of inputs:
+
+#### Hypothesis Strategies
+
+The testing framework generates diverse mixed content documents:
+
+```mermaid
+flowchart TD
+A["Property-Based Testing"] --> B["Code Section Generator"]
+A --> C["List Section Generator"]
+A --> D["Table Section Generator"]
+A --> E["Text Section Generator"]
+B --> F["Random Code Blocks"]
+C --> G["Random Lists"]
+D --> H["Random Tables"]
+E --> I["Random Text"]
+F --> J["Mixed Document Generator"]
+G --> J
+H --> J
+I --> J
+J --> K["Property Validation"]
+```
+
+**Diagram sources**
+- [test_mixed_strategy_properties.py](file://tests/chunker/test_mixed_strategy_properties.py#L30-L148)
+
+### Validation Properties
+
+The strategy tests several critical properties:
+
+| Property | Description | Validation Method |
+|----------|-------------|------------------|
+| **Content Preservation** | All content preserved across chunks | Word-level comparison |
+| **Section Boundaries** | Headers and sections preserved | Header extraction and comparison |
+| **Appropriate Strategies** | Mixed strategy used for mixed content | Strategy selection validation |
+| **Metadata Consistency** | Chunk metadata consistent and accurate | Metadata validation |
+| **Complex Document Handling** | Handles complex mixed documents | Large document testing |
+
+### Integration Testing
+
+The strategy undergoes integration testing with real-world documents:
+
+```mermaid
+sequenceDiagram
+participant Test as Integration Test
+participant Chunker as MarkdownChunker
+participant Mixed as MixedStrategy
+participant Validator as Content Validator
+Test->>Chunker : Process mixed document
+Chunker->>Mixed : Apply mixed strategy
+Mixed->>Mixed : Detect elements
+Mixed->>Mixed : Group sections
+Mixed->>Mixed : Create chunks
+Mixed-->>Chunker : Return chunks
+Chunker->>Validator : Validate results
+Validator-->>Test : Validation report
+```
+
+**Diagram sources**
+- [test_mixed_strategy.py](file://tests/chunker/test_strategies/test_mixed_strategy.py#L311-L496)
+
+**Section sources**
+- [test_mixed_strategy.py](file://tests/chunker/test_strategies/test_mixed_strategy.py#L1-L560)
+- [test_mixed_strategy_properties.py](file://tests/chunker/test_mixed_strategy_properties.py#L1-L558)
+
+## Best Practices
+
+Effective use of the Mixed Strategy requires understanding its strengths, limitations, and optimal usage patterns.
+
+### When to Use Mixed Strategy
+
+The Mixed Strategy is most effective for:
+
+1. **Documentation with Multiple Content Types**: Documents containing code, lists, tables, and text
+2. **Tutorial Materials**: Educational content with examples and explanations
+3. **API Documentation**: Reference materials with code samples and structured information
+4. **Technical Guides**: Documents combining prose with technical examples
+
+### Configuration Guidelines
+
+#### Size Configuration
+
+- **Max Chunk Size**: Start with 2048-4096 characters for mixed content
+- **Min Chunk Size**: Set to 256-512 for balanced processing
+- **Target Size**: Use 1024-2048 for optimal readability
+
+#### Content Preservation Settings
+
+- **preserve_code_blocks**: Always enable for code-containing documents
+- **preserve_tables**: Enable for documents with tabular data
+- **preserve_list_hierarchy**: Essential for list-heavy content
+
+#### Complexity Thresholds
+
+- **min_complexity**: Start with 0.3 for general mixed content
+- **Adjust based on document type**: Higher values for simpler documents
+
+### Performance Optimization
+
+#### Large Document Handling
+
+For large documents:
+- Enable streaming processing when available
+- Use appropriate chunk size limits
+- Monitor memory usage during processing
+
+#### Mixed Content Optimization
+
+For documents with complex mixed content:
+- Increase complexity threshold for simpler documents
+- Use targeted configuration for specific content types
+- Consider preprocessing for extremely complex documents
+
+### Error Handling
+
+#### Common Error Patterns
+
+1. **Unbalanced Code Fences**: Indicates splitting of code blocks
+   - Solution: Enable code block preservation
+   - Prevention: Use appropriate chunk size limits
+
+2. **Missing Content**: Content appears to be lost
+   - Solution: Check content preservation settings
+   - Debug: Enable detailed logging
+
+3. **Poor Chunk Quality**: Chunks are too large or small
+   - Solution: Adjust size configuration
+   - Optimization: Use content-aware sizing
+
+### Monitoring and Debugging
+
+#### Strategy Selection Monitoring
+
+Monitor strategy selection to ensure appropriate strategy usage:
+
+```python
+# Enable detailed logging for strategy selection
+import logging
+logging.getLogger('markdown_chunker.chunker.selector').setLevel(logging.DEBUG)
+
+# Process document and check strategy
+result = chunker.chunk(document, include_analysis=True)
+print(f"Strategy used: {result.strategy_used}")
+print(f"Chunks created: {len(result.chunks)}")
+```
+
+#### Content Quality Assessment
+
+Assess chunk quality using metadata:
+
+```python
+# Analyze chunk composition
+for chunk in result.chunks:
+    element_types = chunk.metadata.get('element_types', '').split(',')
+    print(f"Chunk: {chunk.size} chars, types: {element_types}")
 ```
 
 ### Integration Patterns
 
-#### Automatic Selection
+#### RAG System Integration
+
+For Retrieval-Augmented Generation systems:
+
 ```python
-# Let the system choose the best strategy
-chunker = MarkdownChunker()
-result = chunker.chunk(document, include_analysis=True)
-print(f"Selected strategy: {result.strategy_used}")
+# Optimized configuration for RAG
+rag_config = ChunkConfig(
+    max_chunk_size=1024,      # Smaller chunks for better retrieval
+    min_chunk_size=128,       # Minimum size for meaningful content
+    target_chunk_size=512,    # Balanced size for RAG
+    overlap_size=100,         # Moderate overlap for context
+    enable_overlap=True,      # Enable overlap for RAG
+    min_complexity=0.2,       # Lower complexity for varied content
+    preserve_code_blocks=True # Important for technical content
+)
 ```
 
-#### Manual Control
+#### Documentation Pipeline Integration
+
+For documentation processing pipelines:
+
 ```python
-# Force Mixed Strategy for known mixed documents
-config = ChunkConfig.for_mixed_content()
-chunker = MarkdownChunker(config)
-chunks = chunker.chunk(document, strategy="mixed")
+# Documentation-optimized configuration
+doc_config = ChunkConfig(
+    max_chunk_size=2048,      # Larger chunks for documentation
+    min_complexity=0.3,       # Moderate complexity for mixed docs
+    preserve_code_blocks=True,
+    preserve_tables=True,
+    preserve_list_hierarchy=True,
+    allow_oversize=True       # Allow oversized chunks for integrity
+)
 ```
 
-## Conclusion
-
-The Mixed Strategy represents a sophisticated approach to chunking documents with multiple content types. By intelligently detecting and processing diverse content elements while preserving semantic relationships, it enables effective processing of complex markdown documents that would challenge simpler, specialized strategies.
-
-Its robust error handling, flexible fallback mechanisms, and comprehensive metadata tracking make it a reliable choice for production systems requiring semantic-aware chunking. The strategy's integration with the broader strategy selection ecosystem ensures optimal performance across a wide variety of document types and content combinations.
-
-Through careful implementation of content detection, logical section building, and intelligent chunking algorithms, the Mixed Strategy maintains the integrity of complex documents while providing the flexibility needed for modern document processing applications.
+**Section sources**
+- [types.py](file://markdown_chunker_legacy/chunker/types.py#L500-L626)
+- [core.py](file://markdown_chunker_legacy/chunker/core.py#L41-L118)

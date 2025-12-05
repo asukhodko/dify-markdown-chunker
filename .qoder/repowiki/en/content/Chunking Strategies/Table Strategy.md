@@ -2,64 +2,99 @@
 
 <cite>
 **Referenced Files in This Document**
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py)
-- [selector.py](file://markdown_chunker/chunker/selector.py)
-- [analyzer.py](file://markdown_chunker/parser/analyzer.py)
-- [base.py](file://markdown_chunker/chunker/strategies/base.py)
-- [types.py](file://markdown_chunker/chunker/types.py)
+- [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py)
 - [test_table_strategy.py](file://tests/chunker/test_strategies/test_table_strategy.py)
 - [test_table_strategy_properties.py](file://tests/chunker/test_table_strategy_properties.py)
-- [table_heavy.md](file://tests/fixtures/table_heavy.md)
-- [basic_usage.py](file://examples/basic_usage.py)
+- [base.py](file://markdown_chunker_legacy/chunker/strategies/base.py)
+- [types.py](file://markdown_chunker_legacy/chunker/types.py)
+- [large_tables.md](file://tests/fixtures/corpus/edge_cases/large_tables.md)
+- [table_without_headers.md](file://tests/parser/fixtures/edge_cases/table_without_headers.md)
+- [table_alignments.md](file://tests/parser/fixtures/edge_cases/table_alignments.md)
 </cite>
 
 ## Table of Contents
 1. [Introduction](#introduction)
-2. [Purpose and Philosophy](#purpose-and-philosophy)
-3. [Core Architecture](#core-architecture)
-4. [Table Detection Algorithm](#table-detection-algorithm)
-5. [Strategy Implementation Details](#strategy-implementation-details)
-6. [Quality Scoring System](#quality-scoring-system)
-7. [Table Processing Pipeline](#table-processing-pipeline)
-8. [Handling Large Tables](#handling-large-tables)
-9. [Statistics and Metrics](#statistics-and-metrics)
-10. [Strategy Selection Integration](#strategy-selection-integration)
-11. [Common Issues and Mitigation](#common-issues-and-mitigation)
-12. [Usage Guidelines](#usage-guidelines)
-13. [Performance Considerations](#performance-considerations)
-14. [Testing and Validation](#testing-and-validation)
+2. [Activation Conditions](#activation-conditions)
+3. [Priority Level](#priority-level)
+4. [Core Architecture](#core-architecture)
+5. [Table Detection Algorithm](#table-detection-algorithm)
+6. [Table Preservation Mechanisms](#table-preservation-mechanisms)
+7. [Large Table Handling](#large-table-handling)
+8. [Metadata and Statistics](#metadata-and-statistics)
+9. [Configuration Options](#configuration-options)
+10. [Edge Cases and Examples](#edge-cases-and-examples)
+11. [Performance Considerations](#performance-considerations)
+12. [Common Issues and Solutions](#common-issues-and-solutions)
+13. [Best Practices](#best-practices)
 
 ## Introduction
 
-The Table Strategy is a sophisticated chunking strategy designed specifically for documents containing substantial amounts of tabular data. Its primary purpose is to preserve table structure while intelligently handling large tables by splitting them into manageable chunks while maintaining readability and context preservation.
+The Table Strategy is a sophisticated chunking strategy designed specifically for documents containing substantial amounts of tabular data. Its primary goal is to preserve table structure and integrity while efficiently managing large tables that might exceed standard chunk size limits. The strategy ensures that tables remain readable and maintain their structural relationships across chunk boundaries.
 
-Unlike other strategies that treat tables as opaque blocks, the Table Strategy recognizes the inherent structure of markdown tables and applies specialized logic to ensure that table data remains coherent across chunk boundaries. This approach is particularly valuable for technical documentation, data reports, and any content where tabular information is crucial to understanding.
+Unlike other strategies that may split content arbitrarily, the Table Strategy treats tables as atomic units, preserving their formatting, alignments, and relationships between rows and columns. This approach is essential for maintaining the semantic meaning of tabular data in chunked documents.
 
-## Purpose and Philosophy
+## Activation Conditions
 
-The Table Strategy operates on several key principles:
+The Table Strategy activates under specific conditions that indicate the presence of table-heavy content:
 
-### Preservation of Tabular Structure
-Tables are treated as atomic units that should not be split across chunks. This ensures that readers can understand the complete context of any given row without having to piece together information from multiple chunks.
+### Threshold-Based Activation
 
-### Intelligent Row-Based Splitting
-When tables exceed size constraints, they are split by rows rather than being broken apart. Each resulting chunk includes the table header duplicated at the beginning, ensuring that column information remains accessible.
+The strategy evaluates content using two primary criteria:
 
-### Readability First
-The strategy prioritizes readability by maintaining table formatting, preserving column alignments, and ensuring that each chunk contains meaningful context.
+**Minimum Table Count Threshold**: Documents with 3 or more tables automatically qualify for table strategy activation. This threshold ensures that minor table occurrences don't trigger the specialized handling.
 
-### Context Preservation
-Headers are duplicated in each chunk to maintain referential integrity, allowing readers to understand the table's structure even when viewing individual chunks out of context.
+**Table Ratio Threshold**: Documents where tables constitute 40% or more of the total content activate the strategy. This percentage-based approach accommodates documents with varying lengths but substantial tabular content.
+
+```mermaid
+flowchart TD
+A["Content Analysis"] --> B{"Table Count ≥ 3?"}
+B --> |Yes| C["Activate Table Strategy"]
+B --> |No| D{"Table Ratio ≥ 40%?"}
+D --> |Yes| C
+D --> |No| E["Skip Table Strategy"]
+C --> F["Apply Table-Specific Logic"]
+E --> G["Use Alternative Strategy"]
+```
+
+**Section sources**
+- [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L85-L96)
+
+### Quality Scoring
+
+Beyond activation, the strategy calculates a quality score to help with strategy selection when multiple strategies could apply:
+
+| Table Count | Quality Contribution | Table Ratio | Quality Contribution |
+|-------------|---------------------|-------------|---------------------|
+| ≥5 tables | +0.8 | ≥50% | +0.3 |
+| ≥3 tables | +0.6 | ≥30% | +0.2 |
+| ≥2 tables | +0.4 | ≥20% | +0.1 |
+
+**Section sources**
+- [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L98-L125)
+
+## Priority Level
+
+The Table Strategy operates with a priority level of **5**, placing it in the medium-low priority category. This positioning ensures that:
+
+- More specialized strategies (code, lists, structural) take precedence when applicable
+- The table strategy serves as a fallback for documents with substantial tabular content
+- Strategy selection considers both priority and quality scores for optimal results
+
+**Section sources**
+- [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L80-L83)
 
 ## Core Architecture
 
-The Table Strategy is built around several key components that work together to provide robust table handling:
+The Table Strategy consists of several interconnected components that work together to preserve table integrity:
 
 ```mermaid
 classDiagram
 class TableStrategy {
-+string name
-+int priority
++name : str
++priority : int
++TABLE_HEADER_PATTERN : str
++TABLE_SEPARATOR_PATTERN : str
++TABLE_ROW_PATTERN : str
 +can_handle(analysis, config) bool
 +calculate_quality(analysis) float
 +apply(content, stage1_results, config) Chunk[]
@@ -68,478 +103,391 @@ class TableStrategy {
 -_split_table_rows(table, max_chunk_size) TableRowGroup[]
 -_create_table_chunk(table, config) Chunk
 -_create_table_group_chunk(group, config) Chunk
+-_get_selection_reason(analysis, can_handle) str
 +get_table_statistics(chunks) Dict
 }
 class TableInfo {
-+string header
-+string separator
-+string[] rows
-+int start_line
-+int end_line
-+int column_count
-+get_full_content() string
++header : str
++separator : str
++rows : str[]
++start_line : int
++end_line : int
++column_count : int
++get_full_content() str
 +calculate_size() int
 }
 class TableRowGroup {
-+string header
-+string separator
-+string[] rows
-+int start_line
-+int end_line
-+int part_number
-+int total_parts
-+int total_rows
++header : str
++separator : str
++rows : str[]
++start_line : int
++end_line : int
++part_number : int
++total_parts : int
++total_rows : int
 }
 class BaseStrategy {
 <<abstract>>
-+name() string
-+priority() int
++name : str
++priority : int
 +can_handle(analysis, config) bool
 +calculate_quality(analysis) float
 +apply(content, stage1_results, config) Chunk[]
+-_create_chunk(content, start_line, end_line, content_type, **metadata) Chunk
+-_validate_chunks(chunks, config) Chunk[]
 }
 TableStrategy --|> BaseStrategy
 TableStrategy --> TableInfo : creates
 TableStrategy --> TableRowGroup : creates
-TableInfo --> TableRowGroup : splits into
+TableInfo --> TableRowGroup : splits_into
 ```
 
 **Diagram sources**
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L22-L53)
-- [base.py](file://markdown_chunker/chunker/strategies/base.py#L16-L38)
+- [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L22-L53)
+- [base.py](file://markdown_chunker_legacy/chunker/strategies/base.py#L16-L426)
 
 **Section sources**
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L56-L84)
-- [base.py](file://markdown_chunker/chunker/strategies/base.py#L16-L38)
+- [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L56-L100)
 
 ## Table Detection Algorithm
 
-The Table Strategy employs a sophisticated pattern-matching system to identify and validate markdown tables. The detection process follows a specific sequence to ensure accuracy:
+The table detection algorithm employs sophisticated pattern matching to identify and extract tables from markdown content:
 
-### Pattern Matching Sequence
+### Pattern Definitions
 
-```mermaid
-flowchart TD
-Start([Begin Table Detection]) --> CheckHeader["Check for Table Header<br/>Pattern: ^\\|.+\\|$"]
-CheckHeader --> HeaderMatch{"Header Pattern<br/>Match?"}
-HeaderMatch --> |No| NextLine["Move to Next Line"]
-HeaderMatch --> |Yes| CheckSeparator["Check for Separator<br/>Pattern: ^\\|[\\s:\\|-]+\\|$"]
-CheckSeparator --> SeparatorMatch{"Separator Pattern<br/>Match?"}
-SeparatorMatch --> |No| NextLine
-SeparatorMatch --> |Yes| CollectRows["Collect Table Rows<br/>Pattern: ^\\|.+\\|$"]
-CollectRows --> RowMatch{"Row Pattern<br/>Match?"}
-RowMatch --> |Yes| AddRow["Add Row to Table"]
-AddRow --> CollectRows
-RowMatch --> |No| ValidateTable["Validate Table Structure"]
-ValidateTable --> HasRows{"Has Data Rows?"}
-HasRows --> |Yes| CreateTableInfo["Create TableInfo Object"]
-HasRows --> |No| NextLine
-CreateTableInfo --> NextLine
-NextLine --> End{"End of Content?"}
-End --> |No| CheckHeader
-End --> |Yes| ReturnTables["Return Detected Tables"]
-```
+The strategy uses three primary regular expressions for table identification:
 
-**Diagram sources**
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L156-L209)
+**Header Pattern**: `r"^\|.+\|$` - Matches lines starting and ending with pipe characters containing at least one vertical bar.
 
-### Detection Patterns
+**Separator Pattern**: `r"^\|[\s:|-]+\|$` - Matches separator lines with various dash combinations and alignment indicators.
 
-The strategy uses three primary regex patterns for table identification:
+**Row Pattern**: `r"^\|.+\|$` - Matches data rows with pipe delimiters.
 
-| Pattern | Purpose | Example Match |
-|---------|---------|---------------|
-| `TABLE_HEADER_PATTERN` | `r"^\|.+\|$"` | ` \| Name \| Age \|` |
-| `TABLE_SEPARATOR_PATTERN` | `r"^\|[\s:|-]+\|$"` | ` \|------\|-----\|` |
-| `TABLE_ROW_PATTERN` | `r"^\|.+\|$"` | ` \| Alice \| 30 \|` |
-
-### Validation Logic
-
-The detection algorithm includes several validation steps:
-
-1. **Structure Validation**: Ensures tables have headers followed by separators
-2. **Content Validation**: Verifies that tables contain at least one data row
-3. **Format Validation**: Confirms proper markdown table formatting
-4. **Boundary Detection**: Accurately identifies table start and end positions
-
-**Section sources**
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L70-L74)
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L212-L225)
-
-## Strategy Implementation Details
-
-### Strategy Properties
-
-The Table Strategy is configured with specific properties that define its behavior:
-
-```python
-@property
-def name(self) -> str:
-    """Strategy name."""
-    return "table"
-
-@property
-def priority(self) -> int:
-    """Medium priority."""
-    return 4
-```
-
-### Content Analysis Integration
-
-The strategy integrates with the content analysis system to determine when it should be applied:
+### Detection Process
 
 ```mermaid
 flowchart TD
-ContentAnalysis["Content Analysis"] --> TableCount["Check Table Count"]
-ContentAnalysis --> TableRatio["Check Table Ratio"]
-TableCount --> CountThreshold{"Count >= 3?"}
-TableRatio --> RatioThreshold{"Ratio >= 40%?"}
-CountThreshold --> |Yes| ApplyStrategy["Apply Table Strategy"]
-CountThreshold --> |No| RatioThreshold
-RatioThreshold --> |Yes| ApplyStrategy
-RatioThreshold --> |No| SkipStrategy["Skip Table Strategy"]
-ApplyStrategy --> CalculateQuality["Calculate Quality Score"]
-SkipStrategy --> NextStrategy["Try Next Strategy"]
+A["Start Line Analysis"] --> B{"Is Header Pattern?"}
+B --> |No| C["Next Line"]
+B --> |Yes| D{"Followed by Separator?"}
+D --> |No| C
+D --> |Yes| E["Collect Data Rows"]
+E --> F{"More Lines?"}
+F --> |Yes| G{"Is Row Pattern?"}
+G --> |Yes| E
+G --> |No| H["Complete Table Found"]
+F --> |No| H
+H --> I{"Has Data Rows?"}
+I --> |Yes| J["Add to Table List"]
+I --> |No| K["Skip Empty Table"]
+J --> L["Continue Processing"]
+K --> L
+C --> L
 ```
 
 **Diagram sources**
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L85-L96)
-- [analyzer.py](file://markdown_chunker/parser/analyzer.py#L56-L60)
+- [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L156-L210)
 
-### Threshold Configuration
+### Advanced Detection Features
 
-The strategy uses configurable thresholds to determine applicability:
+The detection algorithm handles several edge cases:
 
-| Parameter | Default Value | Purpose |
-|-----------|---------------|---------|
-| `table_count_threshold` | 3 | Minimum number of tables required |
-| `table_ratio_threshold` | 0.4 (40%) | Minimum percentage of content that must be tables |
+- **Empty Tables**: Tables without data rows are ignored to prevent processing artifacts
+- **Malformed Tables**: Tables with inconsistent formatting may still be detected if they meet basic criteria
+- **Nested Content**: The algorithm focuses on surface-level table structure without parsing nested elements
 
 **Section sources**
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L85-L96)
-- [analyzer.py](file://markdown_chunker/parser/analyzer.py#L22-L25)
+- [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L156-L210)
 
-## Quality Scoring System
+## Table Preservation Mechanisms
 
-The Table Strategy implements a sophisticated quality scoring system that evaluates how well-suited it is for a given document:
+The Table Strategy employs multiple mechanisms to ensure table integrity:
 
-### Scoring Algorithm
+### Atomic Table Chunks
 
-```mermaid
-flowchart TD
-Start([Calculate Quality]) --> TableCountScore["Table Count Contribution"]
-TableCountScore --> CountScore{"Count Score"}
-CountScore --> |>= 5| HighCount["Score += 0.8"]
-CountScore --> |>= 3| MediumCount["Score += 0.6"]
-CountScore --> |>= 2| LowCount["Score += 0.4"]
-CountScore --> |< 2| ZeroCount["Score += 0.0"]
-HighCount --> TableRatioScore["Table Ratio Contribution"]
-MediumCount --> TableRatioScore
-LowCount --> TableRatioScore
-ZeroCount --> TableRatioScore
-TableRatioScore --> RatioScore{"Ratio Score"}
-RatioScore --> |>= 0.5| HighRatio["Score += 0.3"]
-RatioScore --> |>= 0.3| MediumRatio["Score += 0.2"]
-RatioScore --> |>= 0.2| LowRatio["Score += 0.1"]
-RatioScore --> |< 0.2| ZeroRatio["Score += 0.0"]
-HighRatio --> FinalScore["Final Score = min(score, 1.0)"]
-MediumRatio --> FinalScore
-LowRatio --> FinalScore
-ZeroRatio --> FinalScore
-FinalScore --> End([Return Quality Score])
-```
-
-**Diagram sources**
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L98-L125)
-
-### Quality Factors
-
-The scoring system considers multiple factors:
-
-1. **Table Count**: Higher scores for documents with more tables
-2. **Table Ratio**: Higher scores for documents where tables constitute a larger portion of content
-3. **Context Preservation**: Scores favor strategies that maintain content coherence
-
-**Section sources**
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L98-L125)
-
-## Table Processing Pipeline
-
-The Table Strategy processes tables through a comprehensive pipeline that handles various scenarios:
-
-### Processing Stages
+Complete tables are preserved as single chunks when they fit within size constraints:
 
 ```mermaid
 sequenceDiagram
-participant Content as "Original Content"
-participant Detector as "Table Detector"
-participant Processor as "Table Processor"
-participant Splitter as "Row Splitter"
-participant Chunker as "Chunk Creator"
-Content->>Detector : Analyze for Tables
-Detector->>Detector : Detect Table Boundaries
-Detector->>Processor : Return TableInfo Objects
-Processor->>Processor : Check Table Size
-Processor->>Splitter : Split Large Tables
-Splitter->>Splitter : Calculate Row Groups
-Splitter->>Chunker : Create TableRowGroups
-Chunker->>Chunker : Duplicate Headers
-Chunker->>Content : Return Chunks
+participant CS as Chunking Strategy
+participant TD as Table Detector
+participant TC as Table Chunker
+participant V as Validator
+CS->>TD : Detect tables in content
+TD->>CS : Return TableInfo list
+CS->>TC : Process each table
+TC->>TC : Calculate table size
+alt Table fits in chunk
+TC->>V : Create complete table chunk
+V->>CS : Return single chunk
+else Table exceeds size limit
+TC->>TC : Split by rows
+TC->>V : Create multiple chunks
+V->>CS : Return grouped chunks
+end
 ```
 
 **Diagram sources**
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L127-L155)
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L227-L291)
+- [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L227-L291)
 
-### Processing Logic
+### Header Duplication
 
-The pipeline handles three main scenarios:
+For split tables, headers are duplicated in each chunk to maintain readability:
 
-1. **Small Tables**: Processed as single chunks
-2. **Large Tables**: Split by rows with header duplication
-3. **Mixed Content**: Tables interspersed with other content
+**Original Table Structure**:
+```
+| Column A | Column B | Column C |
+|----------|----------|----------|
+| Value 1  | Value 2  | Value 3  |
+| Value 4  | Value 5  | Value 6  |
+```
+
+**Split Table Chunks**:
+```
+# Chunk 1
+| Column A | Column B | Column C |
+|----------|----------|----------|
+| Value 1  | Value 2  | Value 3  |
+
+# Chunk 2  
+| Column A | Column B | Column C |
+|----------|----------|----------|
+| Value 4  | Value 5  | Value 6  |
+```
+
+### Alignment Preservation
+
+The strategy maintains column alignments including:
+- Left alignment (`:---`)
+- Center alignment (`:---:`)  
+- Right alignment (`---:`)
+- Mixed alignment within the same table
 
 **Section sources**
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L127-L155)
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L227-L291)
+- [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L345-L411)
 
-## Handling Large Tables
+## Large Table Handling
 
-Large tables present unique challenges that require specialized handling:
+When tables exceed the maximum chunk size, the strategy employs intelligent splitting mechanisms:
 
-### Row-Based Splitting Algorithm
+### Row-Based Splitting
+
+Large tables are divided into manageable chunks by splitting rows while maintaining table structure:
 
 ```mermaid
 flowchart TD
-LargeTable["Large Table Detected"] --> CalcHeaderSize["Calculate Header Size<br/>(header + separator + newlines)"]
-CalcHeaderSize --> CalcAvgRow["Calculate Average Row Size"]
-CalcAvgRow --> CalcRowsPerChunk["Calculate Rows Per Chunk<br/>(max_chunk_size - header_size) / avg_row_size"]
-CalcRowsPerChunk --> SplitRows["Split Rows into Groups"]
-SplitRows --> CreateGroups["Create TableRowGroup Objects"]
-CreateGroups --> DuplicateHeaders["Duplicate Headers in Each Group"]
-DuplicateHeaders --> CreateChunks["Create Individual Chunks"]
-CreateChunks --> ValidateChunks["Validate Chunk Sizes"]
+A["Large Table Detected"] --> B["Calculate Header Size"]
+B --> C["Estimate Average Row Size"]
+C --> D["Determine Rows Per Chunk"]
+D --> E["Split Rows Into Groups"]
+E --> F["Create TableRowGroup Objects"]
+F --> G["Generate Individual Chunks"]
+G --> H["Duplicate Headers in Each Chunk"]
+H --> I["Add Metadata for Tracking"]
 ```
 
 **Diagram sources**
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L293-L342)
+- [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L293-L344)
 
-### Oversize Allowance
+### Splitting Algorithm Details
 
-The strategy includes intelligent handling for wide tables that exceed size limits:
+The splitting algorithm considers several factors:
 
-| Scenario | Action | Metadata |
-|----------|--------|----------|
-| Wide Table | Allow oversize | `allow_oversize: true` |
-| Reason | `oversize_reason: "wide_table_row"` |
-| Impact | Single chunk with table | Preserves structure |
+**Header Size Calculation**: Accounts for the combined size of header and separator lines.
+
+**Row Size Estimation**: Uses average row length plus newline overhead to determine chunk capacity.
+
+**Optimal Grouping**: Distributes rows evenly across chunks while respecting size limits.
+
+**Progressive Chunking**: Creates chunks with sequential numbering for easy reference.
 
 **Section sources**
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L366-L370)
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L293-L342)
+- [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L293-L344)
 
-## Statistics and Metrics
+## Metadata and Statistics
 
-The Table Strategy provides comprehensive statistics about table-based chunking:
+The Table Strategy enriches chunks with comprehensive metadata for tracking and analysis:
 
-### Available Metrics
+### Chunk Metadata
+
+Each table chunk includes the following metadata:
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| `column_count` | Number of columns in the table | 4 |
+| `row_count_in_chunk` | Number of rows in this chunk | 5 |
+| `total_rows` | Total rows in the original table | 20 |
+| `has_header` | Whether the chunk contains a header | true |
+| `is_split` | Whether the table was split across chunks | false |
+| `split_part` | Current part number (for split tables) | 1 |
+| `total_parts` | Total number of parts (for split tables) | 3 |
+
+### Table Statistics
+
+The strategy provides detailed statistics about table processing:
 
 ```mermaid
-classDiagram
-class TableStatistics {
-+int total_chunks
-+int table_chunks
-+int total_rows
-+int split_chunks
-+float avg_rows_per_chunk
-+float avg_columns
-+int max_columns
-}
-class ChunkMetadata {
-+bool has_header
-+bool is_split
-+int column_count
-+int row_count_in_chunk
-+int total_rows
-+int split_part
-+int total_parts
-}
-TableStatistics --> ChunkMetadata : analyzes
+flowchart LR
+A["Table Chunks"] --> B["Statistics Calculator"]
+B --> C["Total Chunks"]
+B --> D["Table Chunks"]
+B --> E["Total Rows"]
+B --> F["Split Chunks"]
+B --> G["Average Rows/Chunk"]
+B --> H["Average Columns"]
+B --> I["Max Columns"]
 ```
 
 **Diagram sources**
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L432-L465)
-
-### Statistical Analysis
-
-The strategy tracks several key metrics:
-
-1. **Chunk Distribution**: Total chunks vs. table-specific chunks
-2. **Row Distribution**: Average rows per chunk and total row count
-3. **Column Analysis**: Average and maximum column counts
-4. **Split Analysis**: Number of split chunks vs. complete chunks
+- [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L432-L466)
 
 **Section sources**
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L432-L465)
+- [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L358-L411)
 
-## Strategy Selection Integration
+## Configuration Options
 
-The Table Strategy integrates seamlessly with the broader strategy selection system:
+The Table Strategy integrates with the broader chunking configuration system:
 
-### Selection Criteria
+### Strategy-Specific Settings
 
-```mermaid
-flowchart TD
-ContentAnalysis["Content Analysis"] --> TableCount["table_count >= threshold"]
-ContentAnalysis --> TableRatio["table_ratio >= threshold"]
-TableCount --> CanHandle{"Can Handle?"}
-TableRatio --> CanHandle
-CanHandle --> |Yes| CalculateQuality["Calculate Quality Score"]
-CanHandle --> |No| NextStrategy["Try Next Strategy"]
-CalculateQuality --> PriorityCheck["Priority: 4 (Medium)"]
-PriorityCheck --> SelectionDecision["Strategy Selection Decision"]
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `table_count_threshold` | 3 | Minimum tables for strategy activation |
+| `table_ratio_threshold` | 0.4 | Minimum table ratio for activation |
+| `preserve_tables` | true | Whether to preserve table structure |
+
+### Size Management
+
+The strategy respects global size constraints while allowing controlled oversizing:
+
+- **Allow Oversize**: Tables exceeding size limits are permitted with appropriate metadata
+- **Oversize Reason**: Specific reasons for oversized chunks (e.g., "wide_table_row")
+- **Size Validation**: Ensures atomic elements aren't split across chunks
+
+**Section sources**
+- [types.py](file://markdown_chunker_legacy/chunker/types.py#L593-L594)
+
+## Edge Cases and Examples
+
+### Tables Without Headers
+
+The strategy handles tables without explicit headers by treating the first data row as the header equivalent:
+
+**Input**:
+```
+| Value A | Value B |
+|---------|---------|
+| 1       | 2       |
+| 3       | 4       |
 ```
 
-**Diagram sources**
-- [selector.py](file://markdown_chunker/chunker/selector.py#L58-L77)
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L85-L96)
+**Processing**: The strategy identifies the separator line and treats subsequent rows as data, maintaining the table structure.
 
-### Integration Points
+### Mixed Fence Lengths
 
-The strategy participates in several system components:
+While primarily focused on tables, the strategy coexists with other content types and respects mixed fence lengths in surrounding code blocks.
 
-1. **Strategy Selector**: Uses priority-based selection
-2. **Content Analyzer**: Provides metrics for quality calculation
-3. **Chunk Validator**: Ensures chunk integrity
-4. **Statistics Collector**: Reports performance metrics
+### Complex Alignments
 
-**Section sources**
-- [selector.py](file://markdown_chunker/chunker/selector.py#L58-L77)
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L85-L96)
+Tables with various alignment patterns are preserved correctly:
 
-## Common Issues and Mitigation
-
-### Malformed Table Separators
-
-The strategy includes robust pattern matching to handle various separator formats:
-
-| Separator Type | Pattern | Example |
-|----------------|---------|---------|
-| Standard | `|------|-----|` | Basic dash alignment |
-| Left-aligned | `|:--- | ---: |` | Colon alignment |
-| Right-aligned | `| ---: |` | Right alignment |
-| Mixed | `|:---:|:---:|` | Center alignment |
-
-### Edge Cases
-
-The strategy handles several edge cases:
-
-1. **Empty Tables**: Tables without data rows are ignored
-2. **Malformed Headers**: Tables with invalid header formats are skipped
-3. **Nested Tables**: While not directly supported, the strategy avoids false positives
-4. **Unicode Characters**: Proper handling of international characters in tables
-
-**Section sources**
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L172-L195)
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L212-L225)
-
-## Usage Guidelines
-
-### When to Use Table Strategy
-
-The Table Strategy is ideal for:
-
-1. **Data Reports**: Documents containing extensive statistical data
-2. **Technical Specifications**: Documents with feature comparisons
-3. **User Guides**: Documents with configuration matrices
-4. **API Documentation**: Documents with parameter tables
-
-### Configuration Recommendations
-
-For optimal results, consider these configuration settings:
-
-```python
-config = ChunkConfig(
-    max_chunk_size=2000,  # Adjust based on table complexity
-    table_count_threshold=3,  # Minimum tables for activation
-    table_ratio_threshold=0.4,  # Minimum table content ratio
-    allow_oversize=True  # Enable for wide tables
-)
+**Input**:
+```
+| Default | Left   | Center | Right  |
+|---------|:-------|:------:|-------:|
+| A       | B      | C      | D      |
 ```
 
-### Manual Strategy Override
-
-While the strategy selection is automated, manual override is possible:
-
-```python
-# Force table strategy regardless of content analysis
-chunks = chunker.chunk(content, strategy="table")
-
-# Disable automatic selection and force specific strategy
-chunker.force_strategy("table")
-```
+**Output**: All alignment markers (`|:-------|`, `:------:|`, `-------:|`) are preserved in the chunked output.
 
 **Section sources**
-- [basic_usage.py](file://examples/basic_usage.py#L160-L166)
-- [table_strategy.py](file://markdown_chunker/chunker/strategies/table_strategy.py#L85-L96)
+- [table_without_headers.md](file://tests/parser/fixtures/edge_cases/table_without_headers.md#L1-L6)
+- [table_alignments.md](file://tests/parser/fixtures/edge_cases/table_alignments.md#L1-L5)
 
 ## Performance Considerations
 
-### Computational Complexity
+### Memory Optimization
 
-The Table Strategy has specific performance characteristics:
+The strategy employs several memory-efficient techniques:
 
-1. **Detection Complexity**: O(n) where n is the number of lines
-2. **Processing Complexity**: O(m) where m is the number of tables
-3. **Memory Usage**: Linear with table size and complexity
+**Streaming Processing**: Tables are processed individually rather than loading entire documents into memory.
 
-### Optimization Strategies
+**Lazy Evaluation**: Table detection occurs during the initial pass, avoiding redundant scanning.
 
-1. **Early Termination**: Stop processing when chunk size limits are met
-2. **Pattern Caching**: Reuse compiled regex patterns
-3. **Incremental Processing**: Process tables in batches when possible
+**Minimal Object Creation**: TableInfo and TableRowGroup objects are lightweight containers with minimal overhead.
 
-### Scalability Limits
+### Scalability Factors
 
-The strategy performs optimally with:
-- Up to 100 tables per document
-- Tables with fewer than 1000 rows
-- Documents under 1MB in size
+Performance scales with:
 
-## Testing and Validation
+- **Table Count**: Linear scaling with the number of tables detected
+- **Table Size**: Proportional to the total character count of all tables
+- **Split Complexity**: Additional overhead for large tables requiring splitting
 
-### Property-Based Testing
+### Large Table Optimization
 
-The strategy includes comprehensive property-based tests:
+For documents with numerous large tables:
 
-```mermaid
-flowchart TD
-TestGeneration["Generate Test Cases"] --> TableAtomicity["Tables Never Split"]
-TestGeneration --> HeaderPreservation["Headers Preserved"]
-TestGeneration --> StructureIntegrity["Structure Maintained"]
-TestGeneration --> RowSplitting["Row-Based Splitting"]
-TestGeneration --> OversizeHandling["Oversize Handling"]
-TableAtomicity --> Validation["Validate Results"]
-HeaderPreservation --> Validation
-StructureIntegrity --> Validation
-RowSplitting --> Validation
-OversizeHandling --> Validation
-Validation --> PassFail["Pass/Fail Results"]
-```
-
-**Diagram sources**
-- [test_table_strategy_properties.py](file://tests/chunker/test_table_strategy_properties.py#L119-L200)
-
-### Test Coverage Areas
-
-The testing suite covers:
-
-1. **Structural Integrity**: Tables remain intact across chunks
-2. **Header Preservation**: Headers appear in all relevant chunks
-3. **Row Splitting**: Large tables split appropriately
-4. **Edge Cases**: Malformed tables and boundary conditions
-5. **Performance**: Scalability with large documents
+- **Batch Processing**: Tables are processed in batches to manage memory usage
+- **Early Termination**: Processing stops when size limits are reached
+- **Metadata Caching**: Table metadata is cached to avoid recalculation
 
 **Section sources**
-- [test_table_strategy_properties.py](file://tests/chunker/test_table_strategy_properties.py#L119-L200)
-- [test_table_strategy.py](file://tests/chunker/test_strategies/test_table_strategy.py#L174-L265)
+- [large_tables.md](file://tests/fixtures/corpus/edge_cases/large_tables.md#L1-L43)
+
+## Common Issues and Solutions
+
+### Issue: Tables Split Across Chunks
+
+**Problem**: Large tables are split, causing loss of context.
+
+**Solution**: Configure appropriate `max_chunk_size` values or adjust `table_ratio_threshold`.
+
+### Issue: Header Loss in Split Tables
+
+**Problem**: Headers are not duplicated in split chunks.
+
+**Root Cause**: Implementation limitation in current version.
+
+**Workaround**: Manually verify header presence in chunked output.
+
+### Issue: Performance Degradation with Many Tables
+
+**Problem**: Slow processing with documents containing hundreds of small tables.
+
+**Solution**: Increase `table_count_threshold` to reduce strategy activation frequency.
+
+### Issue: Oversize Warnings
+
+**Problem**: Frequent warnings about oversized chunks.
+
+**Solution**: Adjust `max_chunk_size` or enable `allow_oversize` for specific use cases.
+
+## Best Practices
+
+### Configuration Guidelines
+
+1. **Set Appropriate Thresholds**: Adjust `table_count_threshold` and `table_ratio_threshold` based on document characteristics
+2. **Size Management**: Configure `max_chunk_size` to balance readability and chunk count
+3. **Metadata Utilization**: Leverage table metadata for downstream processing decisions
+
+### Content Preparation
+
+1. **Consistent Formatting**: Maintain consistent table formatting for reliable detection
+2. **Reasonable Sizes**: Avoid extremely wide or tall tables when possible
+3. **Header Usage**: Include headers for better chunk readability
+
+### Monitoring and Validation
+
+1. **Track Statistics**: Use `get_table_statistics()` to monitor processing effectiveness
+2. **Validate Output**: Verify table structure preservation in chunked content
+3. **Performance Testing**: Monitor processing time with representative datasets
+
+### Integration Patterns
+
+1. **Fallback Strategy**: Combine with other strategies for mixed-content documents
+2. **Post-Processing**: Use table metadata for specialized downstream processing
+3. **Quality Assurance**: Implement validation checks for table integrity
+
+**Section sources**
+- [test_table_strategy_properties.py](file://tests/chunker/test_table_strategy_properties.py#L1-L534)
