@@ -1,661 +1,295 @@
 # Advanced Features
 
 <cite>
-**Referenced Files in This Document**
-- [markdown_chunker/chunker/orchestrator.py](file://markdown_chunker/chunker/orchestrator.py)
-- [markdown_chunker/chunker/performance.py](file://markdown_chunker/chunker/performance.py)
-- [markdown_chunker/chunker/components/fallback_manager.py](file://markdown_chunker/chunker/components/fallback_manager.py)
-- [markdown_chunker/chunker/components/metadata_enricher.py](file://markdown_chunker/chunker/components/metadata_enricher.py)
-- [markdown_chunker/chunker/components/overlap_manager.py](file://markdown_chunker/chunker/components/overlap_manager.py)
-- [markdown_chunker/chunker/validator.py](file://markdown_chunker/chunker/validator.py)
-- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py)
-- [markdown_chunker/chunker/core.py](file://markdown_chunker/chunker/core.py)
-- [examples/basic_usage.py](file://examples/basic_usage.py)
-- [examples/api_usage.py](file://examples/api_usage.py)
-- [tests/chunker/test_performance.py](file://tests/chunker/test_performance.py)
-- [tests/chunker/test_fallback_manager_integration.py](file://tests/chunker/test_fallback_manager_integration.py)
-- [tests/chunker/test_metadata_properties.py](file://tests/chunker/test_metadata_properties.py)
-- [tests/chunker/test_overlap_properties.py](file://tests/chunker/test_overlap_properties.py)
+**Referenced Files in This Document**   
+- [orchestrator.py](file://markdown_chunker_legacy/chunker/orchestrator.py)
+- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py)
+- [metadata_enricher.py](file://markdown_chunker_legacy/chunker/components/metadata_enricher.py)
+- [performance.py](file://markdown_chunker_legacy/chunker/performance.py)
+- [fallback_manager.py](file://markdown_chunker_legacy/chunker/components/fallback_manager.py)
+- [chunker.py](file://markdown_chunker_v2/chunker.py)
+- [config.py](file://markdown_chunker_v2/config.py)
+- [types.py](file://markdown_chunker_v2/types.py)
+- [test_overlap_manager.py](file://tests/chunker/test_components/test_overlap_manager.py)
+- [test_metadata_enricher.py](file://tests/chunker/test_components/test_metadata_enricher.py)
+- [api_usage.py](file://examples/api_usage.py)
+- [basic_usage.py](file://examples/basic_usage.py)
 </cite>
 
 ## Table of Contents
-1. [Introduction](#introduction)
-2. [Fallback Mechanism](#fallback-mechanism)
-3. [Performance Monitoring System](#performance-monitoring-system)
-4. [Validation Framework](#validation-framework)
-5. [Overlap Management](#overlap-management)
-6. [Metadata Enrichment](#metadata-enrichment)
-7. [Configuration Options](#configuration-options)
-8. [Use Cases and Applications](#use-cases-and-applications)
-9. [Performance Metrics and Interpretation](#performance-metrics-and-interpretation)
-10. [Troubleshooting Guide](#troubleshooting-guide)
+1. [Overlap Management System](#overlap-management-system)
+2. [Metadata Enrichment Process](#metadata-enrichment-process)
+3. [Performance Monitoring Capabilities](#performance-monitoring-capabilities)
+4. [Fallback Mechanisms](#fallback-mechanisms)
+5. [Component Injection System](#component-injection-system)
+6. [Orchestrator Coordination](#orchestrator-coordination)
+7. [Advanced Configuration Examples](#advanced-configuration-examples)
 
-## Introduction
+## Overlap Management System
 
-The markdown chunker provides sophisticated advanced features that go far beyond basic chunking operations. These features ensure robustness, reliability, and optimal performance across diverse use cases, particularly in production environments and compliance-sensitive applications.
+The Markdown chunker implements a sophisticated overlap management system designed to ensure context continuity between adjacent chunks. This system operates through block-aware overlap boundaries that align with structural elements in the Markdown content, preserving block integrity and preventing data loss or duplication issues. The overlap manager supports two distinct handling modes: metadata mode and legacy mode. In metadata mode, context from neighboring chunks is stored in metadata fields (previous_content and next_content) while keeping the core content clean. In legacy mode, context is merged directly into the content itself, creating a continuous text flow.
 
-The advanced system encompasses four core components: a comprehensive fallback mechanism, a sophisticated performance monitoring system, a rigorous validation framework, and intelligent overlap management. Together, these features provide enterprise-grade reliability and quality assurance.
+The overlap manager calculates effective overlap size based on either a fixed character count or a percentage of average chunk size. It extracts context using block-aligned extraction, which identifies content blocks such as paragraphs, headers, lists, code blocks, and tables. When extracting suffix context (for previous_content), the manager collects blocks from the end of a chunk until reaching the target size, with special handling to ensure content blocks are prioritized over headers when possible. Similarly, when extracting prefix context (for next_content), it collects blocks from the beginning of a chunk.
 
-## Fallback Mechanism
-
-### Three-Level Fallback Chain
-
-The fallback mechanism implements a sophisticated three-level fallback chain designed to guarantee chunking success under all circumstances:
+Critical safeguards prevent unbalanced code fences by verifying that the number of opening and closing code block markers (```) is even in any extracted context. The system also enforces a 50% total overlap limit to prevent excessive duplication. If no complete blocks fit within the target overlap size, the manager returns an empty string rather than falling back to character-based extraction, preserving structural integrity.
 
 ```mermaid
 flowchart TD
-A["Primary Strategy"] --> B{"Success?"}
-B --> |Yes| C["Return Chunks"]
-B --> |No| D["Structural Fallback"]
-D --> E{"Success?"}
-E --> |Yes| F["Return Chunks"]
-E --> |No| G["Sentences Fallback"]
-G --> H{"Success?"}
-H --> |Yes| I["Return Chunks"]
-H --> |No| J["Empty Result"]
-K["Fallback Levels"] --> L["Level 0: Primary Strategy"]
-K --> M["Level 1: Structural Strategy"]
-K --> N["Level 2: Sentences Strategy"]
+A[Start Overlap Process] --> B{Chunks < 2?}
+B --> |Yes| C[Return chunks unchanged]
+B --> |No| D{Overlap enabled?}
+D --> |No| C
+D --> |Yes| E[Calculate effective overlap size]
+E --> F[Process each chunk]
+F --> G{Has previous chunk?}
+G --> |Yes| H[Extract suffix context from previous chunk]
+G --> |No| I{Has next chunk?}
+H --> I
+I --> |Yes| J[Extract prefix context from next chunk]
+I --> |No| K[Apply mode-specific logic]
+J --> K
+K --> L{Metadata mode?}
+L --> |Yes| M[Store context in metadata fields]
+L --> |No| N[Merge context into content]
+M --> O[Update chunk with context]
+N --> O
+O --> P{More chunks?}
+P --> |Yes| F
+P --> |No| Q[Return processed chunks]
 ```
 
 **Diagram sources**
-- [markdown_chunker/chunker/components/fallback_manager.py](file://markdown_chunker/chunker/components/fallback_manager.py#L60-L175)
-
-### Fallback Levels and Recovery Behavior
-
-The fallback system operates through distinct levels with specific recovery behaviors:
-
-| Level | Strategy | Purpose | Trigger Conditions |
-|-------|----------|---------|-------------------|
-| 0 | Primary Strategy | Optimal strategy selection | Strategy fails or returns empty |
-| 1 | Structural Strategy | Handle specialized content | Primary strategy fails for specialized content |
-| 2 | Sentences Strategy | Universal fallback | All other strategies fail |
-
-### Configuration Options
-
-Fallback behavior can be customized through configuration parameters:
-
-```python
-# Enable/disable fallback system
-config.enable_fallback = True
-
-# Maximum fallback level (0-4)
-config.max_fallback_level = 4
-
-# Specific fallback strategy
-config.fallback_strategy = "sentences"
-```
-
-### Recovery Behavior
-
-The fallback manager implements intelligent recovery behavior:
-
-- **Automatic Strategy Selection**: Falls back to structural strategy for specialized content
-- **Universal Sentences Fallback**: Always available as ultimate fallback
-- **Metadata Preservation**: Maintains fallback information in chunk metadata
-- **Error Propagation**: Preserves original error messages while adding fallback context
+- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py#L62-L137)
 
 **Section sources**
-- [markdown_chunker/chunker/components/fallback_manager.py](file://markdown_chunker/chunker/components/fallback_manager.py#L31-L310)
-- [markdown_chunker/chunker/orchestrator.py](file://markdown_chunker/chunker/orchestrator.py#L169-L318)
+- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py#L38-L800)
+- [test_overlap_manager.py](file://tests/chunker/test_components/test_overlap_manager.py#L11-L405)
 
-## Performance Monitoring System
+## Metadata Enrichment Process
 
-### Comprehensive Performance Tracking
+The metadata enrichment process adds valuable information to each chunk, enhancing its usability and searchability. The MetadataEnricher component systematically enriches chunks with various types of metadata, including position information, content statistics, strategy-specific details, and searchability features. Each chunk receives position metadata such as chunk_index (sequential position), total_chunks (total number of chunks), is_first_chunk, and is_last_chunk flags.
 
-The performance monitoring system provides detailed insights into chunking operations through multiple layers of measurement:
+Content statistics are calculated for each chunk, providing line_count, word_count, char_count, avg_line_length, and avg_word_length metrics. Strategy-specific enrichment adds additional metadata based on the chunk's content type: code chunks receive code_block_count, has_inline_code, has_imports, and has_comments; list chunks receive ordered_item_count, unordered_item_count, task_item_count, and has_nested_lists; table chunks receive table_row_count, table_count, and has_column_alignment; structural chunks receive header_count, min_header_level, max_header_level, and paragraph_count.
 
-```mermaid
-classDiagram
-class PerformanceMonitor {
-+Dict metrics
-+bool enabled
-+record(operation, duration, size)
-+get_stats(operation) Dict
-+get_all_stats() Dict
-+clear()
-}
-class PerformanceOptimizer {
-+StrategyCache strategy_cache
-+ChunkCache chunk_cache
-+PerformanceMonitor monitor
-+MemoryEfficientProcessor memory_processor
-+should_use_cache(size) bool
-+should_use_streaming(size) bool
-+get_optimal_chunk_size(size) int
-+clear_all_caches()
-}
-class StrategyCache {
-+Dict _strategies
-+WeakValueDictionary _weak_cache
-+get_strategy(name, factory) Any
-+clear()
-}
-class ChunkCache {
-+Dict _cache
-+List _access_order
-+int max_size
-+get(key) Any
-+put(key, value)
-+clear()
-+size() int
-}
-PerformanceOptimizer --> PerformanceMonitor
-PerformanceOptimizer --> StrategyCache
-PerformanceOptimizer --> ChunkCache
-```
-
-**Diagram sources**
-- [markdown_chunker/chunker/performance.py](file://markdown_chunker/chunker/performance.py#L13-L243)
-
-### Performance Metrics Collection
-
-The system tracks comprehensive performance metrics:
-
-| Metric Category | Measurements | Purpose |
-|----------------|--------------|---------|
-| Timing | Operation duration, average time, throughput | Performance optimization |
-| Memory | Cache sizes, memory usage estimates | Resource management |
-| Throughput | Characters processed per second | Efficiency measurement |
-| Cache Performance | Hit rates, eviction patterns | Optimization guidance |
-
-### Memory-Efficient Processing
-
-The system includes intelligent memory management:
-
-- **Streaming for Large Documents**: Automatic streaming for documents >1MB
-- **LRU Cache Management**: Intelligent cache eviction for chunk results
-- **Weak References**: Memory-efficient strategy caching
-- **Size-Based Optimization**: Dynamic chunk sizing based on content characteristics
-
-### Performance Optimization Features
-
-- **Lazy Loading**: Strategies loaded only when needed
-- **Result Caching**: Prevents redundant processing of identical content
-- **Adaptive Chunk Sizing**: Optimizes chunk size based on content type
-- **Parallel Processing Support**: Thread-safe operations for concurrent access
-
-**Section sources**
-- [markdown_chunker/chunker/performance.py](file://markdown_chunker/chunker/performance.py#L32-L243)
-- [markdown_chunker/chunker/core.py](file://markdown_chunker/chunker/core.py#L661-L710)
-
-## Validation Framework
-
-### Data Completeness Validation
-
-The validation framework ensures no data loss during chunking through comprehensive validation:
-
-```mermaid
-flowchart TD
-A["Input Text"] --> B["Character Count Analysis"]
-B --> C["Output Character Count"]
-C --> D{"Within Tolerance?"}
-D --> |Yes| E["Validation Passed"]
-D --> |No| F["Find Missing Blocks"]
-F --> G["Line Coverage Analysis"]
-G --> H{"Large Gaps Detected?"}
-H --> |Yes| I["Validation Failed"]
-H --> |No| J["Partial Validation"]
-K["Validation Types"] --> L["Character Completeness"]
-K --> M["Line Coverage"]
-K --> N["Content Integrity"]
-```
-
-**Diagram sources**
-- [markdown_chunker/chunker/validator.py](file://markdown_chunker/chunker/validator.py#L71-L151)
-
-### Validation Criteria
-
-The validation system checks multiple criteria:
-
-| Validation Type | Criteria | Tolerance | Purpose |
-|----------------|----------|-----------|---------|
-| Character Completeness | Total character count match | ±5% | Prevent data loss |
-| Line Coverage | Continuous line coverage | Gap >10 lines | Maintain document flow |
-| Content Integrity | Missing content blocks | N/A | Identify gaps |
-| Structural Preservation | Element preservation | N/A | Maintain semantics |
-
-### Quality Assurance Features
-
-- **Whitespace Normalization**: Accounts for formatting differences
-- **Missing Content Detection**: Identifies specific missing blocks
-- **Gap Analysis**: Detects significant coverage gaps
-- **Automated Reporting**: Comprehensive validation summaries
-
-### Validation Integration
-
-The validation framework integrates seamlessly with the chunking pipeline:
-
-- **Automatic Validation**: Runs after chunking completion
-- **Graceful Degradation**: Continues processing even with validation warnings
-- **Error Reporting**: Detailed error messages with actionable insights
-- **Performance Impact**: Minimal overhead (<5%)
-
-**Section sources**
-- [markdown_chunker/chunker/validator.py](file://markdown_chunker/chunker/validator.py#L53-L354)
-- [markdown_chunker/chunker/core.py](file://markdown_chunker/chunker/core.py#L280-L327)
-
-## Overlap Management
-
-### Intelligent Overlap Creation
-
-The overlap management system creates meaningful connections between adjacent chunks while preserving content integrity:
-
-```mermaid
-sequenceDiagram
-participant CM as Chunk Manager
-participant OM as Overlap Manager
-participant SM as Sentence Manager
-participant FM as Fence Manager
-CM->>OM : apply_overlap(chunks)
-OM->>OM : check overlap enabled
-OM->>FM : check_unbalanced_fences(content)
-FM-->>OM : fence_status
-OM->>SM : extract_overlap(content, size)
-SM->>SM : find_sentence_boundaries
-SM-->>OM : overlap_text
-OM->>OM : validate_overlap_size
-OM->>CM : overlapped_chunks
-```
-
-**Diagram sources**
-- [markdown_chunker/chunker/components/overlap_manager.py](file://markdown_chunker/chunker/components/overlap_manager.py#L37-L80)
-
-### Overlap Configuration
-
-Overlap behavior can be precisely controlled:
-
-```python
-# Enable/disable overlap
-config.enable_overlap = True
-
-# Fixed-size overlap
-config.overlap_size = 200
-
-# Percentage-based overlap
-config.overlap_percentage = 0.1  # 10%
-
-# Maximum overlap constraints
-max_overlap = int(len(content) * 0.40)  # 40% of source chunk
-```
-
-### Overlap Preservation Techniques
-
-The system employs sophisticated techniques to maintain content integrity:
-
-- **Sentence Boundary Preservation**: Ensures overlaps end at natural sentence breaks
-- **Code Block Integrity**: Prevents partial code blocks in overlaps
-- **Size Constraints**: Enforces maximum overlap ratios to prevent dominance
-- **Context Preservation**: Maintains semantic continuity between chunks
-
-### Overlap Metadata
-
-Each overlapped chunk receives comprehensive metadata:
-
-| Metadata Field | Purpose | Example Value |
-|---------------|---------|---------------|
-| `has_overlap` | Indicates overlap presence | `true` |
-| `overlap_size` | Actual overlap size | `150` |
-| `overlap_type` | Overlap direction | `"prefix"` |
-| `fallback_level` | Fallback level used | `1` |
-
-**Section sources**
-- [markdown_chunker/chunker/components/overlap_manager.py](file://markdown_chunker/chunker/components/overlap_manager.py#L13-L447)
-- [markdown_chunker/chunker/core.py](file://markdown_chunker/chunker/core.py#L280-L286)
-
-## Metadata Enrichment
-
-### Comprehensive Metadata Enhancement
-
-The metadata enrichment system adds rich contextual information to chunks:
+Searchability metadata improves chunk discoverability by adding a preview field (first sentence or line), and flags for content features like has_urls, has_emails, has_numbers, has_bold, has_italic, and has_inline_code. The enricher also normalizes metadata across chunks, ensuring consistency in fields like header_path, section_id, and overlap_size. Header paths are built hierarchically based on header levels, while section IDs are generated through consistent slugification of header text to ensure identical headers produce identical IDs.
 
 ```mermaid
 classDiagram
 class MetadataEnricher {
-+ChunkConfig config
-+enrich_chunks(chunks, doc_id, fallback_info) Chunk[]
-+_enrich_single_chunk(chunk, position, total) Chunk
-+_calculate_content_statistics(content) Dict
-+_enrich_code_metadata(chunk) Dict
-+_enrich_list_metadata(chunk) Dict
-+_enrich_table_metadata(chunk) Dict
-+_enrich_structural_metadata(chunk) Dict
-+_add_searchability_metadata(content) Dict
-+validate_metadata(chunks) Dict
-+get_metadata_summary(chunks) Dict
++enrich_chunks(chunks, document_id, fallback_info)
+-_enrich_single_chunk(chunk, position, total_chunks, document_id, fallback_info)
+-_calculate_content_statistics(content)
+-_enrich_code_metadata(chunk)
+-_enrich_list_metadata(chunk)
+-_enrich_table_metadata(chunk)
+-_enrich_structural_metadata(chunk)
+-_add_searchability_metadata(content)
+-fix_header_path(chunk)
+-fix_section_id(chunk)
+-fix_overlap_metadata(chunk)
+-fix_section_paths(chunk)
 }
 class Chunk {
-+str content
-+int start_line
-+int end_line
-+Dict metadata
-+add_metadata(key, value)
-+get_metadata(key, default)
++content : str
++start_line : int
++end_line : int
++metadata : Dict[str, Any]
++size : int
++line_count : int
++is_oversize : bool
++strategy : str
 }
 MetadataEnricher --> Chunk : enriches
 ```
 
 **Diagram sources**
-- [markdown_chunker/chunker/components/metadata_enricher.py](file://markdown_chunker/chunker/components/metadata_enricher.py#L13-L414)
-
-### Metadata Categories
-
-The system enriches chunks with multiple categories of metadata:
-
-| Category | Fields | Purpose |
-|----------|--------|---------|
-| Positional | `chunk_index`, `total_chunks`, `is_first_chunk`, `is_last_chunk` | Chunk positioning |
-| Content | `line_count`, `word_count`, `char_count`, `avg_line_length` | Content analysis |
-| Strategy-Specific | `strategy`, `content_type`, `language`, `code_block_count` | Strategy identification |
-| Searchability | `preview`, `has_urls`, `has_emails`, `has_numbers` | Search optimization |
-| Quality | `execution_fallback_used`, `execution_fallback_level` | Quality tracking |
-
-### Content-Type Specific Enrichment
-
-Different content types receive specialized metadata:
-
-#### Code Content
-- **Code Block Detection**: Counts and identifies code blocks
-- **Language Identification**: Detects programming languages
-- **Import Detection**: Identifies import statements and includes
-- **Comment Recognition**: Detects comment patterns
-
-#### List Content
-- **Item Type Classification**: Ordered vs unordered lists
-- **Nested List Detection**: Identifies hierarchical structure
-- **Task List Recognition**: Detects checkbox-style lists
-
-#### Table Content
-- **Row and Column Count**: Structural analysis
-- **Alignment Detection**: Table formatting recognition
-- **Separator Analysis**: Table boundary identification
-
-### Metadata Validation
-
-The system includes comprehensive metadata validation:
-
-- **Required Field Verification**: Ensures essential metadata exists
-- **Consistency Checking**: Validates relationships between metadata fields
-- **Type Safety**: Ensures metadata values have appropriate types
-- **Cross-Chunk Validation**: Verifies consistency across chunk collections
+- [metadata_enricher.py](file://markdown_chunker_legacy/chunker/components/metadata_enricher.py#L13-L713)
 
 **Section sources**
-- [markdown_chunker/chunker/components/metadata_enricher.py](file://markdown_chunker/chunker/components/metadata_enricher.py#L34-L414)
-- [markdown_chunker/chunker/core.py](file://markdown_chunker/chunker/core.py#L287-L299)
+- [metadata_enricher.py](file://markdown_chunker_legacy/chunker/components/metadata_enricher.py#L13-L713)
+- [test_metadata_enricher.py](file://tests/chunker/test_components/test_metadata_enricher.py#L11-L372)
 
-## Configuration Options
+## Performance Monitoring Capabilities
 
-### Advanced Configuration Parameters
+The Markdown chunker includes comprehensive performance monitoring capabilities that track and analyze processing metrics throughout the chunking pipeline. The PerformanceMonitor class records execution duration, input size, and timestamps for various operations, enabling detailed analysis of system performance. Metrics are collected for key operations such as strategy selection, chunk application, overlap processing, and validation.
 
-The chunker provides extensive configuration options for fine-tuning behavior:
+The monitoring system provides statistical analysis through the get_stats method, which calculates count, total_time, avg_time, min_time, max_time, avg_size, and throughput for each operation. These metrics help identify performance bottlenecks and optimize configuration parameters. The timed decorator automatically records execution time for decorated functions, particularly those in classes that have a _performance_monitor attribute, ensuring comprehensive coverage of critical operations.
 
-```python
-# Core Size Parameters
-config.max_chunk_size = 4096          # Maximum chunk size
-config.min_chunk_size = 512           # Minimum chunk size
-config.target_chunk_size = 2048       # Target chunk size
+Caching mechanisms enhance performance by storing frequently used results. The StrategyCache maintains instances of strategy classes to avoid repeated instantiation, while the ChunkCache stores complete chunking results to prevent reprocessing identical content. The cached_sentence_split function uses LRU caching for frequently encountered text segments, but limits caching to small to medium texts to prevent memory bloat.
 
-# Overlap Configuration
-config.enable_overlap = True          # Enable overlap
-config.overlap_size = 200             # Fixed overlap size
-config.overlap_percentage = 0.1       # Percentage overlap
+The PerformanceOptimizer coordinates these optimization techniques, determining when to use caching based on content size (enabled for documents under 50KB) and when to use streaming processing for very large documents (over 1MB). It also provides methods to estimate memory usage and determine optimal chunk sizes based on document characteristics.
 
-# Strategy Selection Thresholds
-config.code_ratio_threshold = 0.3     # Code content threshold
-config.list_count_threshold = 5       # List count threshold
-config.table_count_threshold = 3      # Table count threshold
-config.header_count_threshold = 3     # Header count threshold
-
-# Behavior Flags
-config.allow_oversize = True          # Allow oversized chunks
-config.preserve_code_blocks = True    # Preserve code integrity
-config.preserve_tables = True         # Preserve table structure
-config.preserve_list_hierarchy = True # Maintain list structure
-
-# Performance Settings
-config.enable_streaming = False       # Enable streaming
-config.streaming_threshold = 10485760 # 10MB threshold
-
-# Fallback Configuration
-config.enable_fallback = True         # Enable fallback system
-config.max_fallback_level = 4         # Maximum fallback depth
+```mermaid
+sequenceDiagram
+participant User as "User Application"
+participant Chunker as "MarkdownChunker"
+participant Monitor as "PerformanceMonitor"
+participant Cache as "ChunkCache"
+User->>Chunker : chunk(md_text)
+Chunker->>Monitor : record("chunking_start", timestamp)
+Chunker->>Cache : get(cache_key)
+Cache-->>Chunker : None (cache miss)
+Chunker->>Monitor : record("parse", duration)
+Chunker->>Monitor : record("strategy_selection", duration)
+Chunker->>Monitor : record("apply_strategy", duration)
+Chunker->>Monitor : record("overlap", duration)
+Chunker->>Monitor : record("validation", duration)
+Chunker->>Cache : put(cache_key, result)
+Chunker->>Monitor : record("chunking_end", duration)
+Monitor-->>Chunker : metrics collected
+Chunker-->>User : chunks with metadata
 ```
 
-### Configuration Profiles
-
-Predefined configuration profiles optimize behavior for specific use cases:
-
-| Profile | Use Case | Key Characteristics |
-|---------|----------|-------------------|
-| `for_code_heavy()` | Code documentation | Larger chunks, aggressive code detection |
-| `for_structured_docs()` | Technical documentation | Medium chunks, hierarchy preservation |
-| `for_dify_rag()` | RAG applications | Optimized for retrieval contexts |
-| `for_chat_context()` | Chat/LLM contexts | Shorter chunks with overlap |
-
-### Dynamic Configuration
-
-Configuration can be adjusted dynamically based on content characteristics:
-
-- **Content-Aware Sizing**: Adjusts chunk sizes based on content type
-- **Performance-Based Tuning**: Optimizes settings based on performance metrics
-- **Quality-Driven Adaptation**: Modifies behavior based on validation results
+**Diagram sources**
+- [performance.py](file://markdown_chunker_legacy/chunker/performance.py#L32-L243)
 
 **Section sources**
-- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py#L497-L800)
-- [markdown_chunker/chunker/core.py](file://markdown_chunker/chunker/core.py#L119-L150)
+- [performance.py](file://markdown_chunker_legacy/chunker/performance.py#L1-L243)
+- [chunker.py](file://markdown_chunker_v2/chunker.py#L1-L357)
 
-## Use Cases and Applications
+## Fallback Mechanisms
 
-### Production Deployments
+The Markdown chunker implements a robust three-level fallback chain to ensure processing success even when encountering malformed or complex Markdown. The FallbackManager orchestrates this error recovery system, which guarantees that chunking always succeeds and never loses content. The fallback chain consists of three levels: primary strategy (selected by strategy selector), structural fallback (for specialized strategies that fail), and sentences fallback (universal fallback that always works).
 
-The advanced features excel in production environments:
+When the primary strategy fails or returns no chunks, the system automatically progresses to the next level in the chain. The execute_with_fallback method attempts the primary strategy first, logging success or capturing errors and warnings. If the primary strategy fails, it tries the structural fallback unless the primary was already structural. If the structural fallback also fails, it proceeds to the sentences fallback, which uses a reliable sentence-based chunking approach that can handle virtually any Markdown content.
 
-#### Enterprise Document Processing
-- **Reliability**: Fallback mechanisms ensure processing success
-- **Performance**: Comprehensive monitoring tracks system health
-- **Quality**: Validation frameworks prevent data loss
-- **Scalability**: Efficient caching and streaming handle large volumes
+Each fallback level adds metadata to indicate the fallback level used and the reason for fallback. The system preserves all accumulated errors and warnings throughout the fallback process, providing comprehensive diagnostic information. Even if all strategies fail, the system returns an error result with detailed information rather than raising an exception, ensuring graceful degradation.
 
-#### Compliance-Sensitive Applications
-- **Audit Trails**: Complete metadata tracking for regulatory compliance
-- **Data Integrity**: Rigorous validation prevents content corruption
-- **Recovery**: Fallback systems ensure uninterrupted service
-- **Monitoring**: Detailed performance metrics support compliance reporting
+The fallback manager includes validation methods to verify the fallback chain configuration and statistics methods to monitor fallback usage. This comprehensive approach ensures robustness when processing edge cases, malformed Markdown, or documents with complex structures that challenge the primary chunking strategies.
 
-### Real-World Scenarios
-
-#### API Documentation Processing
-```python
-# Configuration optimized for code-heavy documentation
-config = ChunkConfig.for_code_heavy()
-config.overlap_size = 300  # Larger overlap for code context
-config.code_ratio_threshold = 0.5  # Aggressive code detection
+```mermaid
+flowchart TD
+A[Primary Strategy] --> B{Success?}
+B --> |Yes| C[Return chunks]
+B --> |No| D[Structural Fallback]
+D --> E{Success?}
+E --> |Yes| F[Return chunks with fallback metadata]
+E --> |No| G[Sentences Fallback]
+G --> H{Success?}
+H --> |Yes| I[Return chunks with fallback metadata]
+H --> |No| J[Return error result with all errors]
 ```
 
-#### Technical Manual Processing
-```python
-# Structured documentation with hierarchy preservation
-config = ChunkConfig.for_structured_docs()
-config.preserve_list_hierarchy = True
-config.header_count_threshold = 2  # More aggressive structural detection
-```
-
-#### RAG System Integration
-```python
-# Retrieval-Augmented Generation optimization
-config = ChunkConfig.for_dify_rag()
-config.enable_overlap = True
-config.overlap_size = 250  # Balanced overlap for context
-```
-
-### Performance-Critical Applications
-
-#### High-Throughput Processing
-- **Caching**: Intelligent result caching reduces processing time
-- **Streaming**: Memory-efficient processing for large documents
-- **Parallelization**: Thread-safe operations support concurrent processing
-
-#### Low-Latency Requirements
-- **Lazy Loading**: Strategies loaded only when needed
-- **Optimized Paths**: Fast paths for common content types
-- **Minimal Overhead**: Lightweight validation and monitoring
+**Diagram sources**
+- [fallback_manager.py](file://markdown_chunker_legacy/chunker/components/fallback_manager.py#L31-L312)
 
 **Section sources**
-- [examples/basic_usage.py](file://examples/basic_usage.py#L168-L220)
-- [examples/api_usage.py](file://examples/api_usage.py#L210-L267)
+- [fallback_manager.py](file://markdown_chunker_legacy/chunker/components/fallback_manager.py#L31-L312)
+- [orchestrator.py](file://markdown_chunker_legacy/chunker/orchestrator.py#L37-L666)
 
-## Performance Metrics and Interpretation
+## Component Injection System
 
-### Key Performance Indicators
+The component injection system in the Markdown chunker allows for customization of the chunking pipeline through dependency injection and modular design. The v2 implementation simplifies the architecture by consolidating types and reducing configuration parameters from 32 to 8 core parameters, making the system more accessible while maintaining flexibility. The ChunkConfig class serves as the central configuration point, with sensible defaults and validation to ensure configuration integrity.
 
-The system provides comprehensive performance metrics for monitoring and optimization:
+The system supports component injection through constructor parameters, allowing users to inject custom implementations of key components. The MarkdownChunker class accepts a configuration object and internally manages parser and strategy selector instances, but the architecture allows for replacing these components. The simplified pipeline consists of discrete steps: parse, select strategy, apply strategy, merge small chunks, apply overlap, add metadata, and validate.
 
-#### Processing Metrics
-- **Average Processing Time**: Time per chunking operation
-- **Throughput**: Chunks processed per second
-- **Memory Usage**: Peak memory consumption during processing
-- **Cache Hit Rate**: Effectiveness of caching mechanisms
+Configuration profiles provide predefined settings for common use cases, such as code-heavy documents, structured documents, and minimal configurations. These profiles can be accessed through class methods like for_code_heavy, for_structural, and minimal, making it easy to apply optimized settings without manual configuration. The from_legacy class method provides backward compatibility by mapping deprecated parameter names to current ones with appropriate deprecation warnings.
 
-#### Quality Metrics
-- **Fallback Usage Rate**: Frequency of fallback activation
-- **Validation Success Rate**: Percentage of successful validations
-- **Data Completeness**: Character-level accuracy of chunking
-- **Error Rate**: Frequency of processing errors
+The component injection system enables customization at multiple levels: configuration parameters control behavior, strategy selection can be overridden, and the overall pipeline can be extended through the addition of new strategies or processing steps. This modular approach allows developers to tailor the chunker to specific requirements while maintaining the core reliability and performance characteristics.
 
-### Performance Monitoring Integration
-
-```python
-# Enable performance monitoring
-chunker = MarkdownChunker(enable_performance_monitoring=True)
-
-# Process documents
-for doc in documents:
-    chunker.chunk(doc)
-
-# Retrieve performance statistics
-stats = chunker.get_performance_stats()
-
-# Interpret results
-print(f"Average chunk time: {stats['chunk']['avg_time']:.3f}s")
-print(f"Total operations: {stats['chunk']['count']}")
-print(f"Cache hit rate: {stats['cache']['hit_rate']:.1%}")
+```mermaid
+classDiagram
+class MarkdownChunker {
+-config : ChunkConfig
+-_parser : Parser
+-_selector : StrategySelector
++chunk(md_text)
++chunk_with_metrics(md_text)
++chunk_with_analysis(md_text)
+-_apply_overlap(chunks)
+-_validate(chunks, original)
+-_merge_small_chunks(chunks)
+-_add_metadata(chunks, strategy_name)
+}
+class ChunkConfig {
++max_chunk_size : int
++min_chunk_size : int
++overlap_size : int
++preserve_atomic_blocks : bool
++extract_preamble : bool
++code_threshold : float
++structure_threshold : int
++strategy_override : Optional[str]
++enable_overlap : bool
++from_legacy(**kwargs)
++for_code_heavy()
++for_structural()
++minimal()
+}
+class Parser {
++analyze(md_text)
+}
+class StrategySelector {
++select(analysis, config)
+}
+MarkdownChunker --> ChunkConfig : uses
+MarkdownChunker --> Parser : uses
+MarkdownChunker --> StrategySelector : uses
 ```
 
-### Performance Optimization Guidelines
-
-#### Memory Optimization
-- **Cache Sizing**: Adjust cache sizes based on available memory
-- **Streaming Threshold**: Tune streaming threshold for optimal performance
-- **Chunk Size**: Balance chunk size for memory usage and processing efficiency
-
-#### Processing Optimization
-- **Strategy Selection**: Choose appropriate strategies for content types
-- **Fallback Configuration**: Tune fallback parameters for specific use cases
-- **Validation Tolerance**: Adjust validation tolerance based on requirements
-
-#### Monitoring Best Practices
-- **Baseline Establishment**: Establish performance baselines for comparison
-- **Trend Analysis**: Monitor performance trends over time
-- **Alert Configuration**: Set up alerts for performance degradation
+**Diagram sources**
+- [chunker.py](file://markdown_chunker_v2/chunker.py#L21-L357)
+- [config.py](file://markdown_chunker_v2/config.py#L12-L170)
 
 **Section sources**
-- [tests/chunker/test_performance.py](file://tests/chunker/test_performance.py#L70-L200)
-- [markdown_chunker/chunker/core.py](file://markdown_chunker/chunker/core.py#L661-L710)
+- [chunker.py](file://markdown_chunker_v2/chunker.py#L1-L357)
+- [config.py](file://markdown_chunker_v2/config.py#L1-L170)
+- [types.py](file://markdown_chunker_v2/types.py#L1-L272)
 
-## Troubleshooting Guide
+## Orchestrator Coordination
 
-### Common Issues and Solutions
+The ChunkingOrchestrator coordinates the entire processing flow, managing the sequence of operations and handling error conditions gracefully. It serves as the central coordinator that integrates stage 1 analysis, strategy selection, chunking execution, and post-processing steps. The orchestrator follows a four-phase process: running stage 1 content analysis, selecting the optimal strategy, applying the strategy with fallback support, and coordinating error handling.
 
-#### Fallback Activation
-**Symptom**: Fallback used unexpectedly
-**Causes**: 
-- Primary strategy failure
-- Content complexity beyond strategy capabilities
-- Configuration mismatches
+During initialization, the orchestrator sets up the chunking configuration, strategy selector, fallback manager, and parser interface. It also initializes block-based post-processing components when available, including the block_overlap_manager, header_path_validator, and chunk_size_normalizer. The chunk_with_strategy method implements the main processing flow, beginning with stage 1 analysis to understand the document's content type, complexity, and structural elements.
 
-**Solutions**:
-- Review strategy selection criteria
-- Adjust threshold parameters
-- Enable specific strategies for content type
+Strategy selection occurs through either automatic selection based on content analysis or manual override. The orchestrator uses the fallback manager to execute strategies, ensuring that if a strategy fails, the system automatically falls back to alternative approaches. After chunking, the orchestrator applies block-based post-processing to fix various issues, including block-based overlap (MC-003), header path validation (MC-006), and chunk size normalization (MC-004).
 
-#### Performance Degradation
-**Symptom**: Slow chunking performance
-**Causes**:
-- Insufficient cache size
-- Large document processing without streaming
-- Memory pressure
+The orchestrator includes comprehensive error handling, validating content completeness to detect significant content loss, checking for excessive duplication, and validating overlap accuracy. It ensures all oversized chunks are properly flagged with reasons such as code_block_integrity or table_integrity. Finally, it sorts chunks by document position and updates processing time metrics before returning the results.
 
-**Solutions**:
-- Increase cache sizes
-- Enable streaming for large documents
-- Optimize memory configuration
-
-#### Validation Failures
-**Symptom**: Validation errors despite successful chunking
-**Causes**:
-- Whitespace normalization differences
-- Content preprocessing variations
-- Edge case handling
-
-**Solutions**:
-- Adjust validation tolerance
-- Review content preprocessing steps
-- Implement custom validation rules
-
-### Diagnostic Tools
-
-#### Performance Analysis
-```python
-# Enable detailed monitoring
-chunker = MarkdownChunker(enable_performance_monitoring=True)
-
-# Process with diagnostics
-result = chunker.chunk(document, include_analysis=True)
-
-# Analyze performance
-stats = chunker.get_performance_stats()
-print(f"Strategy selection time: {stats['strategy_selection']['avg_time']:.3f}s")
-print(f"Overlap processing time: {stats['overlap']['avg_time']:.3f}s")
+```mermaid
+sequenceDiagram
+participant User as "User Application"
+participant Orchestrator as "ChunkingOrchestrator"
+participant Parser as "Parser"
+participant Selector as "StrategySelector"
+participant Fallback as "FallbackManager"
+participant Validator as "Validator"
+User->>Orchestrator : chunk_with_strategy(md_text)
+Orchestrator->>Orchestrator : Log chunking start
+Orchestrator->>Parser : process_document(md_text)
+Parser-->>Orchestrator : Stage1Results
+Orchestrator->>Selector : select_strategy(analysis, config)
+Selector-->>Orchestrator : Selected strategy
+Orchestrator->>Fallback : execute_with_fallback()
+Fallback->>Strategy : apply(md_text, stage1_results, config)
+Strategy-->>Fallback : Chunks or error
+Fallback-->>Orchestrator : ChunkingResult
+Orchestrator->>Orchestrator : Apply block-based post-processing
+Orchestrator->>Validator : validate_content_completeness()
+Validator-->>Orchestrator : Validation results
+Orchestrator->>Orchestrator : Sort chunks by position
+Orchestrator->>Orchestrator : Update processing time
+Orchestrator->>Orchestrator : Log completion
+Orchestrator-->>User : ChunkingResult
 ```
 
-#### Fallback Diagnostics
-```python
-# Check fallback usage
-if result.fallback_used:
-    print(f"Fallback activated at level {result.fallback_level}")
-    print(f"Primary strategy: {result.strategy_used}")
-    print(f"Alternative strategies tried: {result.errors}")
-```
-
-#### Metadata Validation
-```python
-# Validate metadata completeness
-enricher = MetadataEnricher(config)
-validation_result = enricher.validate_metadata(chunks)
-if not validation_result['valid']:
-    print(f"Issues found: {validation_result['issue_count']}")
-    for issue in validation_result['issues']:
-        print(f"- {issue}")
-```
-
-### Best Practices
-
-#### Configuration Management
-- **Environment-Specific Configs**: Use different configurations for dev/prod
-- **Gradual Rollout**: Test configuration changes incrementally
-- **Monitoring Integration**: Monitor configuration impact on performance
-
-#### Error Handling
-- **Graceful Degradation**: Design systems to handle fallback activation
-- **Retry Logic**: Implement retry mechanisms for transient failures
-- **Logging**: Maintain comprehensive logs for troubleshooting
-
-#### Performance Optimization
-- **Profiling**: Regular performance profiling identifies bottlenecks
-- **Caching**: Leverage caching for repeated content processing
-- **Resource Management**: Monitor and optimize resource usage
+**Diagram sources**
+- [orchestrator.py](file://markdown_chunker_legacy/chunker/orchestrator.py#L44-L666)
 
 **Section sources**
-- [tests/chunker/test_fallback_manager_integration.py](file://tests/chunker/test_fallback_manager_integration.py#L36-L184)
-- [tests/chunker/test_metadata_properties.py](file://tests/chunker/test_metadata_properties.py#L40-L200)
-- [tests/chunker/test_overlap_properties.py](file://tests/chunker/test_overlap_properties.py#L60-L200)
+- [orchestrator.py](file://markdown_chunker_legacy/chunker/orchestrator.py#L44-L666)
+
+## Advanced Configuration Examples
+
+The Markdown chunker supports various advanced configurations that leverage its features for specific use cases. Configuration profiles provide optimized settings for different document types: code-heavy documents benefit from larger chunk sizes and lower code thresholds, structured documents use moderate overlap to maintain section context, and chat context configurations prioritize smaller chunks with significant overlap for conversational AI applications.
+
+For API documentation, a configuration with a max_chunk_size of 3072, min_chunk_size of 256, and a code_ratio_threshold of 0.6 ensures that code examples remain intact while maintaining reasonable chunk sizes. Code documentation profiles use even larger chunk sizes (up to 8192 characters) with minimal overlap to preserve code block integrity. Chat context configurations use smaller max_chunk_size (1536) with substantial overlap (200 characters) to maintain conversational context across chunks.
+
+Custom configurations can combine multiple features: enabling overlap with block-based splitting preserves structural integrity while maintaining context continuity; using the structural strategy with header path validation ensures accurate section hierarchy; and applying metadata enrichment with searchability features enhances retrieval quality. The system also supports batch processing of multiple documents with consistent configuration, streaming responses for large documents, and simplified APIs for easy integration.
+
+The examples demonstrate how to use the API with custom configurations, handle errors gracefully, process documents in batch, and simulate streaming responses. These patterns show how to leverage the advanced features for real-world applications, from documentation processing to conversational AI systems.
+
+**Section sources**
+- [api_usage.py](file://examples/api_usage.py#L1-L356)
+- [basic_usage.py](file://examples/basic_usage.py#L1-L364)
+- [config.py](file://markdown_chunker_v2/config.py#L137-L169)

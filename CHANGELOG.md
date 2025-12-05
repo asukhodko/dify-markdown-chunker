@@ -2,6 +2,34 @@
 
 All notable changes to the Advanced Markdown Chunker plugin will be documented in this file.
 
+## [2.0.2-a0] - 2024-12-05
+
+### Major Redesign
+This release is a complete architectural redesign focused on simplification and reliability.
+
+### Changed
+- **Architecture**: Renamed module from `markdown_chunker` to `markdown_chunker_v2`
+- **Strategies**: Reduced from 6 strategies to 3 (code_aware, structural, fallback)
+- **Configuration**: Simplified from 32 parameters to 8 core parameters
+- **Types**: Consolidated all types into single `types.py` module
+- **Tests**: Focused test suite reduced from 1366+ to 445 property-based tests
+
+### Removed
+- Legacy strategies: Mixed, List, Table, Sentences (functionality merged into remaining 3)
+- Removed 24 configuration parameters that were rarely used or always enabled
+- Removed legacy test files for removed functionality
+- Removed complex fallback hierarchy (now automatic)
+
+### Added
+- `ChunkConfig.from_dict()` and `to_dict()` for serialization
+- `ChunkConfig.from_legacy()` for migration from old parameters
+- Simplified configuration profiles: `default()`, `for_code_heavy()`, `for_structured()`, `minimal()`
+
+### Migration
+See [docs/MIGRATION.md](docs/MIGRATION.md) for migration guide from v1.x.
+
+---
+
 ## [2.0.0-a3] - 2024-12-03
 
 ### Added

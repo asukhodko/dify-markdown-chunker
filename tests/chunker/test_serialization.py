@@ -1,8 +1,12 @@
-"""Tests for serialization functionality."""
+"""Tests for serialization functionality.
+
+Migration note: Updated for v2 API (December 2025)
+"""
 
 import json
 
-from markdown_chunker.chunker.types import Chunk, ChunkConfig, ChunkingResult
+from markdown_chunker_v2 import Chunk, ChunkConfig
+from markdown_chunker_v2.types import ChunkingResult
 
 
 class TestChunkSerialization:
@@ -24,7 +28,6 @@ class TestChunkSerialization:
         assert data["end_line"] == 3
         assert data["size"] == len(chunk.content)
         assert data["line_count"] == 3  # end_line - start_line + 1
-        assert data["content_type"] == chunk.content_type
         assert "metadata" in data
         assert data["metadata"]["strategy"] == "structural"
 
@@ -96,8 +99,7 @@ class TestChunkingResultSerialization:
         assert data["strategy_used"] == "mixed"
         assert data["processing_time"] == 0.5
         assert len(data["chunks"]) == 2
-        assert "statistics" in data
-        assert data["statistics"]["total_chunks"] == 2
+        assert data["chunk_count"] == 2
 
     def test_result_from_dict_basic(self):
         """Test basic result from_dict creation."""
@@ -120,10 +122,8 @@ class TestChunkingResultSerialization:
             chunks=[Chunk(content="test", start_line=1, end_line=1)],
             strategy_used="code",
             processing_time=0.25,
-            fallback_used=True,
-            fallback_level=2,
-            errors=["error1"],
-            warnings=["warning1"],
+            total_chars=100,
+            total_lines=10,
         )
 
         data = original.to_dict()
@@ -131,10 +131,8 @@ class TestChunkingResultSerialization:
 
         assert restored.strategy_used == original.strategy_used
         assert restored.processing_time == original.processing_time
-        assert restored.fallback_used == original.fallback_used
-        assert restored.fallback_level == original.fallback_level
-        assert restored.errors == original.errors
-        assert restored.warnings == original.warnings
+        assert restored.total_chars == original.total_chars
+        assert restored.total_lines == original.total_lines
 
     def test_result_json_serialization(self):
         """Test result can be serialized to JSON."""
@@ -185,8 +183,6 @@ class TestChunkConfigSerialization:
             max_chunk_size=3000,
             min_chunk_size=300,
             overlap_size=150,
-            enable_overlap=False,
-            code_ratio_threshold=0.8,
         )
 
         data = original.to_dict()
@@ -196,7 +192,6 @@ class TestChunkConfigSerialization:
         assert restored.min_chunk_size == original.min_chunk_size
         assert restored.overlap_size == original.overlap_size
         assert restored.enable_overlap == original.enable_overlap
-        assert restored.code_ratio_threshold == original.code_ratio_threshold
 
     def test_config_json_serialization(self):
         """Test config can be serialized to JSON."""

@@ -1,44 +1,52 @@
 # ChunkConfig API
 
-Complete API documentation for the ChunkConfig class.
+Complete API documentation for the ChunkConfig class (v2.0).
 
 ## Overview
 
-`ChunkConfig` controls chunking behavior and strategy selection.
+`ChunkConfig` controls chunking behavior and strategy selection. In v2.0, configuration was simplified from 32 parameters to 8 core parameters.
 
 ## Class: ChunkConfig
 
 ### Import
 
 ```python
-from markdown_chunker import ChunkConfig
+from markdown_chunker_v2 import ChunkConfig
 ```
 
 ### Constructor
 
 ```python
 ChunkConfig(
-    max_chunk_size: int = 2048,
-    min_chunk_size: int = 256,
-    enable_overlap: bool = False,
-    overlap_size: int = 100,
-    force_strategy: Optional[str] = None
+    max_chunk_size: int = 4096,
+    min_chunk_size: int = 512,
+    overlap_size: int = 200,
+    preserve_atomic_blocks: bool = True,
+    extract_preamble: bool = True,
+    code_threshold: float = 0.3,
+    structure_threshold: int = 3,
+    strategy_override: Optional[str] = None
 )
 ```
 
 **Parameters:**
-- `max_chunk_size` (int): Maximum chunk size in characters. Default: 2048
-- `min_chunk_size` (int): Minimum chunk size in characters. Default: 256
-- `enable_overlap` (bool): Enable chunk overlap. Default: False
-- `overlap_size` (int): Overlap size in characters. Default: 100
-- `force_strategy` (str, optional): Force specific strategy. Options: "code", "mixed", "list", "table", "structural", "sentences", or None for auto
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `max_chunk_size` | int | 4096 | Maximum chunk size in characters |
+| `min_chunk_size` | int | 512 | Minimum chunk size in characters |
+| `overlap_size` | int | 200 | Overlap size (0 = disabled) |
+| `preserve_atomic_blocks` | bool | True | Keep code blocks and tables intact |
+| `extract_preamble` | bool | True | Extract content before first header |
+| `code_threshold` | float | 0.3 | Code ratio threshold for CodeAwareStrategy |
+| `structure_threshold` | int | 3 | Min headers for StructuralStrategy |
+| `strategy_override` | str | None | Force strategy: "code_aware", "structural", "fallback" |
 
 **Example:**
 ```python
 config = ChunkConfig(
     max_chunk_size=2048,
     min_chunk_size=256,
-    enable_overlap=True,
     overlap_size=100
 )
 ```
@@ -47,77 +55,122 @@ config = ChunkConfig(
 
 Pre-configured profiles for common use cases.
 
-### for_api_docs()
+### default()
 
 ```python
-ChunkConfig.for_api_docs() -> ChunkConfig
+ChunkConfig.default() -> ChunkConfig
 ```
 
-Optimized for API documentation.
+Default configuration for general use.
 
 **Settings:**
-- max_chunk_size: 1500
-- Preserves code blocks
-- Maintains section structure
+- max_chunk_size: 4096
+- min_chunk_size: 512
+- overlap_size: 200
 
-**Example:**
-```python
-config = ChunkConfig.for_api_docs()
-chunker = MarkdownChunker(config)
-```
-
-### for_code_docs()
+### for_code_heavy()
 
 ```python
-ChunkConfig.for_code_docs() -> ChunkConfig
+ChunkConfig.for_code_heavy() -> ChunkConfig
 ```
 
 Optimized for code-heavy documentation.
 
 **Settings:**
-- max_chunk_size: 2000
-- Preserves code blocks
-- Handles mixed content
+- max_chunk_size: 8192
+- min_chunk_size: 1024
+- overlap_size: 100
+- code_threshold: 0.2
 
 **Example:**
 ```python
-config = ChunkConfig.for_code_docs()
+config = ChunkConfig.for_code_heavy()
 ```
 
-### for_dify_rag()
+### for_structured()
 
 ```python
-ChunkConfig.for_dify_rag() -> ChunkConfig
+ChunkConfig.for_structured() -> ChunkConfig
 ```
 
-Optimized for RAG systems (Dify default).
+Optimized for structured documents with headers.
 
 **Settings:**
-- max_chunk_size: 2048
-- Balanced chunking
-- Overlap enabled
+- max_chunk_size: 4096
+- min_chunk_size: 512
+- overlap_size: 200
+- structure_threshold: 2
 
 **Example:**
 ```python
-config = ChunkConfig.for_dify_rag()
+config = ChunkConfig.for_structured()
 ```
 
-### for_search_indexing()
+### minimal()
 
 ```python
-ChunkConfig.for_search_indexing() -> ChunkConfig
+ChunkConfig.minimal() -> ChunkConfig
 ```
 
-Optimized for search indexing.
+Minimal configuration with small chunks.
 
 **Settings:**
-- max_chunk_size: 1200
-- Smaller chunks
-- No overlap
+- max_chunk_size: 1024
+- min_chunk_size: 256
+- overlap_size: 50
 
 **Example:**
 ```python
-config = ChunkConfig.for_search_indexing()
+config = ChunkConfig.minimal()
+```
+
+## Serialization
+
+### to_dict()
+
+```python
+config.to_dict() -> dict
+```
+
+Serialize config to dictionary.
+
+**Example:**
+```python
+config = ChunkConfig(max_chunk_size=2048)
+data = config.to_dict()
+# {'max_chunk_size': 2048, 'min_chunk_size': 512, ...}
+```
+
+### from_dict()
+
+```python
+ChunkConfig.from_dict(data: dict) -> ChunkConfig
+```
+
+Create config from dictionary.
+
+**Example:**
+```python
+data = {'max_chunk_size': 2048, 'overlap_size': 100}
+config = ChunkConfig.from_dict(data)
+```
+
+### from_legacy()
+
+```python
+ChunkConfig.from_legacy(**kwargs) -> ChunkConfig
+```
+
+Create config from legacy v1.x parameters with deprecation warnings.
+
+**Example:**
+```python
+# Migrating from v1.x
+config = ChunkConfig.from_legacy(
+    max_size=2048,  # renamed to max_chunk_size
+    enable_overlap=True,  # removed, use overlap_size > 0
+    overlap_size=100
+)
 ```
 
 ## Usage Examples
@@ -125,7 +178,7 @@ config = ChunkConfig.for_search_indexing()
 ### Basic Configuration
 
 ```python
-from markdown_chunker import MarkdownChunker, ChunkConfig
+from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
 
 config = ChunkConfig(max_chunk_size=2048)
 chunker = MarkdownChunker(config)
@@ -136,85 +189,74 @@ chunker = MarkdownChunker(config)
 ```python
 config = ChunkConfig(
     max_chunk_size=2048,
-    enable_overlap=True,
-    overlap_size=100
+    overlap_size=100  # 0 = disabled
 )
 ```
 
 ### Force Strategy
 
 ```python
-# Force code strategy
-config = ChunkConfig(force_strategy="code")
+# Force code-aware strategy
+config = ChunkConfig(strategy_override="code_aware")
 
 # Force structural strategy
-config = ChunkConfig(force_strategy="structural")
+config = ChunkConfig(strategy_override="structural")
+
+# Force fallback strategy
+config = ChunkConfig(strategy_override="fallback")
 ```
 
 ### Using Profiles
 
 ```python
-# For API documentation
-config = ChunkConfig.for_api_docs()
-
 # For code documentation
-config = ChunkConfig.for_code_docs()
+config = ChunkConfig.for_code_heavy()
 
-# For RAG systems
-config = ChunkConfig.for_dify_rag()
+# For structured documents
+config = ChunkConfig.for_structured()
 
-# For search indexing
-config = ChunkConfig.for_search_indexing()
+# For small chunks
+config = ChunkConfig.minimal()
 ```
 
-## Configuration Parameters
-
-### max_chunk_size
-
-Maximum size of generated chunks in characters.
-
-- **Type**: int
-- **Default**: 2048
-- **Range**: 100-10000 recommended
-- **Impact**: Larger chunks = fewer chunks, more context per chunk
-
-### min_chunk_size
-
-Minimum size of generated chunks in characters.
-
-- **Type**: int
-- **Default**: 256
-- **Range**: 50-1000 recommended
-- **Impact**: Prevents very small chunks
+## Properties
 
 ### enable_overlap
 
-Enable overlapping content between chunks.
+```python
+config.enable_overlap -> bool
+```
 
-- **Type**: bool
-- **Default**: False
-- **Impact**: Improves context continuity, increases total size
+Returns True if overlap is enabled (overlap_size > 0).
 
-### overlap_size
+## Validation
 
-Size of overlap between chunks in characters.
+ChunkConfig validates parameters on creation:
 
-- **Type**: int
-- **Default**: 100
-- **Range**: 50-500 recommended
-- **Impact**: Only used if enable_overlap=True
+- `max_chunk_size` must be positive
+- `min_chunk_size` must be positive
+- `min_chunk_size` is auto-adjusted if > `max_chunk_size`
+- `overlap_size` must be non-negative
+- `overlap_size` must be < `max_chunk_size`
+- `code_threshold` must be between 0 and 1
+- `structure_threshold` must be >= 1
+- `strategy_override` must be one of: "code_aware", "structural", "fallback", or None
 
-### force_strategy
+## Migration from v1.x
 
-Force a specific chunking strategy.
+| v1.x Parameter | v2.0 Equivalent |
+|----------------|-----------------|
+| `max_size` | `max_chunk_size` |
+| `min_size` | `min_chunk_size` |
+| `enable_overlap` | Use `overlap_size > 0` |
+| `force_strategy` | `strategy_override` |
+| `preserve_code_blocks` | Always enabled |
+| `preserve_tables` | Always enabled |
 
-- **Type**: str or None
-- **Default**: None (automatic selection)
-- **Options**: "code", "mixed", "list", "table", "structural", "sentences"
-- **Impact**: Overrides automatic strategy selection
+See [Migration Guide](../MIGRATION.md) for full details.
 
 ## See Also
 
 - [MarkdownChunker API](chunker.md) - Main chunking class
 - [Chunking Strategies](../architecture/strategies.md) - Strategy details
-- [API Overview](README.md) - Complete API reference
+- [Migration Guide](../MIGRATION.md) - Migration from v1.x

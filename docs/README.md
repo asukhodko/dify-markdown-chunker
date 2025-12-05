@@ -41,7 +41,7 @@ Understand how the system works:
 - **[Architecture Overview](architecture/README.md)** - System architecture and design principles
 - **[Parser Module](architecture/parser.md)** - Markdown parsing and content analysis
 - **[Chunker Module](architecture/chunker.md)** - Chunking logic and processing
-- **[Chunking Strategies](architecture/strategies.md)** - All 6 strategies explained (Code, Mixed, List, Table, Structural, Sentences)
+- **[Chunking Strategies](architecture/strategies.md)** - All 3 strategies explained (Code-Aware, Structural, Fallback)
 - **[Dify Integration](architecture/dify-integration.md)** - How the plugin integrates with Dify
 
 ---
@@ -68,6 +68,16 @@ Detailed reference documentation:
 
 ---
 
+## 🧪 Test Specification (V2)
+
+Спецификация для создания новых тестов markdown_chunker_v2:
+
+- **[V2 Test Specification](v2-test-specification/README.md)** - Полная спецификация тестов (на русском)
+- **[Summary](v2-test-specification/SUMMARY.md)** - Краткая сводка результатов анализа
+- **[Implementation Roadmap](v2-test-specification/implementation-roadmap.md)** - План реализации в 4 фазы
+
+---
+
 ## 📚 Additional Resources
 
 For information about the project's development history and migration, see:
@@ -75,6 +85,7 @@ For information about the project's development history and migration, see:
 - **[CHANGELOG.md](../CHANGELOG.md)** - Version history and changes
 - **[CONTRIBUTING.md](../CONTRIBUTING.md)** - Contribution guidelines
 - **[DEVELOPMENT.md](../DEVELOPMENT.md)** - Development setup and workflow
+- **[Legacy Test Analysis](legacy-tests-analysis/)** - Анализ legacy-тестов
 
 ---
 

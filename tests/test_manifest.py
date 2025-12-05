@@ -55,11 +55,11 @@ class TestManifestCompleteness:
             manifest_data["name"] == "markdown_chunker"
         ), "Name should be 'markdown_chunker'"
 
-        # Version should start with 2.0.0 (allow pre-release suffixes like -a1, -beta, etc)
+        # Version should start with 2.0 (allow minor versions and pre-release suffixes)
         version = manifest_data["version"]
         assert version.startswith(
-            "2.0.0"
-        ), f"Version should start with '2.0.0', got '{version}'"
+            "2.0"
+        ), f"Version should start with '2.0', got '{version}'"
 
     def test_localization_completeness(self, manifest_data):
         """Test that all required languages are present."""
