@@ -1,4 +1,4 @@
-.PHONY: test lint clean install test-quick validate package validate-package release help test-verbose test-coverage format benchmark demo quality-check
+.PHONY: test lint clean install test-quick test-p0 validate package validate-package release help test-verbose test-coverage format benchmark demo quality-check
 
 # Python from venv
 PYTHON = venv/bin/python3.12
@@ -12,7 +12,9 @@ help:
 	@echo "  make install-dev     - Install with dev tools (linters, formatters)"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test            - Run all tests"
+	@echo "  make test            - Run core v2 property tests"
+	@echo "  make test-p0         - Run P0 priority tests (comprehensive)"
+	@echo "  make test-all        - Run all tests in repository"
 	@echo "  make test-verbose    - Run tests with verbose output"
 	@echo "  make test-coverage   - Run tests with coverage report"
 	@echo "  make test-quick      - Run quick tests"
@@ -36,8 +38,37 @@ help:
 	@echo "  make clean           - Clean temporary files"
 
 test:
-	@echo "Running tests..."
+	@echo "Running core v2 property tests..."
 	@$(PYTHON) -m pytest tests/test_domain_properties.py tests/test_v2_properties.py -v
+
+test-p0:
+	@echo "Running P0 priority tests (Phase 1: Foundation)..."
+	@$(PYTHON) -m pytest \
+		tests/test_domain_properties.py \
+		tests/test_v2_properties.py \
+		tests/test_entry_point.py \
+		tests/test_error_handling.py \
+		tests/test_integration_basic.py \
+		tests/test_manifest.py \
+		tests/test_provider_class.py \
+		tests/test_provider_yaml.py \
+		tests/test_tool_yaml.py \
+		tests/test_dependencies.py \
+		tests/api/test_backward_compatibility.py \
+		tests/chunker/test_chunk_simple.py \
+		tests/chunker/test_monotonic_ordering_property.py \
+		tests/chunker/test_no_empty_chunks_property.py \
+		tests/chunker/test_overlap_properties_redesign.py \
+		tests/chunker/test_serialization.py \
+		tests/chunker/test_serialization_roundtrip_property.py \
+		tests/chunker/test_components/test_overlap_new_model.py \
+		tests/parser/test_smoke.py \
+		tests/integration/test_career_matrix.py \
+		tests/integration/test_dify_plugin_integration.py \
+		tests/integration/test_end_to_end.py \
+		tests/integration/test_full_pipeline_real_docs.py \
+		tests/integration/test_overlap_redesign_integration.py \
+		-v
 
 test-all:
 	@echo "Running all tests..."
