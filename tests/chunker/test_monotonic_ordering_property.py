@@ -8,13 +8,14 @@ Property-based tests for monotonic chunk ordering guarantee.
 This module uses Hypothesis to generate random markdown text and verifies
 that chunks appear in the same order as their content appears in the input,
 with monotonically increasing start_line values.
+
+Migration note: Migrated to markdown_chunker_v2 (December 2025)
 """
 
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from markdown_chunker.chunker.core import MarkdownChunker
-from markdown_chunker.chunker.types import ChunkConfig
+from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
 
 
 # Hypothesis strategies for generating markdown
@@ -204,22 +205,25 @@ class TestMonotonicOrderingProperty:
 
 
 class TestMonotonicOrderingWithStrategies:
-    """Test monotonic ordering across different strategies."""
+    """Test monotonic ordering across different strategies.
+    
+    Note: In v2, strategy is selected automatically based on content analysis.
+    These tests verify monotonic ordering regardless of which strategy is selected.
+    """
 
     @settings(max_examples=300, deadline=10000)
-    @given(random_markdown(), st.sampled_from(["structural", "sentences", "mixed"]))
-    def test_property_monotonic_ordering_across_strategies(
-        self, markdown_text, strategy
-    ):
+    @given(random_markdown())
+    def test_property_monotonic_ordering_auto_strategy(self, markdown_text):
         """
-        Property: Monotonic ordering should work for all strategies.
+        Property: Monotonic ordering should work with automatic strategy selection.
 
-        For any markdown and any strategy, chunks should be in monotonic order.
+        For any markdown, chunks should be in monotonic order regardless of
+        which strategy v2 selects automatically.
         """
         chunker = MarkdownChunker()
 
         try:
-            chunks = chunker.chunk(markdown_text, strategy=strategy)
+            chunks = chunker.chunk(markdown_text)
         except Exception:
             return
 
@@ -229,7 +233,7 @@ class TestMonotonicOrderingWithStrategies:
         for i in range(1, len(chunks)):
             assert (
                 chunks[i].start_line >= chunks[i - 1].start_line
-            ), f"Strategy '{strategy}' monotonic ordering violated at chunk {i}"
+            ), f"Monotonic ordering violated at chunk {i}"
 
     @settings(max_examples=200, deadline=10000)
     @given(

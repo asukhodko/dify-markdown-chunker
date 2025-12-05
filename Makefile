@@ -1,4 +1,4 @@
-.PHONY: test lint clean install test-quick test-p0 validate package validate-package release help test-verbose test-coverage format benchmark demo quality-check
+.PHONY: test lint clean install test-quick validate package validate-package release help test-verbose test-coverage format benchmark demo quality-check
 
 # Python from venv
 PYTHON = venv/bin/python3.12
@@ -12,8 +12,7 @@ help:
 	@echo "  make install-dev     - Install with dev tools (linters, formatters)"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test            - Run core v2 property tests"
-	@echo "  make test-p0         - Run P0 priority tests (comprehensive)"
+	@echo "  make test            - Run all core tests (property + integration)"
 	@echo "  make test-all        - Run all tests in repository"
 	@echo "  make test-verbose    - Run tests with verbose output"
 	@echo "  make test-coverage   - Run tests with coverage report"
@@ -38,12 +37,9 @@ help:
 	@echo "  make clean           - Clean temporary files"
 
 test:
-	@echo "Running core v2 property tests..."
-	@$(PYTHON) -m pytest tests/test_domain_properties.py tests/test_v2_properties.py -v
-
-test-p0:
-	@echo "Running P0 priority tests (Phase 1: Foundation)..."
+	@echo "Running all core tests (property + integration)..."
 	@$(PYTHON) -m pytest \
+		tests/test_p0_property_tests.py \
 		tests/test_domain_properties.py \
 		tests/test_v2_properties.py \
 		tests/test_entry_point.py \

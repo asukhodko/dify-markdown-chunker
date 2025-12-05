@@ -167,3 +167,55 @@ class ChunkConfig:
             min_chunk_size=256,
             overlap_size=50,
         )
+    
+    def to_dict(self) -> dict:
+        """
+        Serialize config to dictionary.
+        
+        Returns:
+            Dictionary with all config parameters including computed properties.
+        """
+        return {
+            "max_chunk_size": self.max_chunk_size,
+            "min_chunk_size": self.min_chunk_size,
+            "overlap_size": self.overlap_size,
+            "preserve_atomic_blocks": self.preserve_atomic_blocks,
+            "extract_preamble": self.extract_preamble,
+            "code_threshold": self.code_threshold,
+            "structure_threshold": self.structure_threshold,
+            "strategy_override": self.strategy_override,
+            "enable_overlap": self.enable_overlap,  # computed property
+        }
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> "ChunkConfig":
+        """
+        Create config from dictionary.
+        
+        Handles legacy parameters and uses defaults for missing keys.
+        
+        Args:
+            data: Dictionary with config parameters
+            
+        Returns:
+            ChunkConfig instance
+        """
+        config_data = data.copy()
+        
+        # Handle legacy enable_overlap parameter
+        if "enable_overlap" in config_data:
+            enable = config_data.pop("enable_overlap")
+            if enable and "overlap_size" not in config_data:
+                config_data["overlap_size"] = 200  # default
+            elif not enable:
+                config_data["overlap_size"] = 0
+        
+        # Remove unknown parameters
+        valid_params = {
+            "max_chunk_size", "min_chunk_size", "overlap_size",
+            "preserve_atomic_blocks", "extract_preamble",
+            "code_threshold", "structure_threshold", "strategy_override"
+        }
+        config_data = {k: v for k, v in config_data.items() if k in valid_params}
+        
+        return cls(**config_data)

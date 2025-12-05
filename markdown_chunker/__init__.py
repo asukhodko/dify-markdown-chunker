@@ -14,11 +14,8 @@ from markdown_chunker_v2 import (
     chunk_file,
 )
 
-# For backward compatibility with legacy imports
-try:
-    from markdown_chunker_v2.compat import MarkdownChunkerProvider
-except ImportError:
-    pass
+# Provider for Dify plugin system
+from markdown_chunker.provider import MarkdownChunkerProvider
 
 __all__ = [
     "MarkdownChunker",
@@ -27,6 +24,7 @@ __all__ = [
     "ContentAnalysis",
     "chunk_text",
     "chunk_file",
+    "MarkdownChunkerProvider",
 ]
 
 __version__ = "2.0.0"

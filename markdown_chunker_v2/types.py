@@ -148,6 +148,7 @@ class Chunk:
             "start_line": self.start_line,
             "end_line": self.end_line,
             "size": self.size,
+            "line_count": self.end_line - self.start_line + 1,
             "metadata": self.metadata,
         }
     
@@ -269,3 +270,15 @@ class ChunkingResult:
             "total_lines": self.total_lines,
             "chunk_count": self.chunk_count,
         }
+    
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "ChunkingResult":
+        """Create from dictionary."""
+        chunks = [Chunk.from_dict(c) for c in data.get("chunks", [])]
+        return cls(
+            chunks=chunks,
+            strategy_used=data.get("strategy_used", "unknown"),
+            processing_time=data.get("processing_time", 0.0),
+            total_chars=data.get("total_chars", 0),
+            total_lines=data.get("total_lines", 0),
+        )

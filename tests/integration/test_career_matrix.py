@@ -5,14 +5,17 @@ Tests Task 14.1: Test with real career matrix document
 - Verify no logical block fragmentation
 - Verify no section mixing
 - Verify Markdown structure preserved
+
+Migration note: Migrated to markdown_chunker_v2 (December 2025)
+V2 uses simplified ChunkConfig (8 params instead of 32).
+overlap_size > 0 enables overlap (no separate enable_overlap flag).
 """
 
 from pathlib import Path
 
 import pytest
 
-from markdown_chunker.chunker.core import MarkdownChunker
-from markdown_chunker.chunker.types import ChunkConfig
+from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
 
 
 class TestCareerMatrixIntegration:
@@ -37,7 +40,7 @@ class TestCareerMatrixIntegration:
 
     def test_structural_strategy_no_fragmentation(self, career_matrix_content: str):
         """Test that structural strategy doesn't fragment logical blocks."""
-        config = ChunkConfig(max_chunk_size=500, overlap_size=50, enable_overlap=True)
+        config = ChunkConfig(max_chunk_size=500, overlap_size=50)
         chunker = MarkdownChunker(config)
 
         chunks = chunker.chunk(career_matrix_content)
@@ -56,10 +59,6 @@ class TestCareerMatrixIntegration:
                     if remaining_lines:
                         # There should be content after header
                         pass
-                        # has_content = any(  # noqa: F841
-                        #     not line.strip().startswith("#")
-                        #     for line in remaining_lines
-                        # )
                         # This is a soft check - headers can be followed by sub-headers
                         # The key is that we don't have ONLY a header at the end
 
@@ -68,7 +67,6 @@ class TestCareerMatrixIntegration:
         config = ChunkConfig(
             max_chunk_size=500,
             overlap_size=0,  # No overlap for cleaner section checking
-            enable_overlap=False,
         )
         chunker = MarkdownChunker(config)
 
@@ -96,7 +94,7 @@ class TestCareerMatrixIntegration:
 
     def test_markdown_structure_preserved(self, career_matrix_content: str):
         """Test that Markdown structure is preserved in chunks."""
-        config = ChunkConfig(max_chunk_size=500, overlap_size=50, enable_overlap=True)
+        config = ChunkConfig(max_chunk_size=500, overlap_size=50)
         chunker = MarkdownChunker(config)
 
         chunks = chunker.chunk(career_matrix_content)
@@ -125,7 +123,6 @@ class TestCareerMatrixIntegration:
         config = ChunkConfig(
             max_chunk_size=300,  # Smaller chunks to stress test
             overlap_size=50,
-            enable_overlap=True,
         )
         chunker = MarkdownChunker(config)
 
@@ -148,7 +145,6 @@ class TestCareerMatrixIntegration:
         config = ChunkConfig(
             max_chunk_size=500,
             overlap_size=0,  # No overlap for accurate content comparison
-            enable_overlap=False,
         )
         chunker = MarkdownChunker(config)
 
@@ -174,7 +170,7 @@ class TestCareerMatrixIntegration:
 
     def test_metadata_completeness(self, career_matrix_content: str):
         """Test that chunks have complete metadata."""
-        config = ChunkConfig(max_chunk_size=500, overlap_size=50, enable_overlap=True)
+        config = ChunkConfig(max_chunk_size=500, overlap_size=50)
         chunker = MarkdownChunker(config)
 
         chunks = chunker.chunk(career_matrix_content)
@@ -194,7 +190,7 @@ class TestCareerMatrixIntegration:
 
     def test_chunk_size_respected(self, career_matrix_content: str):
         """Test that chunk sizes are reasonable."""
-        config = ChunkConfig(max_chunk_size=500, overlap_size=50, enable_overlap=True)
+        config = ChunkConfig(max_chunk_size=500, overlap_size=50)
         chunker = MarkdownChunker(config)
 
         chunks = chunker.chunk(career_matrix_content)
@@ -225,36 +221,24 @@ class TestCareerMatrixIntegration:
         for chunk in chunks:
             assert chunk.content.strip(), "Produced empty chunk"
 
-    # Phase 1 Fix 4: Integration tests for the blocker bugs
-
     def test_auto_strategy_no_content_loss(self, career_matrix_content: str):
-        """Test that auto strategy doesn't lose content (Fix 2 + Fix 3).
+        """Test that auto strategy doesn't lose content.
 
         This test verifies:
-        - Auto mode doesn't select list strategy (Fix 2)
-        - Content completeness validation passes (Fix 3)
+        - Auto mode selects appropriate strategy
+        - Content completeness is maintained
         - All major sections preserved
         """
-        config = ChunkConfig(
-            max_chunk_size=1000,
-            overlap_size=200,
-            enable_content_validation=True,  # Enable validation
-        )
+        config = ChunkConfig(max_chunk_size=1000, overlap_size=200)
         chunker = MarkdownChunker(config)
 
-        # Should not raise ChunkingError from validation
-        result = chunker.chunk(
-            career_matrix_content, include_analysis=True, return_format="dict"
-        )
+        # Use chunk_with_analysis to get strategy info
+        chunks, strategy_used, analysis = chunker.chunk_with_analysis(career_matrix_content)
 
-        chunks = result.get("chunks", [])
         assert len(chunks) > 0, "Should produce chunks"
 
         # Verify major headers present (no content loss)
-        # Chunks are dicts when return_format='dict'
-        all_content = "\n".join(
-            c["content"] if isinstance(c, dict) else c.content for c in chunks
-        )
+        all_content = "\n".join(chunk.content for chunk in chunks)
 
         # Check for key sections from career matrix
         # These should be present if content is complete
@@ -273,64 +257,39 @@ class TestCareerMatrixIntegration:
             "This document outlines" in all_content
         ), "Paragraph from Overview section missing - possible content loss"
 
-    def test_metadata_enabled_vs_disabled_consistency(self, career_matrix_content: str):
-        """Test output format consistency (Fix 1).
-
-        Verifies that both metadata configurations return non-empty arrays
-        with the same number of chunks.
-        """
+    def test_chunk_with_metrics(self, career_matrix_content: str):
+        """Test chunk_with_metrics returns valid metrics."""
         config = ChunkConfig(max_chunk_size=1000)
         chunker = MarkdownChunker(config)
 
-        # Chunk with analysis (metadata-like)
-        result_with = chunker.chunk(
-            career_matrix_content, include_analysis=True, return_format="dict"
-        )
+        chunks, metrics = chunker.chunk_with_metrics(career_matrix_content)
 
-        # Chunk without analysis
-        result_without = chunker.chunk(
-            career_matrix_content, include_analysis=False, return_format="dict"
-        )
-
-        chunks_with = result_with.get("chunks", [])
-        # When include_analysis=False, result_without might be a list directly
-        if isinstance(result_without, list):
-            chunks_without = result_without
-        else:
-            chunks_without = result_without.get("chunks", [])
-
-        assert len(chunks_with) > 0, "Should produce chunks with metadata"
-        assert len(chunks_without) > 0, "Should produce chunks without metadata (Fix 1)"
-        assert len(chunks_with) == len(
-            chunks_without
-        ), "Should have same number of chunks regardless of metadata config"
+        assert len(chunks) > 0, "Should produce chunks"
+        assert metrics.total_chunks == len(chunks)
+        assert metrics.avg_chunk_size > 0
+        assert metrics.min_size > 0
+        assert metrics.max_size >= metrics.min_size
 
     @pytest.mark.blocker
-    def test_list_strategy_not_selected_in_auto(self, career_matrix_content: str):
-        """Test that auto mode doesn't select list strategy (Fix 2).
+    def test_strategy_selection_for_mixed_document(self, career_matrix_content: str):
+        """Test that appropriate strategy is selected for mixed documents.
 
-        This is the core fix - list strategy should not be selected for
-        mixed documents in auto mode as it loses non-list content.
+        Career matrix has headers, tables, code, and lists - should use
+        structural or code_aware strategy, not a specialized one.
         """
         config = ChunkConfig(max_chunk_size=1000)
         chunker = MarkdownChunker(config)
 
-        result = chunker.chunk(
-            career_matrix_content, include_analysis=True, return_format="dict"
-        )
+        chunks, strategy_used, analysis = chunker.chunk_with_analysis(career_matrix_content)
 
-        # Verify strategy used is NOT list
-        # When return_format='dict', strategy_used is at top level
-        strategy_used = result.get("strategy_used", "")
-
-        assert (
-            strategy_used != "list"
-        ), f"Auto mode should not select list strategy for mixed documents. Got: {strategy_used}"
-
-        # Should be structural, code, or another safe strategy
+        # Should be structural, code_aware, or fallback - not a specialized strategy
         assert strategy_used in [
             "structural",
-            "code",
-            "mixed",
-            "sentences",
-        ], f"Expected safe strategy, got: {strategy_used}"
+            "code_aware",
+            "fallback",
+        ], f"Expected general strategy for mixed document, got: {strategy_used}"
+
+        # Verify analysis detected the mixed content
+        assert analysis.header_count > 0, "Should detect headers"
+        assert analysis.code_block_count > 0, "Should detect code blocks"
+        assert analysis.table_count > 0, "Should detect tables"

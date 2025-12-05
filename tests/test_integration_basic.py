@@ -54,9 +54,9 @@ class TestBasicIntegration:
         assert "from dify_plugin import Tool" in content
         assert "from dify_plugin.entities.tool import ToolInvokeMessage" in content
 
-        # Library imports
+        # Library imports (v2 uses simplified imports)
         assert "from markdown_chunker import MarkdownChunker" in content
-        assert "from markdown_chunker.chunker.types import ChunkConfig" in content
+        assert "ChunkConfig" in content
 
     def test_tool_handles_all_parameters(self, tool_file):
         """Test that tool handles all 5 parameters."""
@@ -153,9 +153,9 @@ class TestBasicIntegration:
         """Test that parameter defaults are present."""
         content = tool_file.read_text()
 
-        # Default values
-        assert "1000" in content  # max_chunk_size default
-        assert "100" in content  # chunk_overlap default
+        # Default values (v2 uses 4096 for max_chunk_size, 200 for overlap)
+        assert "4096" in content  # max_chunk_size default
+        assert "200" in content  # chunk_overlap default
         assert "auto" in content  # strategy default
         assert "True" in content or "true" in content  # include_metadata default
 

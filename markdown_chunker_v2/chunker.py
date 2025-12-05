@@ -354,3 +354,82 @@ class MarkdownChunker:
             return 'table'
         else:
             return 'text'
+    
+    def chunk_simple(
+        self, 
+        text: str, 
+        config: Optional[dict] = None,
+        strategy: Optional[str] = None
+    ) -> dict:
+        """
+        Simple chunking method that returns dictionary format.
+        
+        This method provides backward compatibility for code expecting
+        dictionary-based results instead of Chunk objects.
+        
+        Args:
+            text: Input text to chunk
+            config: Optional config as dict (will be converted to ChunkConfig)
+            strategy: Optional strategy hint (ignored in v2, auto-selected)
+            
+        Returns:
+            Dictionary with keys:
+            - chunks: list of chunk dicts
+            - errors: list of error messages (empty in normal operation)
+            - warnings: list of warning messages (empty in normal operation)
+            - total_chunks: number of chunks
+            - strategy_used: name of strategy used
+        """
+        try:
+            # Handle config parameter
+            chunker = self
+            if config is not None:
+                config_dict = config.copy()
+                # Handle legacy enable_overlap parameter
+                if 'enable_overlap' in config_dict:
+                    enable = config_dict.pop('enable_overlap')
+                    if enable and 'overlap_size' not in config_dict:
+                        config_dict['overlap_size'] = 100
+                    elif not enable:
+                        config_dict['overlap_size'] = 0
+                
+                # Remove any unknown parameters
+                valid_params = {'max_chunk_size', 'min_chunk_size', 'overlap_size', 
+                               'preserve_atomic_blocks', 'strategy_override'}
+                config_dict = {k: v for k, v in config_dict.items() if k in valid_params}
+                
+                temp_config = ChunkConfig(**config_dict)
+                chunker = MarkdownChunker(temp_config)
+            
+            # Get chunks with analysis
+            chunks, strategy_used, _ = chunker.chunk_with_analysis(text)
+            
+            # Convert chunks to dictionary format
+            chunk_dicts = []
+            for chunk in chunks:
+                chunk_dict = {
+                    'content': chunk.content,
+                    'start_line': chunk.start_line,
+                    'end_line': chunk.end_line,
+                    'size': len(chunk.content),
+                    'line_count': chunk.end_line - chunk.start_line + 1,
+                    'metadata': chunk.metadata.copy() if chunk.metadata else {}
+                }
+                chunk_dicts.append(chunk_dict)
+            
+            return {
+                'chunks': chunk_dicts,
+                'errors': [],
+                'warnings': [],
+                'total_chunks': len(chunk_dicts),
+                'strategy_used': strategy_used or 'auto'
+            }
+            
+        except Exception as e:
+            return {
+                'chunks': [],
+                'errors': [str(e)],
+                'warnings': [],
+                'total_chunks': 0,
+                'strategy_used': 'none'
+            }

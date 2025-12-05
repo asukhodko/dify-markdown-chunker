@@ -7,13 +7,14 @@ Property-based tests for no empty chunks guarantee.
 
 This module uses Hypothesis to generate random markdown text and verifies
 that non-empty input never produces empty chunks.
+
+Migration note: Migrated to markdown_chunker_v2 (December 2025)
 """
 
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from markdown_chunker.chunker.core import MarkdownChunker
-from markdown_chunker.chunker.types import ChunkConfig
+from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
 
 
 # Hypothesis strategies for generating markdown
@@ -192,27 +193,32 @@ class TestNoEmptyChunksProperty:
 
 
 class TestNoEmptyChunksWithStrategies:
-    """Test no empty chunks across different strategies."""
+    """Test no empty chunks across different strategies.
+    
+    Note: In v2, strategy is selected automatically based on content analysis.
+    These tests verify no empty chunks regardless of which strategy is selected.
+    """
 
     @settings(max_examples=300, deadline=10000)
-    @given(non_empty_markdown(), st.sampled_from(["structural", "sentences", "mixed"]))
-    def test_property_no_empty_chunks_across_strategies(self, markdown_text, strategy):
+    @given(non_empty_markdown())
+    def test_property_no_empty_chunks_auto_strategy(self, markdown_text):
         """
-        Property: No empty chunks should work for all strategies.
+        Property: No empty chunks should work with automatic strategy selection.
 
-        For any non-empty markdown and any strategy, no chunks should be empty.
+        For any non-empty markdown, no chunks should be empty regardless of
+        which strategy v2 selects automatically.
         """
         chunker = MarkdownChunker()
 
         try:
-            chunks = chunker.chunk(markdown_text, strategy=strategy)
+            chunks = chunker.chunk(markdown_text)
         except Exception:
             return
 
         # All chunks must have content
         for i, chunk in enumerate(chunks):
             assert chunk.content.strip(), (
-                f"Strategy '{strategy}' produced empty chunk {i}. "
+                f"Produced empty chunk {i}. "
                 f"No strategy should produce empty chunks from non-empty input."
             )
 

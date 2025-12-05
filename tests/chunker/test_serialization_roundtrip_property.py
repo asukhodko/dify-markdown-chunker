@@ -7,6 +7,8 @@ Property-based tests for serialization round-trip guarantee.
 
 This module uses Hypothesis to generate random markdown text and verifies
 that chunks can be serialized and deserialized without data loss.
+
+Migration note: Migrated to markdown_chunker_v2 (December 2025)
 """
 
 import json
@@ -14,7 +16,7 @@ import json
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from markdown_chunker.chunker.core import MarkdownChunker
+from markdown_chunker_v2 import MarkdownChunker
 
 
 # Hypothesis strategies for generating markdown
@@ -255,20 +257,25 @@ class TestSerializationRoundTripProperty:
 
 
 class TestSerializationWithStrategies:
-    """Test serialization across different strategies."""
+    """Test serialization across different strategies.
+    
+    Note: In v2, strategy is selected automatically based on content analysis.
+    These tests verify serialization works regardless of which strategy is selected.
+    """
 
     @settings(max_examples=300, deadline=10000)
-    @given(random_markdown(), st.sampled_from(["structural", "sentences", "mixed"]))
-    def test_property_serialization_across_strategies(self, markdown_text, strategy):
+    @given(random_markdown())
+    def test_property_serialization_auto_strategy(self, markdown_text):
         """
-        Property: Serialization should work for all strategies.
+        Property: Serialization should work with automatic strategy selection.
 
-        For any markdown and any strategy, chunks should survive round-trip.
+        For any markdown, chunks should survive round-trip regardless of
+        which strategy v2 selects automatically.
         """
         chunker = MarkdownChunker()
 
         try:
-            chunks = chunker.chunk(markdown_text, strategy=strategy)
+            chunks = chunker.chunk(markdown_text)
         except Exception:
             return
 
@@ -329,11 +336,12 @@ class TestSerializationEdgeCases:
         Property: Metadata should be serializable.
 
         For any markdown, chunk metadata should survive round-trip.
+        Note: In v2, strategy is selected automatically.
         """
         chunker = MarkdownChunker()
 
         try:
-            chunks = chunker.chunk(markdown_text, strategy="structural")
+            chunks = chunker.chunk(markdown_text)
         except Exception:
             return
 

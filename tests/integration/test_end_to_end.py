@@ -145,7 +145,7 @@ def test_end_to_end_table_document():
 
 def test_end_to_end_with_custom_config():
     """Test pipeline with custom configuration."""
-    config = ChunkConfig(max_chunk_size=1000, enable_overlap=True, overlap_size=100)
+    config = ChunkConfig(max_chunk_size=1000, overlap_size=100)
     chunker = MarkdownChunker(config)
 
     chunks = chunker.chunk(README_DOC)

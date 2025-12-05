@@ -1,6 +1,10 @@
-"""Tests for chunk_simple() method."""
+"""Tests for chunk_simple() method.
 
-from markdown_chunker.chunker import MarkdownChunker
+Migration note: Updated for v2 API (December 2025)
+v2 chunk_simple returns: chunks, errors, warnings, total_chunks, strategy_used
+"""
+
+from markdown_chunker_v2 import MarkdownChunker
 
 
 class TestChunkSimple:
@@ -12,10 +16,11 @@ class TestChunkSimple:
         result = chunker.chunk_simple("# Test\n\nContent here.")
 
         assert isinstance(result, dict)
-        assert "success" in result
         assert "chunks" in result
-        assert "metadata" in result
-        assert result["success"] is True
+        assert "errors" in result
+        assert "warnings" in result
+        assert "total_chunks" in result
+        assert "strategy_used" in result
         assert len(result["chunks"]) > 0
 
     def test_chunk_simple_returns_dict_chunks(self):
@@ -40,32 +45,29 @@ class TestChunkSimple:
 
         result = chunker.chunk_simple("# Test\n\nContent", config=config_dict)
 
-        assert result["success"] is True
+        assert len(result["errors"]) == 0
         assert len(result["chunks"]) > 0
 
     def test_chunk_simple_with_strategy(self):
-        """Test chunk_simple with strategy override."""
+        """Test chunk_simple with strategy parameter (ignored in v2)."""
         chunker = MarkdownChunker()
         result = chunker.chunk_simple("# Test\n\nContent", strategy="sentences")
 
-        assert result["success"] is True
-        assert result["metadata"]["strategy_used"] == "sentences"
+        # v2 auto-selects strategy, so strategy param is ignored
+        assert len(result["errors"]) == 0
+        assert "strategy_used" in result
 
     def test_chunk_simple_metadata_structure(self):
-        """Test metadata structure in result."""
+        """Test metadata structure in chunk dicts."""
         chunker = MarkdownChunker()
         result = chunker.chunk_simple("# Test\n\nContent")
 
-        metadata = result["metadata"]
-        assert "strategy_used" in metadata
-        assert "processing_time" in metadata
-        assert "fallback_used" in metadata
-        assert "statistics" in metadata
-
-        stats = metadata["statistics"]
-        assert "total_chunks" in stats
-        assert "total_chars" in stats
-        assert "content_type" in stats
+        assert len(result["chunks"]) > 0
+        chunk = result["chunks"][0]
+        
+        # v2 metadata is in each chunk
+        assert "metadata" in chunk
+        assert isinstance(chunk["metadata"], dict)
 
     def test_chunk_simple_preserves_original_config(self):
         """Test that chunk_simple doesn't permanently change config."""
@@ -84,9 +86,9 @@ class TestChunkSimple:
         result = chunker.chunk_simple("")
 
         assert isinstance(result, dict)
-        assert "success" in result
         assert "chunks" in result
-        # May have empty chunks or fallback chunks
+        assert "errors" in result
+        assert result["total_chunks"] == 0
 
     def test_chunk_simple_json_serializable(self):
         """Test that result is JSON serializable."""
@@ -101,13 +103,12 @@ class TestChunkSimple:
 
         # Should be able to parse back
         parsed = json.loads(json_str)
-        assert parsed["success"] == result["success"]
+        assert parsed["total_chunks"] == result["total_chunks"]
 
     def test_chunk_simple_with_code_content(self):
         """Test chunk_simple with code-heavy content."""
         chunker = MarkdownChunker()
-        content = """
-# Code Example
+        content = """# Code Example
 
 ```python
 def hello():
@@ -118,7 +119,7 @@ Some text here.
 """
         result = chunker.chunk_simple(content)
 
-        assert result["success"] is True
+        assert len(result["errors"]) == 0
         assert len(result["chunks"]) > 0
 
     def test_chunk_simple_errors_list(self):
@@ -145,8 +146,7 @@ class TestChunkSimpleIntegration:
         """Test complete workflow with chunk_simple."""
         chunker = MarkdownChunker()
 
-        content = """
-# Introduction
+        content = """# Introduction
 
 This is a test document with multiple sections.
 
@@ -163,9 +163,9 @@ Content for section 2.
             content, config={"max_chunk_size": 4096}, strategy="structural"
         )
 
-        assert result["success"] is True
+        assert len(result["errors"]) == 0
         assert len(result["chunks"]) > 0
-        assert result["metadata"]["strategy_used"] == "structural"
+        assert "strategy_used" in result
 
         # Verify chunk structure
         for chunk in result["chunks"]:
@@ -183,19 +183,14 @@ Content for section 2.
 
         # Get result from both methods
         simple_result = chunker.chunk_simple(content)
-        analysis_result = chunker.chunk_with_analysis(content)
+        chunks, strategy_used, analysis = chunker.chunk_with_analysis(content)
 
         # Should have same number of chunks
-        assert len(simple_result["chunks"]) == len(analysis_result.chunks)
+        assert len(simple_result["chunks"]) == len(chunks)
 
         # Should use same strategy
-        assert (
-            simple_result["metadata"]["strategy_used"] == analysis_result.strategy_used
-        )
+        assert simple_result["strategy_used"] == strategy_used
 
         # First chunk content should match
         if len(simple_result["chunks"]) > 0:
-            assert (
-                simple_result["chunks"][0]["content"]
-                == analysis_result.chunks[0].content
-            )
+            assert simple_result["chunks"][0]["content"] == chunks[0].content
