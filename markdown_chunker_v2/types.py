@@ -106,6 +106,25 @@ class Chunk:
         start_line: Starting line number (1-indexed)
         end_line: Ending line number (1-indexed)
         metadata: Additional information about the chunk
+        
+    Metadata Fields:
+        chunk_index (int): Sequential index of chunk in document
+        content_type (str): "text" | "code" | "table" | "mixed" | "preamble"
+        has_code (bool): Whether chunk contains code blocks
+        strategy (str): Strategy name that created this chunk
+        header_path (str): Hierarchical path to first header in chunk.
+            Format: "/Level1/Level2/Level3" where each segment corresponds
+            to a header level (# = 1st segment, ## = 2nd, etc.).
+            Special value "/__preamble__" for preamble chunks.
+            Empty string only if document has no headers.
+        header_level (int): Level of first header in chunk (1-6)
+        sub_headers (List[str], optional): Additional header texts within
+            the chunk (excluding the first header used for header_path).
+            Only present when chunk contains multiple headers.
+        small_chunk (bool): True if chunk size < min_chunk_size and
+            cannot be merged with adjacent chunks without exceeding max_chunk_size.
+        small_chunk_reason (str): Reason for small_chunk flag.
+            Currently only "cannot_merge" is used.
     """
     content: str
     start_line: int

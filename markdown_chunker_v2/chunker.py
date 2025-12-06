@@ -281,42 +281,95 @@ class MarkdownChunker:
         """
         Try to merge a small chunk with adjacent chunks.
         
+        Merge conditions for small_chunk:
+        - Chunk size is below min_chunk_size
+        - Cannot merge with adjacent chunks without exceeding max_chunk_size
+        - Preamble chunks are never merged with structural chunks
+        - Prefer merging with chunks in same logical section (same header_path prefix)
+        - Prefer left (previous) chunk over right (next) chunk
+        
         Returns True if merge was successful.
         """
-        # Try merging with previous chunk
+        # Never merge preamble with structural content
+        chunk_is_preamble = chunk.metadata.get('content_type') == 'preamble'
+        
+        # Try merging with previous chunk (left preference per Requirement 4.4)
         if result:
             prev_chunk = result[-1]
-            combined_size = prev_chunk.size + chunk.size
+            prev_is_preamble = prev_chunk.metadata.get('content_type') == 'preamble'
             
-            if combined_size <= self.config.max_chunk_size:
-                # Merge with previous
-                merged_content = prev_chunk.content + "\n\n" + chunk.content
-                merged_chunk = Chunk(
-                    content=merged_content,
-                    start_line=prev_chunk.start_line,
-                    end_line=chunk.end_line,
-                    metadata={**prev_chunk.metadata}
-                )
-                result[-1] = merged_chunk
-                return True
+            # Don't merge preamble with non-preamble
+            if chunk_is_preamble != prev_is_preamble:
+                pass  # Skip this merge option
+            else:
+                combined_size = prev_chunk.size + chunk.size
+                
+                if combined_size <= self.config.max_chunk_size:
+                    # Check if same logical section (Requirement 4.3)
+                    if self._same_logical_section(prev_chunk, chunk):
+                        # Merge with previous
+                        merged_content = prev_chunk.content + "\n\n" + chunk.content
+                        merged_chunk = Chunk(
+                            content=merged_content,
+                            start_line=prev_chunk.start_line,
+                            end_line=chunk.end_line,
+                            metadata={**prev_chunk.metadata}
+                        )
+                        result[-1] = merged_chunk
+                        return True
         
         # Try merging with next chunk
         if index + 1 < len(all_chunks):
             next_chunk = all_chunks[index + 1]
-            combined_size = chunk.size + next_chunk.size
+            next_is_preamble = next_chunk.metadata.get('content_type') == 'preamble'
             
-            if combined_size <= self.config.max_chunk_size:
-                # Merge with next - modify next chunk in place
-                merged_content = chunk.content + "\n\n" + next_chunk.content
-                all_chunks[index + 1] = Chunk(
-                    content=merged_content,
-                    start_line=chunk.start_line,
-                    end_line=next_chunk.end_line,
-                    metadata={**next_chunk.metadata}
-                )
-                return True
+            # Don't merge preamble with non-preamble
+            if chunk_is_preamble != next_is_preamble:
+                pass  # Skip this merge option
+            else:
+                combined_size = chunk.size + next_chunk.size
+                
+                if combined_size <= self.config.max_chunk_size:
+                    # Check if same logical section
+                    if self._same_logical_section(chunk, next_chunk):
+                        # Merge with next - modify next chunk in place
+                        merged_content = chunk.content + "\n\n" + next_chunk.content
+                        all_chunks[index + 1] = Chunk(
+                            content=merged_content,
+                            start_line=chunk.start_line,
+                            end_line=next_chunk.end_line,
+                            metadata={**next_chunk.metadata}
+                        )
+                        return True
         
         return False
+    
+    def _same_logical_section(self, chunk1: Chunk, chunk2: Chunk) -> bool:
+        """
+        Check if two chunks belong to the same logical section.
+        
+        Compares header_path prefix up to ## level (first two segments).
+        This implements Requirement 4.3 - prefer merging within same section.
+        
+        Args:
+            chunk1: First chunk
+            chunk2: Second chunk
+            
+        Returns:
+            True if chunks are in same logical section
+        """
+        path1 = chunk1.metadata.get('header_path', '')
+        path2 = chunk2.metadata.get('header_path', '')
+        
+        # Preamble chunks are in their own section
+        if path1 == '/__preamble__' or path2 == '/__preamble__':
+            return path1 == path2
+        
+        # Compare first two segments of path (up to ## level)
+        parts1 = path1.strip('/').split('/')[:2]
+        parts2 = path2.strip('/').split('/')[:2]
+        
+        return parts1 == parts2
     
     def _add_metadata(self, chunks: List[Chunk], strategy_name: str) -> List[Chunk]:
         """
@@ -331,7 +384,9 @@ class MarkdownChunker:
         """
         for i, chunk in enumerate(chunks):
             chunk.metadata['chunk_index'] = i
-            chunk.metadata['content_type'] = self._detect_content_type(chunk.content)
+            # Don't overwrite content_type if already set (e.g., "preamble")
+            if 'content_type' not in chunk.metadata:
+                chunk.metadata['content_type'] = self._detect_content_type(chunk.content)
             chunk.metadata['has_code'] = '```' in chunk.content
             chunk.metadata['strategy'] = strategy_name
             
