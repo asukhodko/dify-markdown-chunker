@@ -525,7 +525,7 @@ class TestSDE12Contract:
         **Validates: Requirements 1.2, 1.3**
         """
         doc = """# Критерии грейдов SDE
-## SDE 12 (T@T1, Junior-, Младший разработчик)
+## SDE 12 (Junior-, Младший разработчик)
 ### Scope
 Content about scope here with enough text to potentially split.
 ### Impact (Delivery)
@@ -552,7 +552,7 @@ Content about improvement here.
         for chunk in sde12_chunks:
             path = chunk.metadata["header_path"]
             # header_path MUST end with SDE 12, NOT with any H3
-            assert path.endswith("SDE 12 (T@T1, Junior-, Младший разработчик)"), \
+            assert path.endswith("SDE 12 (Junior-, Младший разработчик)"), \
                 f"header_path should end with SDE 12, got: {path}"
             # header_level MUST be 2 (H2)
             assert chunk.metadata["header_level"] == 2, \
@@ -565,7 +565,7 @@ Content about improvement here.
         **Validates: Requirements 2.2, 7.3**
         """
         doc = """# Критерии грейдов SDE
-## SDE 12 (T@T1, Junior-, Младший разработчик)
+## SDE 12 (Junior-, Младший разработчик)
 ### Complexity
 Content about complexity.
 ### Leadership

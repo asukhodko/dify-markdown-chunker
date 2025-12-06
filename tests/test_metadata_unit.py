@@ -29,7 +29,7 @@ class TestSDE12ImpactCase:
         # Create a document where Impact/Complexity/Leadership will be in one chunk
         md_text = """# Критерии грейдов SDE
 
-## SDE 12 (T@T1, Junior-, Младший разработчик)
+## SDE 12 (Junior-, Младший разработчик)
 
 ### Scope
 Разработчик помогает разрабатывать отдельные компоненты продукта.
@@ -66,7 +66,7 @@ class TestSDE12ImpactCase:
         # Create content with H1/H2 structural context and multiple H3 headers
         md_text = """# Критерии грейдов SDE
 
-## SDE 12 (T@T1, Junior-, Младший разработчик)
+## SDE 12 (Junior-, Младший разработчик)
 
 ### Impact (Delivery)
 Основная задача Junior — учиться.
