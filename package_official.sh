@@ -1,10 +1,31 @@
-#!/bin/bash
-# Package plugin using official dify-plugin CLI
+#!/usr/bin/env bash
+set -euo pipefail
 
 PLUGIN_DIR="$(cd "$(dirname "$0")" && pwd)"
+FILE="$PLUGIN_DIR/manifest.yaml"
+
+if [ ! -f "$FILE" ]; then
+  echo "❌ manifest.yaml not found at $FILE"
+  exit 1
+fi
+
+MAIN_VERSION=$(awk '/^version:/ {print $2; exit}' "$FILE")
+META_VERSION=$(awk '/^  version:/ {print $2; exit}' "$FILE")
+
+if [ -z "$MAIN_VERSION" ] || [ -z "$META_VERSION" ]; then
+  echo "❌ Failed to extract version or meta.version from manifest.yaml"
+  exit 1
+fi
+
+if [ "$MAIN_VERSION" != "$META_VERSION" ]; then
+    echo "❌ version ($MAIN_VERSION) != meta.version ($META_VERSION) in manifest.yaml"
+    exit 1
+fi
+
+PLUGIN_VERSION="$MAIN_VERSION"
+
 PLUGIN_DIRNAME="$(basename "$PLUGIN_DIR")"
 PLUGIN_NAME="markdown-chunker"
-PLUGIN_VERSION=$(grep '^version:' "$PLUGIN_DIR/manifest.yaml" | head -1 | sed 's/version: *//' | tr -d '"' | tr -d "'" | tr -d '\r')
 PARENT_DIR="$(dirname "$PLUGIN_DIR")"
 
 if [ -z "$PLUGIN_VERSION" ]; then

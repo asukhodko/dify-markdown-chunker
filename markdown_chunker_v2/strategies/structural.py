@@ -20,7 +20,25 @@ class StructuralStrategy(BaseStrategy):
     Splits document by headers, maintaining header hierarchy.
     
     Priority: 2 (used when document has headers but no code/tables)
+    
+    Attributes:
+        max_structural_level: Maximum header level that can appear in header_path
+            as structural context. Headers with level > max_structural_level are
+            always considered local sections and go into section_tags.
+            Default: 2 (H1 and H2 are structural, H3+ are local)
     """
+    
+    def __init__(self, max_structural_level: int = 2):
+        """
+        Initialize StructuralStrategy.
+        
+        Args:
+            max_structural_level: Maximum header level for structural context.
+                Headers with level <= max_structural_level can appear in header_path.
+                Headers with level > max_structural_level always go to section_tags.
+                Default: 2 (H1, H2 structural; H3, H4, H5, H6 local)
+        """
+        self.max_structural_level = max_structural_level
     
     @property
     def name(self) -> str:
@@ -75,15 +93,21 @@ class StructuralStrategy(BaseStrategy):
                     first_header_line - 1,
                     content_type="preamble",
                     header_path="/__preamble__",
+                    section_tags=[],  # NEW: always present, empty for preamble
+                    header_level=0,   # NEW: 0 for preamble (no structural context)
                 ))
         
-        # Process sections between headers
-        for i, header in enumerate(headers):
+        # Filter to structural headers only (level <= max_structural_level)
+        # H3+ headers don't create new sections - they stay inside parent section
+        structural_headers = [h for h in headers if h.level <= self.max_structural_level]
+        
+        # Process sections between STRUCTURAL headers only
+        for i, header in enumerate(structural_headers):
             # Determine section boundaries
             start_line = header.line
             
-            if i + 1 < len(headers):
-                end_line = headers[i + 1].line - 1
+            if i + 1 < len(structural_headers):
+                end_line = structural_headers[i + 1].line - 1
             else:
                 end_line = len(lines)
             
@@ -96,18 +120,17 @@ class StructuralStrategy(BaseStrategy):
             
             # Check if section fits in one chunk
             if len(section_content) <= config.max_chunk_size:
-                # Build header_path from FIRST header in chunk content
-                header_path, sub_headers = self._build_header_path_for_chunk(
+                # Build header_path and section_tags with new semantics
+                header_path, section_tags, header_level = self._build_header_path_for_chunk(
                     section_content, headers, start_line
                 )
                 
                 chunk_meta = {
                     "content_type": "section",
                     "header_path": header_path,
-                    "header_level": header.level,
+                    "header_level": header_level,
+                    "section_tags": section_tags,  # NEW: always present
                 }
-                if sub_headers:
-                    chunk_meta["sub_headers"] = sub_headers
                 
                 chunks.append(self._create_chunk(
                     section_content,
@@ -116,24 +139,28 @@ class StructuralStrategy(BaseStrategy):
                     **chunk_meta,
                 ))
             else:
-                # Split large section
+                # Split large section into sub-chunks
                 section_chunks = self._split_text_to_size(
                     section_content,
                     start_line,
                     config
                 )
-                # Set header_path for each sub-chunk based on its content
+                # Build section's header_path ONCE - all sub-chunks inherit it
+                # This ensures all chunks from SDE 12 have header_path ending with SDE 12
+                section_header_path, _, section_header_level = self._build_header_path_for_chunk(
+                    section_content, headers, start_line
+                )
+                
                 for chunk in section_chunks:
-                    chunk_path, chunk_sub = self._build_header_path_for_chunk(
-                        chunk.content, headers, chunk.start_line
-                    )
-                    # If chunk has no headers, use the section's header path
-                    if not chunk_path:
-                        chunk_path = self._build_header_path(headers[:i + 1])
-                    chunk.metadata["header_path"] = chunk_path
-                    chunk.metadata["header_level"] = header.level
-                    if chunk_sub:
-                        chunk.metadata["sub_headers"] = chunk_sub
+                    # Sub-chunks inherit header_path from parent section
+                    chunk.metadata["header_path"] = section_header_path
+                    chunk.metadata["header_level"] = section_header_level
+                    # section_tags = all H3+ headers inside THIS sub-chunk
+                    chunk_headers = self._find_headers_in_content(chunk.content)
+                    chunk.metadata["section_tags"] = [
+                        text for level, text in chunk_headers 
+                        if level > section_header_level
+                    ]
                 chunks.extend(section_chunks)
         
         return chunks
@@ -168,6 +195,147 @@ class StructuralStrategy(BaseStrategy):
             current_level = header.level
         
         return "/" + "/".join(path_parts)
+    
+    def _get_contextual_header_stack(
+        self,
+        chunk_start_line: int,
+        all_headers: List[Header],
+    ) -> List[Header]:
+        """
+        Get the active header stack at the start of a chunk.
+        
+        This is the stack of headers that define the structural context
+        of the chunk - where it sits in the document tree.
+        
+        IMPORTANT: Stack is built from ALL headers before chunk start,
+        regardless of their level. This ensures header_path reflects
+        the true document hierarchy.
+        
+        max_structural_level only affects CHUNK BOUNDARIES (where to split),
+        NOT which headers appear in header_path.
+        
+        Args:
+            chunk_start_line: First line of the chunk (1-indexed)
+            all_headers: All headers in the document
+            
+        Returns:
+            List of headers forming the contextual stack (ancestors)
+        """
+        stack: List[Header] = []
+        
+        for header in all_headers:
+            # Only consider headers BEFORE chunk start
+            if header.line >= chunk_start_line:
+                break
+            
+            # Build hierarchy: new header replaces same/higher levels
+            # NO filtering by max_structural_level - all headers can be in path
+            while stack and stack[-1].level >= header.level:
+                stack.pop()
+            stack.append(header)
+        
+        return stack
+    
+    def _get_contextual_level(self, header_stack: List[Header]) -> int:
+        """
+        Get the contextual level from header stack.
+        
+        Contextual level is the level of the deepest header in the
+        ALREADY FILTERED contextual stack (stack doesn't contain
+        levels > max_structural_level).
+        
+        Args:
+            header_stack: The contextual header stack (already filtered)
+            
+        Returns:
+            The contextual level (1 to max_structural_level), or 0 if stack is empty
+        """
+        if not header_stack:
+            return 0
+        return header_stack[-1].level
+    
+    def _build_header_path_from_stack(self, header_stack: List[Header]) -> str:
+        """
+        Build header_path from contextual header stack.
+        
+        Args:
+            header_stack: List of ancestor headers
+            
+        Returns:
+            Header path string like "/Level1/Level2", or empty string if stack is empty
+        """
+        if not header_stack:
+            return ""
+        return "/" + "/".join(h.text for h in header_stack)
+    
+    def _build_section_tags(
+        self,
+        chunk_content: str,
+        contextual_level: int,
+        header_stack: List[Header],
+        first_header_in_path: Tuple[int, str] | None = None,
+    ) -> List[str]:
+        """
+        Build section_tags from headers inside the chunk.
+        
+        section_tags contains ALL headers that are children of the root section
+        (last header in header_path). This is determined by:
+        1. All headers with level > contextual_level (deeper than root section)
+        2. Headers with level == contextual_level, whose TEXT does not match
+           the root section header (siblings of root, not root itself)
+        
+        IMPORTANT: 
+        - max_structural_level is NOT used in section_tags rules
+        - Everything is relative to contextual_level (level of root section)
+        - If root section is H4, then H5/H6 go to section_tags
+        - If root section is H2, then H3/H4/H5/H6 go to section_tags
+        
+        Args:
+            chunk_content: The text content of the chunk
+            contextual_level: The level of the root section (last header in header_path)
+            header_stack: The contextual header stack (to identify root section)
+            first_header_in_path: Optional (level, text) of first header that was added to path
+                                  from this chunk - should be excluded from section_tags
+            
+        Returns:
+            List of header texts (deduplicated, order preserved)
+        """
+        # Get text of the root section (last header in stack) for exclusion
+        root_section_text = header_stack[-1].text if header_stack else None
+        
+        # Also exclude the first header if it was added to path from this chunk
+        excluded_texts = set()
+        if root_section_text:
+            excluded_texts.add(root_section_text)
+        if first_header_in_path:
+            excluded_texts.add(first_header_in_path[1])
+        
+        # Find headers in chunk content
+        chunk_headers = self._find_headers_in_content(chunk_content)
+        
+        section_tags: List[str] = []
+        seen_texts: set = set()
+        
+        for level, text in chunk_headers:
+            # Skip if already added (deduplication)
+            if text in seen_texts:
+                continue
+            
+            # Skip if this is the root section header itself
+            if text in excluded_texts:
+                continue
+            
+            # Add if level > contextual_level (child of root section)
+            # This works for ANY contextual_level, not just max_structural_level
+            if level > contextual_level:
+                section_tags.append(text)
+                seen_texts.add(text)
+            # Add if level == contextual_level (sibling of root, not root itself)
+            elif level == contextual_level:
+                section_tags.append(text)
+                seen_texts.add(text)
+        
+        return section_tags
     
     def _find_headers_in_range(
         self, 
@@ -224,12 +392,27 @@ class StructuralStrategy(BaseStrategy):
         chunk_content: str, 
         all_headers: List[Header],
         chunk_start_line: int
-    ) -> Tuple[str, List[str]]:
+    ) -> Tuple[str, List[str], int]:
         """
-        Build header_path based on FIRST header in chunk content.
+        Build header_path and section_tags for a chunk.
         
-        This ensures header_path reflects the primary section of the chunk,
-        not the last header encountered before the chunk.
+        New semantics:
+        - header_path = structural context (where in document tree)
+        - section_tags = local sections inside chunk (children of root section)
+        
+        Algorithm:
+        1. Build contextual stack from headers BEFORE chunk start
+           (only levels <= max_structural_level for CHUNK BOUNDARIES)
+        2. Find first non-empty line of chunk
+        3. If it's a header with level <= max_structural_level, add to stack
+        4. If it's a header with level > max_structural_level, DON'T add to stack
+        5. Build header_path from final stack
+        6. Build section_tags from ALL headers deeper than contextual_level
+           (relative logic, not absolute max_structural_level)
+        
+        IMPORTANT: section_tags uses RELATIVE logic based on contextual_level,
+        not absolute max_structural_level. If header_path ends with H3,
+        then H4/H5/H6 go to section_tags.
         
         Args:
             chunk_content: The text content of the chunk
@@ -237,40 +420,61 @@ class StructuralStrategy(BaseStrategy):
             chunk_start_line: Starting line of the chunk (1-indexed)
             
         Returns:
-            Tuple of (header_path, sub_headers_list)
-            - header_path: Path to first header in chunk
-            - sub_headers_list: List of additional header texts in chunk
+            Tuple of (header_path, section_tags, header_level)
         """
-        # Find headers in chunk content
+        # Step 1: Get contextual header stack (headers BEFORE chunk, filtered by max_structural_level)
+        header_stack = self._get_contextual_header_stack(chunk_start_line, all_headers)
+        
+        # Step 2-4: Find headers in chunk content and process first header
         chunk_headers = self._find_headers_in_content(chunk_content)
         
-        if not chunk_headers:
-            # No headers in chunk - return empty
-            return "", []
+        # Check for single-header-only chunk special case
+        is_single_header_only = (
+            len(chunk_headers) == 1 and
+            chunk_content.strip() == f"{'#' * chunk_headers[0][0]} {chunk_headers[0][1]}"
+        )
         
-        first_level, first_text = chunk_headers[0]
+        # Track if we added a header from this chunk to the path
+        first_header_added_to_path: Tuple[int, str] | None = None
         
-        # Build hierarchy path for the first header
-        # Find all ancestor headers (headers before this chunk with lower level)
-        ancestors = []
-        for h in all_headers:
-            if h.line >= chunk_start_line:
-                break
-            # Keep track of hierarchy
-            if h.level < first_level:
-                # This could be an ancestor
-                # Remove any ancestors at same or higher level
-                while ancestors and ancestors[-1].level >= h.level:
-                    ancestors.pop()
-                ancestors.append(h)
+        if chunk_headers:
+            first_level, first_text = chunk_headers[0]
+            
+            # ONLY add first header to stack if it's a STRUCTURAL header (level <= max_structural_level)
+            # Headers deeper than max_structural_level stay in section_tags, NOT in header_path
+            # This ensures all chunks within a section (e.g., SDE 12) have the SAME header_path
+            if first_level <= self.max_structural_level:
+                # Build hierarchy: new header replaces same/higher levels
+                while header_stack and header_stack[-1].level >= first_level:
+                    header_stack.pop()
+                # Create a temporary Header object for the first header
+                first_header = Header(
+                    level=first_level,
+                    text=first_text,
+                    line=chunk_start_line  # Approximate line
+                )
+                header_stack.append(first_header)
+                first_header_added_to_path = (first_level, first_text)
+            # If first header is H3+ (level > max_structural_level), it goes to section_tags
+            # header_path stays at the parent section level (e.g., SDE 12)
         
-        # Build path from ancestors + first header
-        path_parts = [h.text for h in ancestors]
-        path_parts.append(first_text)
+        # Step 5: Build header_path from stack
+        header_path = self._build_header_path_from_stack(header_stack)
         
-        header_path = "/" + "/".join(path_parts)
+        # Step 6: Get contextual level and build section_tags
+        # contextual_level is the level of the ROOT SECTION (last header in path)
+        # section_tags will contain ALL headers with level > contextual_level
+        contextual_level = self._get_contextual_level(header_stack)
+        section_tags = self._build_section_tags(
+            chunk_content, contextual_level, header_stack, first_header_added_to_path
+        )
         
-        # Collect sub_headers (additional headers after the first)
-        sub_headers = [text for _, text in chunk_headers[1:]]
+        # For single-header-only chunks, section_tags should be empty
+        # (the header is in header_path, not section_tags)
+        if is_single_header_only:
+            section_tags = []
         
-        return header_path, sub_headers
+        # Calculate header_level (level of deepest header in header_path)
+        header_level = contextual_level if header_stack else 0
+        
+        return header_path, section_tags, header_level

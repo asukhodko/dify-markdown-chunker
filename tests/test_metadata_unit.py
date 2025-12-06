@@ -60,10 +60,15 @@ class TestSDE12ImpactCase:
     
     def test_multiple_headers_in_chunk_uses_first(self):
         """
-        When a chunk contains multiple headers, header_path uses the first one.
+        NEW SEMANTICS: H3 headers go to section_tags, not header_path.
+        All H3 headers within a structural section (H2) should be in section_tags.
         """
-        # Create content that will be in a single chunk with multiple headers
-        md_text = """### Impact (Delivery)
+        # Create content with H1/H2 structural context and multiple H3 headers
+        md_text = """# Критерии грейдов SDE
+
+## SDE 12 (T@T1, Junior-, Младший разработчик)
+
+### Impact (Delivery)
 Основная задача Junior — учиться.
 
 ### Complexity
@@ -76,24 +81,30 @@ class TestSDE12ImpactCase:
         chunker = MarkdownChunker(config)
         chunks = chunker.chunk(md_text)
         
-        # Should have one chunk with all three headers
-        assert len(chunks) >= 1
+        # Should have chunks for H1 and H2 sections
+        assert len(chunks) >= 2
         
-        # Find chunk with multiple headers
+        # Find the SDE 12 chunk (should contain all H3 headers)
+        sde12_chunk = None
         for chunk in chunks:
-            content = chunk.content
-            if '### Impact' in content and '### Complexity' in content:
-                header_path = chunk.metadata.get('header_path', '')
-                # Should end with Impact, not Complexity
-                assert 'Impact' in header_path, (
-                    f"header_path should contain 'Impact', got '{header_path}'"
-                )
-                # sub_headers should have the other headers
-                sub_headers = chunk.metadata.get('sub_headers', [])
-                if sub_headers:
-                    assert any('Complexity' in h for h in sub_headers), (
-                        f"sub_headers should contain 'Complexity', got {sub_headers}"
-                    )
+            if 'SDE 12' in chunk.metadata.get('header_path', ''):
+                sde12_chunk = chunk
+                break
+        
+        assert sde12_chunk is not None, "Should have a chunk for SDE 12"
+        
+        header_path = sde12_chunk.metadata.get('header_path', '')
+        section_tags = sde12_chunk.metadata.get('section_tags', [])
+        
+        # header_path should NOT contain any H3 headers
+        assert 'Impact' not in header_path, f"header_path should NOT contain 'Impact', got '{header_path}'"
+        assert 'Complexity' not in header_path, f"header_path should NOT contain 'Complexity', got '{header_path}'"
+        assert 'Leadership' not in header_path, f"header_path should NOT contain 'Leadership', got '{header_path}'"
+        
+        # section_tags should contain ALL H3 headers
+        assert 'Impact (Delivery)' in section_tags, f"section_tags should contain 'Impact (Delivery)', got {section_tags}"
+        assert 'Complexity' in section_tags, f"section_tags should contain 'Complexity', got {section_tags}"
+        assert 'Leadership' in section_tags, f"section_tags should contain 'Leadership', got {section_tags}"
 
 
 

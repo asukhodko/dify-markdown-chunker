@@ -258,12 +258,36 @@ class TestProperty4NonEmptyHeaderPath:
                     has_header = True
                     break
             
-            # If chunk has headers, header_path must be non-empty string
+            # If chunk has headers, header_path must be a string
+            # NEW SEMANTICS: header_path can be empty if chunk only has H3+ headers
+            # without structural context (H1/H2 ancestors)
             if has_header:
-                assert header_path and isinstance(header_path, str) and header_path != '[]', (
-                    f"Chunk with headers must have non-empty header_path string, "
-                    f"got '{header_path}'"
-                )
+                # Check if chunk has structural headers (H1 or H2)
+                has_structural_header = False
+                in_code = False
+                for line in content.split('\n'):
+                    if line.strip().startswith('```'):
+                        in_code = not in_code
+                        continue
+                    if in_code:
+                        continue
+                    match = re.match(r'^(#{1,2})\s+', line)
+                    if match:
+                        has_structural_header = True
+                        break
+                
+                # Only require non-empty header_path if chunk has structural headers
+                if has_structural_header:
+                    assert header_path and isinstance(header_path, str) and header_path != '[]', (
+                        f"Chunk with structural headers (H1/H2) must have non-empty header_path string, "
+                        f"got '{header_path}'"
+                    )
+                else:
+                    # For chunks with only H3+ headers, header_path can be empty
+                    # but section_tags should contain the headers
+                    assert isinstance(header_path, str), (
+                        f"header_path must be a string, got {type(header_path)}"
+                    )
 
 
 class TestProperty5SmallChunkMarking:

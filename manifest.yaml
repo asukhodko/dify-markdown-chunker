@@ -1,4 +1,4 @@
-version: 2.0.2-a0
+version: 2.0.2-a1
 type: plugin
 author: asukhodko
 name: markdown_chunker
@@ -29,7 +29,7 @@ plugins:
     - provider/markdown_chunker.yaml
 
 meta:
-  version: 2.0.2-a0
+  version: 2.0.2-a1
   arch:
     - amd64
     - arm64
