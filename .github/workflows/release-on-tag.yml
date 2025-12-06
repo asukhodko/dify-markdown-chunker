@@ -1,0 +1,105 @@
+name: Build and release markdown-chunker
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write   # нужно для создания релиза и загрузки asset
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show ref info
+        run: |
+          echo "GITHUB_REF: $GITHUB_REF"
+          echo "GITHUB_SHA: $GITHUB_SHA"
+
+      - name: Verify manifest version matches tag
+        run: |
+          set -euo pipefail
+
+          FILE=manifest.yaml
+
+          if [ ! -f "$FILE" ]; then
+            echo "❌ $FILE not found"
+            exit 1
+          fi
+
+          # TAG = последняя часть refs/tags/v2.0.2-a0 → v2.0.2-a0
+          TAG="${GITHUB_REF##*/}"
+          # TAG_VERSION = без префикса v → 2.0.2-a0
+          TAG_VERSION="${TAG#v}"
+
+          # верхнеуровневая version:
+          MAIN_VERSION=$(awk '/^version:/ {print $2; exit}' "$FILE")
+          # meta.version (строка с двумя пробелами перед version:)
+          META_VERSION=$(awk '/^  version:/ {print $2; exit}' "$FILE")
+
+          echo "Tag:                      $TAG"
+          echo "Tag version:              $TAG_VERSION"
+          echo "manifest.version:         $MAIN_VERSION"
+          echo "manifest.meta.version:    $META_VERSION"
+
+          if [ -z "$MAIN_VERSION" ] || [ -z "$META_VERSION" ]; then
+            echo "❌ Failed to extract version or meta.version from $FILE"
+            exit 1
+          fi
+
+          if [ "$MAIN_VERSION" != "$META_VERSION" ]; then
+            echo "❌ version ($MAIN_VERSION) != meta.version ($META_VERSION)"
+            exit 1
+          fi
+
+          if [ "$TAG_VERSION" != "$MAIN_VERSION" ]; then
+            echo "❌ Tag version ($TAG_VERSION) != manifest version ($MAIN_VERSION)"
+            exit 1
+          fi
+
+          echo "✅ Tag, version и meta.version синхронизированы"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make curl
+
+      - name: Install dify-plugin CLI
+        run: |
+          curl -L https://github.com/langgenius/dify-plugin-daemon/releases/latest/download/dify-plugin-linux-amd64 -o /tmp/dify-plugin
+          chmod +x /tmp/dify-plugin
+          sudo mv /tmp/dify-plugin /usr/local/bin/dify-plugin
+          dify-plugin version || true
+
+      - name: Build package (make package)
+        run: |
+          chmod +x package_official.sh || true
+          make package
+
+      - name: Locate generated .difypkg
+        id: find_package
+        run: |
+          set -euo pipefail
+          FILE=$(ls markdown-chunker-*.difypkg 2>/dev/null | head -n 1 || true)
+          if [ -z "$FILE" ]; then
+            echo "❌ No markdown-chunker-*.difypkg found in repository root"
+            ls -R
+            exit 1
+          fi
+          echo "Found package: $FILE"
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release and upload asset
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          artifacts: ${{ steps.find_package.outputs.file }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          draft: false
+          prerelease: false
