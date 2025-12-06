@@ -103,8 +103,12 @@ class Chunk:
     
     Attributes:
         content: The text content of the chunk
-        start_line: Starting line number (1-indexed)
-        end_line: Ending line number (1-indexed)
+        start_line: Starting line number (1-indexed) - provides approximate location
+            in source document. Line ranges may overlap between adjacent chunks.
+            For precise chunk location, use the content text itself.
+        end_line: Ending line number (1-indexed) - provides approximate location
+            in source document. Line ranges may overlap between adjacent chunks.
+            For precise chunk location, use the content text itself.
         metadata: Additional information about the chunk
         
     Metadata Fields:
@@ -121,10 +125,27 @@ class Chunk:
         sub_headers (List[str], optional): Additional header texts within
             the chunk (excluding the first header used for header_path).
             Only present when chunk contains multiple headers.
-        small_chunk (bool): True if chunk size < min_chunk_size and
-            cannot be merged with adjacent chunks without exceeding max_chunk_size.
+        small_chunk (bool): True if chunk meets ALL conditions:
+            - Size < min_chunk_size
+            - Cannot merge with adjacent chunks without exceeding max_chunk_size
+            - Chunk is structurally weak (lacks strong headers, multiple paragraphs,
+              or sufficient meaningful content)
+            Note: Chunks below min_chunk_size that are structurally strong
+            (e.g., have level 2-3 headers, multiple paragraphs, or substantial text)
+            will NOT be flagged as small_chunk.
         small_chunk_reason (str): Reason for small_chunk flag.
             Currently only "cannot_merge" is used.
+        previous_content (str, optional): Last N characters from previous chunk.
+            Size of context window determined by overlap_size configuration.
+            This is metadata-only context; chunk.content does NOT contain
+            duplicated text from previous chunk.
+        next_content (str, optional): First N characters from next chunk.
+            Size of context window determined by overlap_size configuration.
+            This is metadata-only context; chunk.content does NOT contain
+            duplicated text from next chunk.
+        overlap_size (int, optional): Size of context window (in characters)
+            used for previous_content/next_content metadata extraction.
+            Does NOT indicate physical text overlap in chunk.content.
     """
     content: str
     start_line: int

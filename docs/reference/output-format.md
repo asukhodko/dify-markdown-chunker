@@ -81,6 +81,7 @@ When metadata is included, each chunk contains **only RAG-useful fields**. Stati
 - `preamble`: If present, contains `{content: "..."}` with preamble text
 
 ### Overlap Fields (When Overlap Enabled)
+**Deprecated - See "Overlap Fields (Context Windows)" section for current implementation**
 - `has_overlap`: Whether chunk has overlap
 - `overlap_type`: Type of overlap (prefix/suffix)
 
@@ -99,6 +100,50 @@ When metadata is included, each chunk contains **only RAG-useful fields**. Stati
 - `row_count`: Number of rows
 - `column_count`: Number of columns
 - `has_header`: Whether table has header row
+
+### Small Chunk Fields
+
+Chunks may be marked as "small" based on specific criteria:
+
+- `small_chunk`: Boolean flag indicating if chunk is small AND structurally weak
+- `small_chunk_reason`: Reason for flagging (currently only "cannot_merge")
+
+**Small Chunk Criteria (ALL must be met):**
+1. Chunk size is below `min_chunk_size` configuration
+2. Cannot merge with adjacent chunks without exceeding `max_chunk_size`  
+3. Chunk is structurally weak (lacks strong headers, multiple paragraphs, or meaningful content)
+
+**Structural Strength Indicators (ANY prevents small_chunk flag):**
+- Has header level 2 (`##`) or 3 (`###`)
+- Contains at least 3 lines of non-header content
+- Text content exceeds 100 characters after header extraction
+- Contains at least 2 paragraph breaks (double newline)
+
+**Important:** A chunk below `min_chunk_size` that has structural strength (e.g., level 2-3 headers, multiple paragraphs, substantial text) will NOT be flagged as `small_chunk`.
+
+**Current Limitation:** Lists (bullet/numbered) are not yet considered as structural strength indicators.
+
+### Line Range Fields
+
+- `start_line`: Starting line number (1-indexed) - approximate location
+- `end_line`: Ending line number (1-indexed) - approximate location
+
+**Note:** Line ranges provide approximate locations in the source document. Adjacent chunks may have overlapping `start_line`/`end_line` ranges. For precise chunk location, use the content text itself.
+
+### Overlap Fields (Context Windows)
+
+When overlap is enabled (`overlap_size > 0`):
+
+- `previous_content`: Last N characters from previous chunk (metadata only)
+- `next_content`: First N characters from next chunk (metadata only)
+- `overlap_size`: Size of context window in characters
+
+**Important:** The overlap model uses **metadata-only context windows**:
+- `overlap_size` is the context window size, NOT the amount of duplicated text
+- `chunk.content` contains distinct, non-overlapping text
+- `previous_content` and `next_content` are metadata fields only
+- No physical text duplication occurs in chunk content
+- This design avoids index bloat and semantic search confusion
 
 ### Filtered Out (Not Included)
 

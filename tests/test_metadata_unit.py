@@ -62,6 +62,9 @@ class TestSDE12ImpactCase:
         """
         NEW SEMANTICS: H3 headers go to section_tags, not header_path.
         All H3 headers within a structural section (H2) should be in section_tags.
+        
+        NOTE: With header merging enabled, small H1 headers may merge with H2 sections,
+        resulting in fewer chunks than before.
         """
         # Create content with H1/H2 structural context and multiple H3 headers
         md_text = """# Критерии грейдов SDE
@@ -81,17 +84,17 @@ class TestSDE12ImpactCase:
         chunker = MarkdownChunker(config)
         chunks = chunker.chunk(md_text)
         
-        # Should have chunks for H1 and H2 sections
-        assert len(chunks) >= 2
+        # With header merging, may have 1 chunk (H1 merged with H2) or 2 chunks
+        assert len(chunks) >= 1
         
-        # Find the SDE 12 chunk (should contain all H3 headers)
+        # Find a chunk that contains SDE 12 content (either in header_path or content)
         sde12_chunk = None
         for chunk in chunks:
-            if 'SDE 12' in chunk.metadata.get('header_path', ''):
+            if 'SDE 12' in chunk.metadata.get('header_path', '') or 'SDE 12' in chunk.content:
                 sde12_chunk = chunk
                 break
         
-        assert sde12_chunk is not None, "Should have a chunk for SDE 12"
+        assert sde12_chunk is not None, "Should have a chunk containing SDE 12"
         
         header_path = sde12_chunk.metadata.get('header_path', '')
         section_tags = sde12_chunk.metadata.get('section_tags', [])

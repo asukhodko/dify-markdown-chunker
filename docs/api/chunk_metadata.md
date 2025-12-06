@@ -85,15 +85,27 @@ This produces:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `small_chunk` | `bool` | `True` if chunk size < `min_chunk_size` and cannot be merged |
+| `small_chunk` | `bool` | `True` if chunk is small AND structurally weak |
 | `small_chunk_reason` | `str` | Reason for small chunk: `"cannot_merge"` |
 
-**Conditions for `small_chunk: true`:**
+**Conditions for `small_chunk: true` (ALL must be met):**
 1. Chunk size is below `min_chunk_size` configuration
 2. Cannot merge with adjacent chunks without exceeding `max_chunk_size`
-3. Preamble chunks are never merged with structural chunks
-4. Merge prefers chunks in the same logical section (same `header_path` prefix up to `##` level)
-5. Left (previous) chunk is preferred over right (next) chunk for merging
+3. Chunk is structurally weak (lacks strong headers, multiple paragraphs, or meaningful content)
+
+**Important:** A chunk below `min_chunk_size` that is **structurally strong** will NOT be flagged as `small_chunk`. Structural strength indicators:
+- Has header level 2 (`##`) or 3 (`###`)
+- Contains at least 3 lines of non-header content
+- Text content exceeds 100 characters after header extraction
+- Contains at least 2 paragraph breaks (double newline)
+
+**Current Limitation:** Lists (bullet/numbered) are not yet considered as structural strength indicators. This may be added in future versions.
+
+**Merge behavior:**
+- Preamble chunks are never merged with structural chunks
+- Merge prefers chunks in the same logical section (same `header_path` prefix up to `##` level)
+- Left (previous) chunk is preferred over right (next) chunk for merging
+- Small header-only chunks (level 1-2, < 150 chars) are merged with their section body before size-based merging
 
 ### Oversize Handling
 
@@ -104,13 +116,38 @@ This produces:
 
 ### Overlap Fields
 
+**Overview:** The overlap model in v2 uses metadata-only context windows. There is **no physical text duplication** in `chunk.content`. Context from neighboring chunks is stored only in metadata fields.
+
 When overlap is enabled (`overlap_size > 0`):
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `previous_content` | `str` | Last N characters from previous chunk |
-| `next_content` | `str` | First N characters from next chunk |
-| `overlap_size` | `int` | Actual overlap size in characters |
+| `previous_content` | `str` | Last N characters from previous chunk (metadata only) |
+| `next_content` | `str` | First N characters from next chunk (metadata only) |
+| `overlap_size` | `int` | Size of context window in characters (NOT physical text overlap) |
+
+**Key Points:**
+- `overlap_size` is the **context window size**, not the amount of duplicated text
+- `chunk.content` contains **distinct, non-overlapping text**
+- `previous_content` and `next_content` provide **metadata context only**
+- Context fields help language models understand chunk boundaries without text duplication
+- This design avoids index bloat and semantic search confusion
+
+**Example:**
+```python
+chunker = MarkdownChunker(ChunkConfig(overlap_size=100))
+chunks = chunker.chunk(document)
+
+# chunk.content does NOT contain duplicated text
+assert chunks[1].content not in chunks[0].content
+assert chunks[0].content not in chunks[1].content
+
+# Context is in metadata only
+if 'previous_content' in chunks[1].metadata:
+    # This context is from chunks[0], but not in chunks[1].content
+    context = chunks[1].metadata['previous_content']
+    assert context in chunks[0].content
+```
 
 ## Usage Examples
 

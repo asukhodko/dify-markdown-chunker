@@ -129,12 +129,29 @@ class MarkdownChunker:
     
     def _apply_overlap(self, chunks: List[Chunk]) -> List[Chunk]:
         """
-        Apply overlap between chunks.
+        Apply metadata-only overlap context between chunks.
         
-        Adds:
-        - previous_content: last N chars from previous chunk (for all except first)
-        - next_content: first N chars from next chunk (for all except last)
-        - Respects word boundaries
+        This implements the v2 overlap model where context from neighboring chunks
+        is stored in metadata fields only. There is NO physical text duplication
+        in chunk.content.
+        
+        Adds metadata fields:
+        - previous_content: Last N characters from previous chunk (all except first)
+        - next_content: First N characters from next chunk (all except last)
+        - overlap_size: Size of context window used
+        
+        Key points:
+        - overlap_size parameter determines context window size
+        - chunk.content remains distinct and non-overlapping
+        - Context extraction respects word boundaries
+        - Helps language models understand chunk boundaries without text duplication
+        - Avoids index bloat and semantic search confusion
+        
+        Args:
+            chunks: List of chunks to add overlap metadata to
+            
+        Returns:
+            Same chunks with overlap metadata added
         """
         if len(chunks) <= 1:
             return chunks
@@ -248,13 +265,25 @@ class MarkdownChunker:
         Merge chunks smaller than min_chunk_size with adjacent chunks.
         
         Strategy:
-        1. Prefer merging with previous chunk
-        2. If would exceed max_chunk_size, try next chunk
-        3. If both exceed, keep as-is with 'small_chunk' metadata flag
+        1. First, merge small header-only chunks with their section body
+        2. Then merge remaining small chunks with adjacent chunks
+        3. For chunks that cannot merge, flag as small_chunk if structurally weak
+        
+        Small chunk flagging criteria:
+        - Chunk size is below min_chunk_size
+        - Cannot merge with adjacent chunks without exceeding max_chunk_size
+        - Chunk is structurally weak (lacks significant headers, content, or paragraphs)
+        
+        Note: A chunk below min_chunk_size that is structurally strong (has headers,
+        multiple paragraphs, etc.) will NOT be flagged as small_chunk.
         """
         if len(chunks) <= 1:
             return chunks
         
+        # Phase 1: Merge small header chunks with their section body
+        chunks = self._merge_header_chunks(chunks)
+        
+        # Phase 2: Size-based merging for remaining small chunks
         result = []
         i = 0
         
@@ -267,14 +296,175 @@ class MarkdownChunker:
                     i += 1
                     continue
                 else:
-                    # Cannot merge - flag it
-                    chunk.metadata['small_chunk'] = True
-                    chunk.metadata['small_chunk_reason'] = 'cannot_merge'
+                    # Cannot merge - check if structurally weak before flagging
+                    if not self._is_structurally_strong(chunk):
+                        chunk.metadata['small_chunk'] = True
+                        chunk.metadata['small_chunk_reason'] = 'cannot_merge'
             
             result.append(chunk)
             i += 1
         
         return result
+    
+    def _merge_header_chunks(self, chunks: List[Chunk]) -> List[Chunk]:
+        """
+        Merge small header-only chunks with their section body.
+        
+        This addresses the issue where top-level headers create standalone chunks
+        with minimal content, while the actual section body is in a separate chunk.
+        
+        Merge conditions (all must be met):
+        - Current chunk has header level 1 or 2
+        - Current chunk size < 150 characters (heuristic threshold)
+        - Current chunk is header/section type, not preamble
+        - Next chunk is in same section or is a child section
+        - Next chunk is not preamble
+        
+        Returns:
+            List of chunks with header chunks merged into their section bodies
+        """
+        if len(chunks) <= 1:
+            return chunks
+        
+        result = []
+        i = 0
+        
+        while i < len(chunks):
+            current = chunks[i]
+            
+            # Check if this chunk should be merged with next
+            if i + 1 < len(chunks) and self._should_merge_with_next(current, chunks[i + 1]):
+                next_chunk = chunks[i + 1]
+                
+                # Merge current header chunk with next chunk
+                merged_content = current.content + "\n\n" + next_chunk.content
+                merged_chunk = Chunk(
+                    content=merged_content,
+                    start_line=current.start_line,
+                    end_line=next_chunk.end_line,
+                    metadata={**current.metadata}
+                )
+                
+                # Update metadata after merge
+                # Preserve top-level header_path from current chunk
+                if 'section_tags' in current.metadata and 'section_tags' in next_chunk.metadata:
+                    # Combine section tags from both chunks
+                    merged_chunk.metadata['section_tags'] = (
+                        current.metadata['section_tags'] + next_chunk.metadata['section_tags']
+                    )
+                elif 'section_tags' in next_chunk.metadata:
+                    merged_chunk.metadata['section_tags'] = next_chunk.metadata['section_tags']
+                
+                result.append(merged_chunk)
+                i += 2  # Skip next chunk since we merged it
+            else:
+                result.append(current)
+                i += 1
+        
+        return result
+    
+    def _should_merge_with_next(self, current: Chunk, next_chunk: Chunk) -> bool:
+        """
+        Determine if a small header chunk should merge with the next chunk.
+        
+        Merge conditions (all must be met):
+        1. Current chunk has header level 1 or 2 (top-level headers)
+        2. Current chunk size < 150 characters (configurable heuristic)
+        3. Current chunk is header/section type, not preamble
+        4. Next chunk is in same section OR is a child section
+        5. Next chunk is not preamble
+        
+        Args:
+            current: Current chunk to check
+            next_chunk: Next chunk in sequence
+            
+        Returns:
+            True if current chunk should merge with next chunk
+        """
+        # Condition 1: Check header level (1 or 2 only)
+        header_level = current.metadata.get('header_level', 0)
+        if header_level not in [1, 2]:
+            return False
+        
+        # Condition 2: Check size threshold (150 characters heuristic)
+        HEADER_MERGE_THRESHOLD = 150
+        if current.size >= HEADER_MERGE_THRESHOLD:
+            return False
+        
+        # Condition 3: Current chunk must be header/section type, not preamble
+        current_type = current.metadata.get('content_type', '')
+        if current_type == 'preamble':
+            return False
+        
+        # Condition 5: Next chunk must not be preamble
+        next_type = next_chunk.metadata.get('content_type', '')
+        if next_type == 'preamble':
+            return False
+        
+        # Condition 4: Check if next chunk is in same section or is child section
+        current_path = current.metadata.get('header_path', '')
+        next_path = next_chunk.metadata.get('header_path', '')
+        
+        # Handle empty paths
+        if not current_path or not next_path:
+            return False
+        
+        # Same section: paths are identical
+        if current_path == next_path:
+            return True
+        
+        # Child section: next_path starts with current_path
+        if next_path.startswith(current_path + '/'):
+            return True
+        
+        return False
+    
+    def _is_structurally_strong(self, chunk: Chunk) -> bool:
+        """
+        Determine if a chunk is structurally strong despite being small.
+        
+        A chunk is considered structurally strong if ANY of these conditions are true:
+        1. Has strong header: Contains header level 2 (##) or 3 (###)
+        2. Sufficient text lines: Contains at least 3 lines of non-header content
+        3. Meaningful content: Text content exceeds 100 characters after header extraction
+        4. Multiple paragraphs: Contains at least 2 paragraph breaks (double newline)
+        
+        Current limitation: Lists (bullet/numbered) are NOT considered as structural
+        strength indicators in this version. Support planned for future iterations.
+        
+        Args:
+            chunk: Chunk to evaluate
+            
+        Returns:
+            True if chunk is structurally strong, False otherwise
+        """
+        content = chunk.content
+        
+        # Indicator 1: Has strong header (level 2 or 3)
+        header_level = chunk.metadata.get('header_level', 0)
+        if header_level in [2, 3]:
+            return True
+        
+        # Indicator 4: Multiple paragraphs (at least 2 paragraph breaks)
+        paragraph_breaks = content.count('\n\n')
+        if paragraph_breaks >= 2:
+            return True
+        
+        # For indicators 2 and 3, extract non-header content
+        lines = content.split('\n')
+        non_header_lines = [line for line in lines if not line.strip().startswith('#')]
+        non_header_content = '\n'.join(non_header_lines)
+        
+        # Indicator 2: Sufficient text lines (at least 3 non-header lines)
+        non_empty_lines = [line for line in non_header_lines if line.strip()]
+        if len(non_empty_lines) >= 3:
+            return True
+        
+        # Indicator 3: Meaningful content (> 100 chars after header extraction)
+        if len(non_header_content.strip()) > 100:
+            return True
+        
+        return False
     
     def _try_merge(self, chunk: Chunk, result: List[Chunk], 
                    all_chunks: List[Chunk], index: int) -> bool:
