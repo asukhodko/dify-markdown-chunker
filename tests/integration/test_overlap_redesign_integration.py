@@ -7,7 +7,7 @@ Migration note: Updated for v2 API (December 2025)
 - include_metadata parameter removed (always included in v2)
 """
 
-from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
+from markdown_chunker_v2 import ChunkConfig, MarkdownChunker
 
 
 class TestOverlapRedesignIntegration:

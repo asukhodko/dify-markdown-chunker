@@ -14,7 +14,7 @@ from pathlib import Path
 
 import pytest
 
-from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
+from markdown_chunker_v2 import MarkdownChunker
 
 
 @pytest.fixture
@@ -71,7 +71,14 @@ def verify_metadata(chunk):
     # v2 stores content_type in metadata dict
     if "content_type" in chunk.metadata:
         assert chunk.metadata["content_type"] in [
-            "code", "text", "list", "table", "mixed", "header", "preamble", "section"
+            "code",
+            "text",
+            "list",
+            "table",
+            "mixed",
+            "header",
+            "preamble",
+            "section",
         ]
 
 
@@ -90,7 +97,7 @@ class TestAPIDocumentation:
         """Test that code blocks are preserved."""
         content = load_document(documents_dir, "api_documentation.md")
         chunks = chunker.chunk(content)
-        
+
         # Verify code blocks have balanced fences
         for chunk in chunks:
             fence_count = chunk.content.count("```")
@@ -180,26 +187,32 @@ class TestAllDocuments:
             "technical_spec.md",
         ]
 
-    @pytest.mark.parametrize("filename", [
-        "api_documentation.md",
-        "tutorial.md",
-        "readme.md",
-        "blog_post.md",
-        "technical_spec.md",
-    ])
+    @pytest.mark.parametrize(
+        "filename",
+        [
+            "api_documentation.md",
+            "tutorial.md",
+            "readme.md",
+            "blog_post.md",
+            "technical_spec.md",
+        ],
+    )
     def test_all_documents_no_content_loss(self, documents_dir, chunker, filename):
         """Test no content loss for all documents."""
         content = load_document(documents_dir, filename)
         chunks = chunker.chunk(content)
         verify_no_content_loss(content, chunks)
 
-    @pytest.mark.parametrize("filename", [
-        "api_documentation.md",
-        "tutorial.md",
-        "readme.md",
-        "blog_post.md",
-        "technical_spec.md",
-    ])
+    @pytest.mark.parametrize(
+        "filename",
+        [
+            "api_documentation.md",
+            "tutorial.md",
+            "readme.md",
+            "blog_post.md",
+            "technical_spec.md",
+        ],
+    )
     def test_all_documents_metadata_valid(self, documents_dir, chunker, filename):
         """Test metadata validity for all documents."""
         content = load_document(documents_dir, filename)
@@ -207,13 +220,16 @@ class TestAllDocuments:
         for chunk in chunks:
             verify_metadata(chunk)
 
-    @pytest.mark.parametrize("filename", [
-        "api_documentation.md",
-        "tutorial.md",
-        "readme.md",
-        "blog_post.md",
-        "technical_spec.md",
-    ])
+    @pytest.mark.parametrize(
+        "filename",
+        [
+            "api_documentation.md",
+            "tutorial.md",
+            "readme.md",
+            "blog_post.md",
+            "technical_spec.md",
+        ],
+    )
     def test_all_documents_line_numbers_valid(self, documents_dir, chunker, filename):
         """Test line numbers validity for all documents."""
         content = load_document(documents_dir, filename)

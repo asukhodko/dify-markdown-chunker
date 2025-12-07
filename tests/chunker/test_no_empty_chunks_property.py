@@ -14,7 +14,7 @@ Migration note: Migrated to markdown_chunker_v2 (December 2025)
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
+from markdown_chunker_v2 import ChunkConfig, MarkdownChunker
 
 
 # Hypothesis strategies for generating markdown
@@ -194,7 +194,7 @@ class TestNoEmptyChunksProperty:
 
 class TestNoEmptyChunksWithStrategies:
     """Test no empty chunks across different strategies.
-    
+
     Note: In v2, strategy is selected automatically based on content analysis.
     These tests verify no empty chunks regardless of which strategy is selected.
     """

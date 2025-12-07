@@ -258,7 +258,7 @@ class TestSerializationRoundTripProperty:
 
 class TestSerializationWithStrategies:
     """Test serialization across different strategies.
-    
+
     Note: In v2, strategy is selected automatically based on content analysis.
     These tests verify serialization works regardless of which strategy is selected.
     """

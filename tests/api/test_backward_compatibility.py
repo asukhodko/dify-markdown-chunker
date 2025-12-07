@@ -130,9 +130,7 @@ def test_chunk_with_default_config():
 def test_chunk_with_custom_config():
     """Test chunk() with custom config."""
     # v2 uses overlap_size > 0 to enable overlap (no enable_overlap param)
-    config = ChunkConfig(
-        max_chunk_size=1000, min_chunk_size=100, overlap_size=50
-    )
+    config = ChunkConfig(max_chunk_size=1000, min_chunk_size=100, overlap_size=50)
     chunker = MarkdownChunker(config)
     chunks = chunker.chunk("# Test\n\nContent here with some text")
 

@@ -11,7 +11,7 @@ V2 uses Parser.analyze() instead of extract_fenced_blocks().
 import pytest
 
 from markdown_chunker_v2.parser import Parser
-from markdown_chunker_v2.types import ContentAnalysis, FencedBlock
+from markdown_chunker_v2.types import ContentAnalysis
 
 
 class TestSmoke:
@@ -22,7 +22,7 @@ class TestSmoke:
         parser = Parser()
         markdown = "```python\nprint('hello')\n```"
         analysis = parser.analyze(markdown)
-        
+
         assert len(analysis.code_blocks) == 1
         assert analysis.code_blocks[0].language == "python"
         assert analysis.code_blocks[0].content == "print('hello')"
@@ -32,7 +32,7 @@ class TestSmoke:
         parser = Parser()
         markdown = "Line 1\n```python\ncode\n```\nLine 5"
         analysis = parser.analyze(markdown)
-        
+
         assert len(analysis.code_blocks) == 1
         assert analysis.code_blocks[0].start_line == 2  # Second line in 1-based
         assert analysis.code_blocks[0].end_line == 4  # Fourth line in 1-based
@@ -50,7 +50,7 @@ Some text
 console.log("second");
 ```"""
         analysis = parser.analyze(markdown)
-        
+
         assert len(analysis.code_blocks) == 2
         assert analysis.code_blocks[0].language == "python"
         assert analysis.code_blocks[1].language == "javascript"
@@ -60,9 +60,12 @@ console.log("second");
         parser = Parser()
         markdown = "```\nsome code\n```"
         analysis = parser.analyze(markdown)
-        
+
         assert len(analysis.code_blocks) == 1
-        assert analysis.code_blocks[0].language is None or analysis.code_blocks[0].language == ""
+        assert (
+            analysis.code_blocks[0].language is None
+            or analysis.code_blocks[0].language == ""
+        )
 
     def test_language_normalization(self):
         """Language names are extracted correctly."""
@@ -75,7 +78,9 @@ console.log("second");
 
         for markdown, expected_language in test_cases:
             analysis = parser.analyze(markdown)
-            assert len(analysis.code_blocks) == 1, f"Expected 1 block for {expected_language}"
+            assert (
+                len(analysis.code_blocks) == 1
+            ), f"Expected 1 block for {expected_language}"
             assert (
                 analysis.code_blocks[0].language == expected_language
             ), f"Expected language '{expected_language}', got '{analysis.code_blocks[0].language}'"
@@ -147,7 +152,7 @@ More content.
 Final content.
 """
         analysis = parser.analyze(markdown)
-        
+
         assert analysis.header_count == 4
         assert len(analysis.headers) == 4
         assert analysis.headers[0].level == 1
@@ -169,7 +174,7 @@ Final content.
 Some text after.
 """
         analysis = parser.analyze(markdown)
-        
+
         assert analysis.table_count == 1
         assert len(analysis.tables) == 1
         assert analysis.tables[0].column_count >= 1
@@ -188,7 +193,7 @@ def hello():
 ```
 """
         analysis = parser.analyze(markdown)
-        
+
         assert analysis.total_chars > 0
         assert analysis.total_lines > 0
         assert 0 <= analysis.code_ratio <= 1
@@ -197,7 +202,7 @@ def hello():
     def test_preamble_detection(self):
         """Preamble detection works."""
         parser = Parser()
-        
+
         # Document with preamble
         markdown_with_preamble = """This is preamble content.
 
@@ -207,7 +212,7 @@ Content after header.
 """
         analysis = parser.analyze(markdown_with_preamble)
         assert analysis.has_preamble is True
-        
+
         # Document without preamble
         markdown_no_preamble = """# First Header
 
@@ -229,7 +234,7 @@ Content after header.
 ## Another Real Header
 """
         analysis = parser.analyze(markdown)
-        
+
         # Should only find 2 real headers, not the ones inside code block
         assert analysis.header_count == 2
         assert analysis.headers[0].text == "Real Header"
@@ -243,10 +248,10 @@ class TestParserLineConversion:
         """Line at position works correctly."""
         parser = Parser()
         markdown = "Line 1\nLine 2\nLine 3"
-        
+
         # Position 0 is line 1
         assert parser.get_line_at_position(markdown, 0) == 1
-        
+
         # Position 7 (start of "Line 2") is line 2
         assert parser.get_line_at_position(markdown, 7) == 2
 
@@ -254,9 +259,9 @@ class TestParserLineConversion:
         """Position at line works correctly."""
         parser = Parser()
         markdown = "Line 1\nLine 2\nLine 3"
-        
+
         # Line 1 starts at position 0
         assert parser.get_position_at_line(markdown, 1) == 0
-        
+
         # Line 2 starts at position 7
         assert parser.get_position_at_line(markdown, 2) == 7

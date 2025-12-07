@@ -64,7 +64,7 @@ class TestChunkSimple:
 
         assert len(result["chunks"]) > 0
         chunk = result["chunks"][0]
-        
+
         # v2 metadata is in each chunk
         assert "metadata" in chunk
         assert isinstance(chunk["metadata"], dict)

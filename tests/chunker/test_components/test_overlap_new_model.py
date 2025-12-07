@@ -12,7 +12,7 @@ Note: In v2, overlap is controlled by overlap_size parameter:
 - overlap_size = 0: overlap disabled
 """
 
-from markdown_chunker_v2 import MarkdownChunker, ChunkConfig, Chunk
+from markdown_chunker_v2 import ChunkConfig, MarkdownChunker
 
 
 class TestOverlapNewModel:
@@ -54,11 +54,7 @@ Third chunk content here with enough text to be a chunk.
 
     def test_context_size_limits(self):
         """Validate context length constraints."""
-        config = ChunkConfig(
-            overlap_size=30,
-            max_chunk_size=200,
-            min_chunk_size=50
-        )
+        config = ChunkConfig(overlap_size=30, max_chunk_size=200, min_chunk_size=50)
         chunker = MarkdownChunker(config)
 
         markdown = """# First Section
@@ -90,16 +86,13 @@ Third chunk with additional content that is long enough too.
 
             # Check next_content size limit (with tolerance)
             if "next_content" in chunk.metadata:
-                assert len(chunk.metadata["next_content"]) <= max_size_with_tolerance, \
-                    f"next_content too large: {len(chunk.metadata['next_content'])}"
+                assert (
+                    len(chunk.metadata["next_content"]) <= max_size_with_tolerance
+                ), f"next_content too large: {len(chunk.metadata['next_content'])}"
 
     def test_boundary_chunks(self):
         """Validate first and last chunks have no context fields on boundaries."""
-        config = ChunkConfig(
-            overlap_size=50,
-            max_chunk_size=200,
-            min_chunk_size=50
-        )
+        config = ChunkConfig(overlap_size=50, max_chunk_size=200, min_chunk_size=50)
         chunker = MarkdownChunker(config)
 
         markdown = """# First Section
@@ -127,11 +120,7 @@ Third chunk content with enough text to be a standalone chunk.
 
     def test_metadata_mode_no_content_merge(self):
         """Ensure contexts are in metadata, not merged into content."""
-        config = ChunkConfig(
-            overlap_size=20,
-            max_chunk_size=200,
-            min_chunk_size=50
-        )
+        config = ChunkConfig(overlap_size=20, max_chunk_size=200, min_chunk_size=50)
         chunker = MarkdownChunker(config)
 
         markdown = """# First Section
@@ -152,14 +141,14 @@ Second chunk content here.
         for i, chunk in enumerate(chunks):
             if "next_content" in chunk.metadata:
                 # Next content should not be in this chunk's content
-                next_ctx = chunk.metadata["next_content"]
+                _ = chunk.metadata["next_content"]
                 # The context is from the next chunk, so it shouldn't be
                 # the main content of this chunk
                 pass  # v2 stores context separately
 
             if "previous_content" in chunk.metadata:
                 # Previous content should not be the main content
-                prev_ctx = chunk.metadata["previous_content"]
+                _ = chunk.metadata["previous_content"]
                 pass  # v2 stores context separately
 
     def test_overlap_disabled(self):
@@ -196,11 +185,7 @@ Second chunk content here.
 
     def test_context_is_substring_of_neighbor(self):
         """Verify context originates from correct neighbor."""
-        config = ChunkConfig(
-            overlap_size=50,
-            max_chunk_size=200,
-            min_chunk_size=50
-        )
+        config = ChunkConfig(overlap_size=50, max_chunk_size=200, min_chunk_size=50)
         chunker = MarkdownChunker(config)
 
         markdown = """# First Section
@@ -220,21 +205,21 @@ Second chunk with different text that is also long enough to be a chunk.
         if "next_content" in chunks[0].metadata:
             next_ctx = chunks[0].metadata["next_content"]
             # The context should be from the next chunk's content
-            assert next_ctx in chunks[1].content or chunks[1].content.startswith(next_ctx[:20])
+            assert next_ctx in chunks[1].content or chunks[1].content.startswith(
+                next_ctx[:20]
+            )
 
         # Check that previous_content of chunk 1 is from chunk 0
         if "previous_content" in chunks[1].metadata:
             prev_ctx = chunks[1].metadata["previous_content"]
             # The context should be from the previous chunk's content
-            assert prev_ctx in chunks[0].content or chunks[0].content.endswith(prev_ctx[-20:])
+            assert prev_ctx in chunks[0].content or chunks[0].content.endswith(
+                prev_ctx[-20:]
+            )
 
     def test_overlap_size_in_metadata(self):
         """Verify overlap_size is recorded in metadata when overlap is applied."""
-        config = ChunkConfig(
-            overlap_size=30,
-            max_chunk_size=200,
-            min_chunk_size=50
-        )
+        config = ChunkConfig(overlap_size=30, max_chunk_size=200, min_chunk_size=50)
         chunker = MarkdownChunker(config)
 
         markdown = """# First Section
@@ -262,11 +247,7 @@ class TestOverlapIntegration:
 
     def test_overlap_with_code_blocks(self):
         """Test overlap works correctly with code blocks."""
-        config = ChunkConfig(
-            overlap_size=50,
-            max_chunk_size=300,
-            min_chunk_size=50
-        )
+        config = ChunkConfig(overlap_size=50, max_chunk_size=300, min_chunk_size=50)
         chunker = MarkdownChunker(config)
 
         markdown = """# Code Example 1
@@ -294,11 +275,7 @@ def goodbye():
 
     def test_overlap_preserves_chunk_order(self):
         """Test that overlap doesn't affect chunk ordering."""
-        config = ChunkConfig(
-            overlap_size=50,
-            max_chunk_size=200,
-            min_chunk_size=50
-        )
+        config = ChunkConfig(overlap_size=50, max_chunk_size=200, min_chunk_size=50)
         chunker = MarkdownChunker(config)
 
         markdown = """# Section A
@@ -317,15 +294,11 @@ Content for section C.
 
         # Chunks should be in monotonic order
         for i in range(1, len(chunks)):
-            assert chunks[i].start_line >= chunks[i-1].start_line
+            assert chunks[i].start_line >= chunks[i - 1].start_line
 
     def test_overlap_with_large_document(self):
         """Test overlap with a larger document."""
-        config = ChunkConfig(
-            overlap_size=100,
-            max_chunk_size=500,
-            min_chunk_size=100
-        )
+        config = ChunkConfig(overlap_size=100, max_chunk_size=500, min_chunk_size=100)
         chunker = MarkdownChunker(config)
 
         # Generate a larger document

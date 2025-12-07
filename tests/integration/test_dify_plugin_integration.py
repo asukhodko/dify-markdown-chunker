@@ -37,10 +37,10 @@ def tool_instance():
 
     try:
         # Clear any cached imports that might conflict
-        modules_to_clear = [k for k in sys.modules.keys() if 'markdown_chunker' in k]
+        modules_to_clear = [k for k in sys.modules.keys() if "markdown_chunker" in k]
         for mod in modules_to_clear:
             del sys.modules[mod]
-            
+
         from markdown_chunk_tool import MarkdownChunkTool
 
         # Create mock runtime and session
@@ -191,7 +191,7 @@ class TestDifyPluginIntegration:
             assert len(messages) == 1
             message = messages[0]
             # Handle both VariableMessage and TextMessage responses
-            if hasattr(message.message, 'variable_name'):
+            if hasattr(message.message, "variable_name"):
                 assert message.message.variable_name == "result"
             else:
                 # TextMessage - check it's not an error
@@ -247,9 +247,9 @@ function test() {
 
         messages = list(tool_instance._invoke(tool_parameters))
         message = messages[0]
-        
+
         # Handle both VariableMessage and TextMessage responses
-        if hasattr(message.message, 'variable_value'):
+        if hasattr(message.message, "variable_value"):
             result = message.message.variable_value
             # Should succeed
             assert len(result) > 0
@@ -343,9 +343,9 @@ Regular paragraph text here.
 
         messages = list(tool_instance._invoke(tool_parameters))
         message = messages[0]
-        
+
         # Handle both VariableMessage and TextMessage responses
-        if hasattr(message.message, 'variable_value'):
+        if hasattr(message.message, "variable_value"):
             result = message.message.variable_value
             # Should succeed
             assert len(result) > 0
@@ -377,12 +377,12 @@ Regular paragraph text here.
 
         messages = list(tool_instance._invoke(tool_parameters))
         message = messages[0]
-        
+
         # Handle both VariableMessage and TextMessage responses
-        if not hasattr(message.message, 'variable_value'):
+        if not hasattr(message.message, "variable_value"):
             # TextMessage - skip metadata checks
             return
-            
+
         result = message.message.variable_value
 
         # Extract and verify metadata

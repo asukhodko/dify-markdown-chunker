@@ -8,10 +8,10 @@ This is the redesigned version with:
 - Linear pipeline without duplication
 """
 
-from .types import Chunk, ContentAnalysis, FencedBlock, ChunkingResult, ChunkingMetrics
-from .config import ChunkConfig
 from .chunker import MarkdownChunker
-from .validator import Validator, ValidationResult, validate_chunks
+from .config import ChunkConfig
+from .types import Chunk, ChunkingMetrics, ChunkingResult, ContentAnalysis, FencedBlock
+from .validator import ValidationResult, Validator, validate_chunks
 
 __version__ = "2.0.0"
 
@@ -36,5 +36,5 @@ def chunk_text(text: str, config: ChunkConfig = None) -> list:
 
 def chunk_file(path: str, config: ChunkConfig = None) -> list:
     """Convenience function to chunk a file."""
-    with open(path, encoding='utf-8') as f:
+    with open(path, encoding="utf-8") as f:
         return chunk_text(f.read(), config)

@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
+from markdown_chunker_v2 import ChunkConfig, MarkdownChunker
 
 
 class TestCareerMatrixIntegration:
@@ -55,7 +55,7 @@ class TestCareerMatrixIntegration:
             for j, line in enumerate(lines[:-1]):  # Exclude last line
                 if line.strip().startswith("#"):
                     # Next non-empty line should not be a header
-                    remaining_lines = [line for line in lines[j + 1 :] if line.strip()]
+                    remaining_lines = [line for line in lines[j + 1:] if line.strip()]
                     if remaining_lines:
                         # There should be content after header
                         pass
@@ -233,7 +233,9 @@ class TestCareerMatrixIntegration:
         chunker = MarkdownChunker(config)
 
         # Use chunk_with_analysis to get strategy info
-        chunks, strategy_used, analysis = chunker.chunk_with_analysis(career_matrix_content)
+        chunks, strategy_used, analysis = chunker.chunk_with_analysis(
+            career_matrix_content
+        )
 
         assert len(chunks) > 0, "Should produce chunks"
 
@@ -280,7 +282,9 @@ class TestCareerMatrixIntegration:
         config = ChunkConfig(max_chunk_size=1000)
         chunker = MarkdownChunker(config)
 
-        chunks, strategy_used, analysis = chunker.chunk_with_analysis(career_matrix_content)
+        chunks, strategy_used, analysis = chunker.chunk_with_analysis(
+            career_matrix_content
+        )
 
         # Should be structural, code_aware, or fallback - not a specialized strategy
         assert strategy_used in [

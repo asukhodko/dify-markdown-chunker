@@ -15,7 +15,7 @@ Migration note: Migrated to markdown_chunker_v2 (December 2025)
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
+from markdown_chunker_v2 import ChunkConfig, MarkdownChunker
 
 
 # Hypothesis strategies for generating markdown
@@ -206,7 +206,7 @@ class TestMonotonicOrderingProperty:
 
 class TestMonotonicOrderingWithStrategies:
     """Test monotonic ordering across different strategies.
-    
+
     Note: In v2, strategy is selected automatically based on content analysis.
     These tests verify monotonic ordering regardless of which strategy is selected.
     """
