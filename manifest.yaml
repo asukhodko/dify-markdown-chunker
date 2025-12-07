@@ -14,6 +14,7 @@ description:
   ru_RU: Продвинутое чанкование Markdown с учётом структуры для улучшения RAG
 
 icon: icon.svg
+privacy: PRIVACY.md
 
 resource:
   memory: 536870912  # 512MB in bytes

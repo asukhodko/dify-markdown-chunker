@@ -121,7 +121,7 @@
 ```markdown
 ## 👤 Автор и поддержка
 
-**Автор:** Алексей Суходько (asukhodko)  
+**Автор:** Aleksandr Sukhodko (asukhodko)  
 **Репозиторий:** https://github.com/asukhodko/dify-markdown-chunker  
 **Баг-репорты:** https://github.com/asukhodko/dify-markdown-chunker/issues  
 **Контакт:** [ваш-email@example.com] *(опционально)*

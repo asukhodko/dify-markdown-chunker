@@ -38,32 +38,32 @@ parameters:
   - name: max_chunk_size
     type: number
     required: false
-    default: 1000
+    default: 4096
     form: form
     label:
       en_US: Max Chunk Size
       zh_Hans: 最大块大小
       ru_RU: Максимальный размер части
     human_description:
-      en_US: "Maximum size of each chunk in characters (default: 1000)"
-      zh_Hans: "每个块的最大字符数（默认：1000）"
-      ru_RU: "Максимальный размер каждой части в символах (по умолчанию: 1000)"
+      en_US: "Maximum size of each chunk in characters (default: 4096)"
+      zh_Hans: "每个块的最大字符数（默认：4096）"
+      ru_RU: "Максимальный размер каждой части в символах (по умолчанию: 4096)"
     llm_description: Maximum number of characters allowed in each chunk. Larger values create bigger chunks with more context.
 
   - name: chunk_overlap
     type: number
     required: false
-    default: 100
+    default: 200
     form: form
     label:
       en_US: Chunk Overlap
       zh_Hans: 块重叠
       ru_RU: Перекрытие частей
     human_description:
-      en_US: "Number of characters to overlap between consecutive chunks (default: 100). With include_metadata=true, overlap is stored in metadata; with include_metadata=false, overlap is merged into chunk content."
-      zh_Hans: "连续块之间重叠的字符数（默认：100）。当 include_metadata=true 时，重叠存储在元数据中；当 include_metadata=false 时，重叠合并到块内容中。"
-      ru_RU: "Количество символов для перекрытия между последовательными частями (по умолчанию: 100). При include_metadata=true перекрытие хранится в метаданных; при include_metadata=false перекрытие объединяется с содержимым."
-    llm_description: Number of characters that overlap between consecutive chunks to maintain context continuity. Overlap placement depends on include_metadata setting.
+      en_US: "Number of characters to overlap between consecutive chunks (default: 200, 0 to disable). Overlap is stored in chunk metadata."
+      zh_Hans: "连续块之间重叠的字符数（默认：200，0 表示禁用）。重叠存储在块元数据中。"
+      ru_RU: "Количество символов для перекрытия между последовательными частями (по умолчанию: 200, 0 для отключения). Перекрытие хранится в метаданных."
+    llm_description: Number of characters that overlap between consecutive chunks to maintain context continuity. Set to 0 to disable overlap.
 
   - name: strategy
     type: select
@@ -75,31 +75,31 @@ parameters:
       zh_Hans: 分块策略
       ru_RU: Стратегия разделения
     human_description:
-      en_US: "Strategy for chunking the document (default: auto - automatically detect best strategy)"
-      zh_Hans: "文档分块策略（默认：auto - 自动检测最佳策略）"
-      ru_RU: "Стратегия разделения документа (по умолчанию: auto - автоматически определить лучшую стратегию)"
-    llm_description: The chunking strategy to use. Auto automatically selects the best strategy based on content analysis.
+      en_US: "Strategy for chunking the document (default: auto - automatically detect best strategy based on content analysis)"
+      zh_Hans: "文档分块策略（默认：auto - 根据内容分析自动检测最佳策略）"
+      ru_RU: "Стратегия разделения документа (по умолчанию: auto - автоматически определить лучшую стратегию на основе анализа контента)"
+    llm_description: The chunking strategy to use. Auto automatically selects the best strategy based on content analysis (code ratio, structure complexity).
     options:
       - value: auto
         label:
           en_US: Auto (detect best strategy)
           zh_Hans: 自动（检测最佳策略）
           ru_RU: Авто (определить лучшую стратегию)
-      - value: code
+      - value: code_aware
         label:
-          en_US: Code-focused
-          zh_Hans: 以代码为中心
-          ru_RU: Ориентированная на код
+          en_US: Code-Aware (preserves code blocks)
+          zh_Hans: 代码感知（保留代码块）
+          ru_RU: С учётом кода (сохраняет блоки кода)
       - value: structural
         label:
-          en_US: Structural (headers)
-          zh_Hans: 结构化（标题）
-          ru_RU: Структурная (заголовки)
-      - value: mixed
+          en_US: Structural (header-based)
+          zh_Hans: 结构化（基于标题）
+          ru_RU: Структурная (по заголовкам)
+      - value: fallback
         label:
-          en_US: Mixed content
-          zh_Hans: 混合内容
-          ru_RU: Смешанный контент
+          en_US: Fallback (simple splitting)
+          zh_Hans: 回退（简单分割）
+          ru_RU: Базовая (простое разделение)
 
   - name: include_metadata
     type: boolean
@@ -111,10 +111,10 @@ parameters:
       zh_Hans: 包含元数据
       ru_RU: Включить метаданные
     human_description:
-      en_US: "Include structural metadata with each chunk (default: true). When true, overlap is stored in metadata.overlap_prefix/overlap_suffix fields (clean content); when false, overlap is merged into chunk content (legacy mode)."
-      zh_Hans: "在每个块中包含结构元数据（默认：true）。为 true 时，重叠存储在 metadata.overlap_prefix/overlap_suffix 字段中（干净内容）；为 false 时，重叠合并到块内容中（传统模式）。"
-      ru_RU: "Включить структурные метаданные в каждую часть (по умолчанию: true). При true перекрытие хранится в полях metadata.overlap_prefix/overlap_suffix (чистый контент); при false перекрытие объединяется с содержимым (устаревший режим)."
-    llm_description: "Whether to include metadata about chunk structure, type, strategy used, line numbers, and complexity score. Also controls overlap handling: true stores overlap in metadata (clean content), false merges overlap into content (legacy mode)."
+      en_US: "Include structural metadata with each chunk (default: true). Metadata includes content type, header path, line numbers, and overlap context."
+      zh_Hans: "在每个块中包含结构元数据（默认：true）。元数据包括内容类型、标题路径、行号和重叠上下文。"
+      ru_RU: "Включить структурные метаданные в каждую часть (по умолчанию: true). Метаданные включают тип контента, путь заголовков, номера строк и контекст перекрытия."
+    llm_description: "Whether to include metadata about chunk structure, content type, header path, line numbers, and overlap context for better RAG retrieval."
 
 output_schema:
   type: object

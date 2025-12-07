@@ -78,8 +78,6 @@ def test_linear_scaling():
     
     print(f"\n✓ R² threshold: {r_squared:.4f} >= 0.70 (PASS)")
     print(f"✓ Coefficient threshold: {coefficient:.4f} < 2.0 ms/KB (PASS)")
-    
-    return True
 
 
 def test_memory_scaling():
@@ -140,8 +138,6 @@ def test_memory_scaling():
             print(f"\n✓ All samples within {max_deviation*100:.0f}% deviation (PASS)")
         else:
             print(f"✓ Memory ratio too small for meaningful validation (SKIP)")
-    
-    return True
 
 
 def main():

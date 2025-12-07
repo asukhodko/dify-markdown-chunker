@@ -78,7 +78,7 @@ class TestToolYAML:
 
         assert max_chunk_size["type"] == "number"
         assert max_chunk_size["required"] is False
-        assert max_chunk_size["default"] == 1000
+        assert max_chunk_size["default"] == 4096
 
     def test_chunk_overlap_parameter(self, tool_data):
         """Property 10: Parameter Definitions Completeness - Test chunk_overlap parameter."""
@@ -87,7 +87,7 @@ class TestToolYAML:
 
         assert chunk_overlap["type"] == "number"
         assert chunk_overlap["required"] is False
-        assert chunk_overlap["default"] == 100
+        assert chunk_overlap["default"] == 200
 
     def test_strategy_parameter(self, tool_data):
         """Property 10: Parameter Definitions Completeness - Test strategy parameter."""
@@ -102,9 +102,9 @@ class TestToolYAML:
         # Check options
         option_values = [opt["value"] for opt in strategy["options"]]
         assert "auto" in option_values
-        assert "code" in option_values
+        assert "code_aware" in option_values
         assert "structural" in option_values
-        assert "mixed" in option_values
+        assert "fallback" in option_values
 
     def test_include_metadata_parameter(self, tool_data):
         """Property 10: Parameter Definitions Completeness - Test include_metadata parameter."""

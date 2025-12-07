@@ -8,7 +8,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Dify Plugin](https://img.shields.io/badge/dify-1.9.0+-green.svg)](https://dify.ai/)
-[![Tests](https://img.shields.io/badge/tests-445-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-498-brightgreen.svg)](#testing)
 
 </div>
 
@@ -18,6 +18,7 @@
 
 - [Overview](#overview)
 - [Features](#-features)
+- [Data & Privacy](#-data--privacy)
 - [Installation](#-installation)
 - [Dify Integration](#-dify-integration)
 - [Quick Start](#-quick-start)
@@ -61,14 +62,35 @@
 - **Complexity scoring** — optimizes strategy selection
 
 ### 🛡️ Reliability
-- **445 tests** — comprehensive test coverage with property-based testing
+- **498 tests** — comprehensive test coverage with property-based testing
 - **Property-Based Testing** — formal correctness guarantees with Hypothesis
 - **Automatic fallback** — graceful degradation on errors
+- **Performance benchmarks** — automated performance regression detection
 
 ### 🔌 Integration
 - **Dify Plugin** — ready-to-use in Dify workflows
 - **Python Library** — standalone usage
 - **REST API Ready** — adapters for API integration
+
+---
+
+## 🔒 Data & Privacy
+
+**Local Processing Only**  
+The Plugin processes all Markdown content locally within your Dify instance. No data is transmitted to external services.
+
+**What the Plugin does:**
+- ✅ Parses Markdown structure using local AST analysis
+- ✅ Generates chunks based on document structure
+- ✅ Adds metadata for improved retrieval quality
+
+**What the Plugin does NOT do:**
+- ❌ Send data to external APIs
+- ❌ Store data outside of Dify's standard mechanisms
+- ❌ Log or track user content
+- ❌ Collect analytics or telemetry
+
+For complete details, see [PRIVACY.md](PRIVACY.md).
 
 ---
 
@@ -435,9 +457,11 @@ dify-markdown-chunker/
 │   └── strategies/            # 3 chunking strategies
 ├── provider/                  # Dify plugin provider
 ├── tools/                     # Dify plugin tools
-├── tests/                     # Test suite (445 tests)
+├── tests/                     # Test suite (498 tests)
+│   ├── performance/           # Performance benchmarks
+│   ├── integration/           # Integration tests
+│   └── ...                    # Unit & property tests
 ├── docs/                      # Documentation
-├── benchmarks/                # Performance benchmarks
 ├── manifest.yaml              # Dify plugin manifest
 └── requirements.txt           # Dependencies
 ```
@@ -446,6 +470,24 @@ dify-markdown-chunker/
 
 ## ⚡ Performance
 
+### Benchmark Results
+
+The v2 architecture delivers excellent performance with linear scaling:
+
+| Document Size | Processing Time | Throughput | Memory |
+|---------------|----------------|------------|--------|
+| Tiny (<1KB) | 0.23ms | 1,963 KB/s | <0.01 MB |
+| Small (1-5KB) | 0.78ms | 4,093 KB/s | 0.02 MB |
+| Medium (5-20KB) | 2.06ms | 4,801 KB/s | 0.04 MB |
+| Large (20-100KB) | 21.11ms | 4,449 KB/s | 0.31 MB |
+
+**Performance Characteristics:**
+- **Processing Speed**: 0.25 ms/KB (very fast)
+- **Throughput**: 4-5 MB/s sustained
+- **Scaling**: Linear (R² = 0.77)
+- **Memory**: <1 MB for typical documents
+
+### Performance Monitoring
 
 ```python
 chunker = MarkdownChunker(enable_performance_monitoring=True)
@@ -457,6 +499,8 @@ stats = chunker.get_performance_stats()
 print(f"Average time: {stats['chunk']['avg_time']:.3f}s")
 ```
 
+For detailed benchmarks and methodology, see [Performance Guide](docs/guides/performance.md).
+
 ---
 
 ## 🧪 Development
@@ -464,7 +508,7 @@ print(f"Average time: {stats['chunk']['avg_time']:.3f}s")
 ### Testing
 
 ```bash
-# Run all tests (445)
+# Run all tests (498)
 make test
 
 # Verbose output
@@ -475,6 +519,9 @@ make test-coverage
 
 # Quick tests
 make test-quick
+
+# Performance benchmarks
+python tests/performance/run_benchmarks_standalone.py
 ```
 
 ### Code Quality
