@@ -339,7 +339,7 @@ Benchmark results are stored in a structured JSON format that captures comprehen
 
 ```json
 {
-  "timestamp": "2024-12-03T10:30:00.000Z",
+  "timestamp": "2025-12-03T10:30:00.000Z",
   "version": "1.4.0",
   "by_size": [
     {

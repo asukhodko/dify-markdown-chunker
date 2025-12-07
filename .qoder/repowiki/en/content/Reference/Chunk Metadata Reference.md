@@ -94,7 +94,7 @@ When a chunk contains multiple headers, the `sub_headers` field lists additional
 ```python
 # Example chunk with multiple headers
 chunk.metadata = {
-    "header_path": "/Grades/SDE 12/Impact (Delivery)",
+    "header_path": "/Grades/DEV-4/Impact (Delivery)",
     "sub_headers": ["Complexity", "Leadership"],  # Additional ### headers
     ...
 }
@@ -104,7 +104,7 @@ The `sub_headers` field contains headers that are children of the root section (
 - Headers with level greater than the contextual level (deeper than root section)
 - Headers with the same level as the contextual level but different text (siblings of root, not root itself)
 
-This design ensures that all chunks within a section (e.g., SDE 12) have the same `header_path`, while still capturing the local section structure within the chunk.
+This design ensures that all chunks within a section (e.g., DEV-4) have the same `header_path`, while still capturing the local section structure within the chunk.
 
 **Section sources**
 - [types.py](file://markdown_chunker_v2/types.py#L119-L127)
@@ -302,7 +302,7 @@ These properties ensure that the metadata system behaves correctly across a wide
 Specific examples are tested to verify correct behavior:
 
 ```python
-class TestSDE12ImpactCase:
+class TestDEV4ImpactCase:
     """
     Test that chunk with Impact/Complexity/Leadership has header_path
     ending with "Impact (Delivery)", not "Complexity".
@@ -310,7 +310,7 @@ class TestSDE12ImpactCase:
     
 class TestPreambleSeparation:
     """
-    Test that links before # Критерии грейдов SDE are in separate preamble chunk.
+    Test that links before # Критерии грейдов DEV are in separate preamble chunk.
     """
 ```
 

@@ -9,7 +9,6 @@ based on contextual_level, not absolute max_structural_level.
 **Validates: Requirements 2.1, 2.2, 2.3, 2.4, 2.5, 6.1, 6.2**
 """
 
-
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -28,7 +27,7 @@ class TestSectionTagsRelativeLogic:
         **Validates: Requirements 2.1, 2.2**
         """
         doc = """# Main
-## SDE 12
+## DEV-4
 ### Scope
 Content about scope
 ### Impact
@@ -41,13 +40,13 @@ Content about impact
 
         chunks = strategy.apply(doc, analysis, config)
 
-        # Find the SDE 12 chunk
-        sde_chunk = next(
-            c for c in chunks if "SDE 12" in c.metadata.get("header_path", "")
+        # Find the DEV-4 chunk
+        dev_chunk = next(
+            c for c in chunks if "DEV-4" in c.metadata.get("header_path", "")
         )
 
-        assert sde_chunk.metadata["header_path"] == "/Main/SDE 12"
-        assert sde_chunk.metadata["section_tags"] == ["Scope", "Impact"]
+        assert dev_chunk.metadata["header_path"] == "/Main/DEV-4"
+        assert dev_chunk.metadata["section_tags"] == ["Scope", "Impact"]
 
     def test_h3_root_h4_children_with_max_level_3(self):
         """
@@ -57,7 +56,7 @@ Content about impact
         """
         doc = """# Main
 ## Category
-### SDE 12
+### DEV-4
 #### Scope
 Content about scope
 #### Impact
@@ -70,13 +69,13 @@ Content about impact
 
         chunks = strategy.apply(doc, analysis, config)
 
-        # Find the SDE 12 chunk
-        sde_chunk = next(
-            c for c in chunks if c.metadata.get("header_path", "").endswith("SDE 12")
+        # Find the DEV-4 chunk
+        dev_chunk = next(
+            c for c in chunks if c.metadata.get("header_path", "").endswith("DEV-4")
         )
 
-        assert sde_chunk.metadata["header_path"] == "/Main/Category/SDE 12"
-        assert sde_chunk.metadata["section_tags"] == ["Scope", "Impact"]
+        assert dev_chunk.metadata["header_path"] == "/Main/Category/DEV-4"
+        assert dev_chunk.metadata["section_tags"] == ["Scope", "Impact"]
 
     def test_h3_in_section_tags_when_max_level_2(self):
         """
@@ -86,7 +85,7 @@ Content about impact
         """
         doc = """# Main
 ## Category
-### SDE 12
+### DEV-4
 #### Scope
 Content
 """
@@ -103,8 +102,8 @@ Content
         )
 
         assert cat_chunk.metadata["header_path"] == "/Main/Category"
-        # SDE 12 and Scope should both be in section_tags
-        assert "SDE 12" in cat_chunk.metadata["section_tags"]
+        # DEV-4 and Scope should both be in section_tags
+        assert "DEV-4" in cat_chunk.metadata["section_tags"]
         assert "Scope" in cat_chunk.metadata["section_tags"]
 
 
@@ -566,26 +565,26 @@ Content
         assert tags.index("Level 4") < tags.index("Level 5")
 
 
-class TestSDE12Contract:
+class TestDEV4Contract:
     """
-    Contract tests for SDE 12 grade matrix chunking.
+    Contract tests for DEV-4 grade matrix chunking.
 
-    These tests ensure that all chunks within a section (e.g., SDE 12)
+    These tests ensure that all chunks within a section (e.g., DEV-4)
     have the SAME header_path pointing to the section root, with
     subsections in section_tags.
 
     **Validates: Requirements 1.2, 1.3, 2.2, 7.2, 7.3**
     """
 
-    def test_sde12_all_chunks_same_header_path(self):
+    def test_dev4_all_chunks_same_header_path(self):
         """
-        All chunks from SDE 12 section must have header_path ending with SDE 12,
+        All chunks from DEV-4 section must have header_path ending with DEV-4,
         NOT with any H3 subsection like Complexity or Leadership.
 
         **Validates: Requirements 1.2, 1.3**
         """
-        doc = """# Критерии грейдов SDE
-## SDE 12 (Junior-, Младший разработчик)
+        doc = """# Критерии грейдов DEV
+## DEV-4 (Junior-, Младший разработчик)
 ### Scope
 Content about scope here with enough text to potentially split.
 ### Impact (Delivery)
@@ -604,32 +603,32 @@ Content about improvement here.
 
         chunks = strategy.apply(doc, analysis, config)
 
-        # Find SDE 12 chunk(s)
-        sde12_chunks = [
-            c for c in chunks if "SDE 12" in c.metadata.get("header_path", "")
+        # Find DEV-4 chunk(s)
+        dev4_chunks = [
+            c for c in chunks if "DEV-4" in c.metadata.get("header_path", "")
         ]
 
-        assert len(sde12_chunks) >= 1, "Should have at least one SDE 12 chunk"
+        assert len(dev4_chunks) >= 1, "Should have at least one DEV-4 chunk"
 
-        for chunk in sde12_chunks:
+        for chunk in dev4_chunks:
             path = chunk.metadata["header_path"]
-            # header_path MUST end with SDE 12, NOT with any H3
+            # header_path MUST end with DEV-4, NOT with any H3
             assert path.endswith(
-                "SDE 12 (Junior-, Младший разработчик)"
-            ), f"header_path should end with SDE 12, got: {path}"
+                "DEV-4 (Junior-, Младший разработчик)"
+            ), f"header_path should end with DEV-4, got: {path}"
             # header_level MUST be 2 (H2)
             assert (
                 chunk.metadata["header_level"] == 2
             ), f"header_level should be 2, got: {chunk.metadata['header_level']}"
 
-    def test_sde12_section_tags_contain_all_h3(self):
+    def test_dev4_section_tags_contain_all_h3(self):
         """
         section_tags must contain all H3 subsections within the chunk.
 
         **Validates: Requirements 2.2, 7.3**
         """
-        doc = """# Критерии грейдов SDE
-## SDE 12 (Junior-, Младший разработчик)
+        doc = """# Критерии грейдов DEV
+## DEV-4 (Junior-, Младший разработчик)
 ### Complexity
 Content about complexity.
 ### Leadership
@@ -644,11 +643,11 @@ Content about improvement.
 
         chunks = strategy.apply(doc, analysis, config)
 
-        sde12_chunk = next(
-            c for c in chunks if "SDE 12" in c.metadata.get("header_path", "")
+        dev4_chunk = next(
+            c for c in chunks if "DEV-4" in c.metadata.get("header_path", "")
         )
 
-        tags = sde12_chunk.metadata["section_tags"]
+        tags = dev4_chunk.metadata["section_tags"]
         assert "Complexity" in tags
         assert "Leadership" in tags
         assert "Improvement" in tags

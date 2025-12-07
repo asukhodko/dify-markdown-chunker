@@ -1,10 +1,11 @@
 """
 Chunking strategies for markdown_chunker v2.
 
-Three strategies instead of six:
-- CodeAwareStrategy: For documents with code blocks or tables
-- StructuralStrategy: For documents with hierarchical headers
-- FallbackStrategy: Universal fallback for any document
+Four strategies:
+- CodeAwareStrategy: For documents with code blocks or tables (priority 1)
+- ListAwareStrategy: For list-heavy documents (priority 2)
+- StructuralStrategy: For documents with hierarchical headers (priority 3)
+- FallbackStrategy: Universal fallback for any document (priority 4)
 """
 
 from typing import List
@@ -14,6 +15,7 @@ from ..types import ContentAnalysis
 from .base import BaseStrategy
 from .code_aware import CodeAwareStrategy
 from .fallback import FallbackStrategy
+from .list_aware import ListAwareStrategy
 from .structural import StructuralStrategy
 
 
@@ -23,13 +25,15 @@ class StrategySelector:
 
     Selection order (by priority):
     1. CodeAwareStrategy - if document has code blocks or tables
-    2. StructuralStrategy - if document has hierarchical headers
-    3. FallbackStrategy - always works (universal fallback)
+    2. ListAwareStrategy - if document is list-heavy
+    3. StructuralStrategy - if document has hierarchical headers
+    4. FallbackStrategy - always works (universal fallback)
     """
 
     def __init__(self):
         self.strategies: List[BaseStrategy] = [
             CodeAwareStrategy(),
+            ListAwareStrategy(),
             StructuralStrategy(),
             FallbackStrategy(),
         ]
@@ -69,6 +73,7 @@ __all__ = [
     "StrategySelector",
     "BaseStrategy",
     "CodeAwareStrategy",
+    "ListAwareStrategy",
     "StructuralStrategy",
     "FallbackStrategy",
 ]

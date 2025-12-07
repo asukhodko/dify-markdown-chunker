@@ -90,6 +90,11 @@ parameters:
           en_US: Code-Aware (preserves code blocks)
           zh_Hans: 代码感知（保留代码块）
           ru_RU: С учётом кода (сохраняет блоки кода)
+      - value: list_aware
+        label:
+          en_US: List-Aware (preserves list hierarchy)
+          zh_Hans: 列表感知（保留列表层次结构）
+          ru_RU: С учётом списков (сохраняет иерархию списков)
       - value: structural
         label:
           en_US: Structural (header-based)

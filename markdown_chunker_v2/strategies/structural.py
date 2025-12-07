@@ -46,7 +46,7 @@ class StructuralStrategy(BaseStrategy):
 
     @property
     def priority(self) -> int:
-        return 2
+        return 3
 
     def can_handle(self, analysis: ContentAnalysis, config: ChunkConfig) -> bool:
         """
@@ -150,8 +150,8 @@ class StructuralStrategy(BaseStrategy):
                     section_content, start_line, config
                 )
                 # Build section's header_path ONCE - all sub-chunks inherit it
-                # This ensures all chunks from SDE 12 have header_path
-                # ending with SDE 12
+                # This ensures all chunks from DEV-4 have header_path
+                # ending with DEV-4
                 section_header_path, _, section_header_level = (
                     self._build_header_path_for_chunk(
                         section_content, headers, start_line
@@ -454,7 +454,7 @@ class StructuralStrategy(BaseStrategy):
             # (level <= max_structural_level)
             # Headers deeper than max_structural_level stay in
             # section_tags, NOT in header_path
-            # This ensures all chunks within a section (e.g., SDE 12)
+            # This ensures all chunks within a section (e.g., DEV-4)
             # have the SAME header_path
             if first_level <= self.max_structural_level:
                 # Build hierarchy: new header replaces same/higher levels
@@ -470,7 +470,7 @@ class StructuralStrategy(BaseStrategy):
                 first_header_added_to_path = (first_level, first_text)
             # If first header is H3+ (level > max_structural_level),
             # it goes to section_tags
-            # header_path stays at the parent section level (e.g., SDE 12)
+            # header_path stays at the parent section level (e.g., DEV-4)
 
         # Step 5: Build header_path from stack
         header_path = self._build_header_path_from_stack(header_stack)

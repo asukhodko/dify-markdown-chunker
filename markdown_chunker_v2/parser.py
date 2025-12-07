@@ -1,14 +1,15 @@
-"""
-Simplified markdown parser for v2.
-
-Single file (~500 lines) instead of 15 files.
-Line ending normalization at the start of pipeline.
-"""
-
 import re
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
-from .types import ContentAnalysis, FencedBlock, Header, TableBlock
+from .types import (
+    ContentAnalysis,
+    FencedBlock,
+    Header,
+    ListBlock,
+    ListItem,
+    ListType,
+    TableBlock,
+)
 
 
 class Parser:
@@ -48,6 +49,7 @@ class Parser:
         code_blocks = self._extract_code_blocks(md_text)
         headers = self._extract_headers(md_text)
         tables = self._extract_tables(md_text)
+        list_blocks = self._extract_lists(md_text)
 
         # 3. Calculate metrics
         total_chars = len(md_text)
@@ -57,6 +59,18 @@ class Parser:
         code_ratio = code_chars / total_chars if total_chars > 0 else 0.0
 
         max_header_depth = max((h.level for h in headers), default=0)
+
+        # Calculate list metrics
+        list_chars = sum(
+            len(item.content) for block in list_blocks for item in block.items
+        )
+        list_ratio = list_chars / total_chars if total_chars > 0 else 0.0
+        list_item_count = sum(block.item_count for block in list_blocks)
+        max_list_depth = max((block.max_depth for block in list_blocks), default=0)
+        has_checkbox_lists = any(
+            any(item.list_type == ListType.CHECKBOX for item in block.items)
+            for block in list_blocks
+        )
 
         # 4. Detect preamble
         has_preamble, preamble_end = self._detect_preamble(md_text, headers)
@@ -69,11 +83,17 @@ class Parser:
             header_count=len(headers),
             max_header_depth=max_header_depth,
             table_count=len(tables),
+            list_count=len(list_blocks),
+            list_item_count=list_item_count,
             code_blocks=code_blocks,
             headers=headers,
             tables=tables,
+            list_blocks=list_blocks,
             has_preamble=has_preamble,
             preamble_end_line=preamble_end,
+            list_ratio=list_ratio,
+            max_list_depth=max_list_depth,
+            has_checkbox_lists=has_checkbox_lists,
         )
 
     def _normalize_line_endings(self, text: str) -> str:
@@ -268,6 +288,186 @@ class Parser:
                 return True, first_header_line - 1
 
         return False, 0
+
+    def _extract_lists(self, md_text: str) -> List[ListBlock]:
+        """
+        Extract list blocks from markdown.
+
+        Handles:
+        - Bullet lists (-, *, +)
+        - Numbered lists (1., 2., etc.)
+        - Checkbox lists (- [ ], - [x])
+        - Nested lists
+        - Continuation lines
+        """
+        blocks = []
+        lines = md_text.split("\n")
+
+        # Track code block state to skip lists inside code
+        in_code_block = False
+        fence_pattern = re.compile(r"^`{3,}")
+
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+
+            # Toggle code block state
+            if fence_pattern.match(line):
+                in_code_block = not in_code_block
+                i += 1
+                continue
+
+            if in_code_block:
+                i += 1
+                continue
+
+            # Try to parse as list item
+            item = self._try_parse_list_item(line, i + 1)
+            if item:
+                # Collect entire list block
+                block, end_idx = self._collect_list_block(lines, i)
+                blocks.append(block)
+                i = end_idx + 1
+            else:
+                i += 1
+
+        return blocks
+
+    def _try_parse_list_item(self, line: str, line_number: int) -> Optional[ListItem]:
+        """
+        Try to parse a line as a list item.
+
+        Args:
+            line: Line to parse
+            line_number: Line number (1-indexed)
+
+        Returns:
+            ListItem if successful, None otherwise
+        """
+        # Checkbox pattern (must check first as it's a subset of bullet)
+        checkbox_match = re.match(r"^(\s*)([-*+])\s+\[([ xX])\]\s+(.+)$", line)
+        if checkbox_match:
+            indent, marker, checked, content = checkbox_match.groups()
+            return ListItem(
+                content=content,
+                marker=f"{marker} [{checked}]",
+                depth=len(indent) // 2,
+                line_number=line_number,
+                list_type=ListType.CHECKBOX,
+                is_checked=(checked.lower() == "x"),
+            )
+
+        # Numbered list pattern
+        numbered_match = re.match(r"^(\s*)(\d+\.)\s+(.+)$", line)
+        if numbered_match:
+            indent, marker, content = numbered_match.groups()
+            return ListItem(
+                content=content,
+                marker=marker,
+                depth=len(indent) // 2,
+                line_number=line_number,
+                list_type=ListType.NUMBERED,
+                is_checked=None,
+            )
+
+        # Bullet list pattern
+        bullet_match = re.match(r"^(\s*)([-*+])\s+(.+)$", line)
+        if bullet_match:
+            indent, marker, content = bullet_match.groups()
+            return ListItem(
+                content=content,
+                marker=marker,
+                depth=len(indent) // 2,
+                line_number=line_number,
+                list_type=ListType.BULLET,
+                is_checked=None,
+            )
+
+        return None
+
+    def _collect_list_block(
+        self, lines: List[str], start_idx: int
+    ) -> Tuple[ListBlock, int]:
+        """Collect an entire list block starting from start_idx."""
+        items = []
+        max_depth = 0
+        end_idx = start_idx
+        first_item_type = None
+
+        i = start_idx
+        while i < len(lines):
+            line = lines[i]
+
+            # Empty line - check if list continues
+            if not line.strip():
+                should_continue, new_i = self._should_continue_list(
+                    lines, i, first_item_type
+                )
+                if should_continue:
+                    i = new_i
+                    continue
+                break
+
+            # Try to parse as list item
+            item = self._try_parse_list_item(line, i + 1)
+            if item:
+                if first_item_type is None:
+                    first_item_type = item.list_type
+                elif item.list_type != first_item_type:
+                    # Type changed - close this block
+                    break
+
+                items.append(item)
+                max_depth = max(max_depth, item.depth)
+                end_idx = i
+                i += 1
+            elif items:
+                # Continuation line
+                if line.strip():
+                    items[-1].content += "\n" + line.strip()
+                    end_idx = i
+                i += 1
+            else:
+                break
+
+        if not items:
+            return None, start_idx
+
+        primary_type = self._determine_primary_type(items)
+        block = ListBlock(
+            items=items,
+            start_line=items[0].line_number,
+            end_line=end_idx + 1,
+            list_type=primary_type,
+            max_depth=max_depth,
+        )
+
+        return block, end_idx
+
+    def _should_continue_list(
+        self, lines: List[str], current_idx: int, first_item_type: Optional[ListType]
+    ) -> Tuple[bool, int]:
+        """Check if list continues after empty line."""
+        if current_idx + 1 >= len(lines):
+            return False, current_idx
+
+        next_item = self._try_parse_list_item(lines[current_idx + 1], current_idx + 2)
+        if not next_item:
+            return False, current_idx
+
+        # Check if type changes
+        if first_item_type and next_item.list_type != first_item_type:
+            return False, current_idx
+
+        # Continue past the empty line
+        return True, current_idx + 1
+
+    def _determine_primary_type(self, items: List[ListItem]) -> ListType:
+        """Determine predominant list type from items."""
+        type_counts: dict[ListType, int] = {}
+        for item in items:
+            type_counts[item.list_type] = type_counts.get(item.list_type, 0) + 1
+        return max(type_counts, key=type_counts.get)
 
     def get_line_at_position(self, md_text: str, pos: int) -> int:
         """

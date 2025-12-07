@@ -32,6 +32,10 @@ class ChunkConfig:
             (default: 0.3)
         structure_threshold: Min headers for StructuralStrategy
             (default: 3)
+        list_ratio_threshold: Minimum list ratio for ListAwareStrategy
+            (default: 0.4)
+        list_count_threshold: Minimum list block count for ListAwareStrategy
+            (default: 5)
         strategy_override: Force specific strategy (default: None)
     """
 
@@ -47,12 +51,20 @@ class ChunkConfig:
     # Strategy selection thresholds
     code_threshold: float = 0.3
     structure_threshold: int = 3
+    list_ratio_threshold: float = 0.4
+    list_count_threshold: int = 5
 
     # Override
     strategy_override: Optional[str] = None
 
     def __post_init__(self):
         """Validate configuration."""
+        self._validate_size_params()
+        self._validate_threshold_params()
+        self._validate_strategy_override()
+
+    def _validate_size_params(self):
+        """Validate size-related parameters."""
         if self.max_chunk_size <= 0:
             raise ValueError(
                 f"max_chunk_size must be positive, got {self.max_chunk_size}"
@@ -78,6 +90,8 @@ class ChunkConfig:
                 f"max_chunk_size ({self.max_chunk_size})"
             )
 
+    def _validate_threshold_params(self):
+        """Validate threshold parameters."""
         if not 0 <= self.code_threshold <= 1:
             raise ValueError(
                 f"code_threshold must be between 0 and 1, got {self.code_threshold}"
@@ -88,8 +102,21 @@ class ChunkConfig:
                 f"structure_threshold must be >= 1, got {self.structure_threshold}"
             )
 
+        if not 0 <= self.list_ratio_threshold <= 1:
+            raise ValueError(
+                f"list_ratio_threshold must be between 0 and 1, "
+                f"got {self.list_ratio_threshold}"
+            )
+
+        if self.list_count_threshold < 1:
+            raise ValueError(
+                f"list_count_threshold must be >= 1, got {self.list_count_threshold}"
+            )
+
+    def _validate_strategy_override(self):
+        """Validate strategy override parameter."""
         if self.strategy_override is not None:
-            valid_strategies = {"code_aware", "structural", "fallback"}
+            valid_strategies = {"code_aware", "list_aware", "structural", "fallback"}
             if self.strategy_override not in valid_strategies:
                 raise ValueError(
                     f"strategy_override must be one of "
@@ -191,6 +218,17 @@ class ChunkConfig:
             overlap_size=50,
         )
 
+    @classmethod
+    def for_changelogs(cls) -> "ChunkConfig":
+        """Configuration optimized for changelog documents."""
+        return cls(
+            max_chunk_size=6144,
+            min_chunk_size=256,
+            overlap_size=100,
+            list_ratio_threshold=0.35,
+            list_count_threshold=4,
+        )
+
     def to_dict(self) -> dict:
         """
         Serialize config to dictionary.
@@ -206,6 +244,8 @@ class ChunkConfig:
             "extract_preamble": self.extract_preamble,
             "code_threshold": self.code_threshold,
             "structure_threshold": self.structure_threshold,
+            "list_ratio_threshold": self.list_ratio_threshold,
+            "list_count_threshold": self.list_count_threshold,
             "strategy_override": self.strategy_override,
             "enable_overlap": self.enable_overlap,  # computed property
         }
@@ -242,6 +282,8 @@ class ChunkConfig:
             "extract_preamble",
             "code_threshold",
             "structure_threshold",
+            "list_ratio_threshold",
+            "list_count_threshold",
             "strategy_override",
         }
         config_data = {k: v for k, v in config_data.items() if k in valid_params}

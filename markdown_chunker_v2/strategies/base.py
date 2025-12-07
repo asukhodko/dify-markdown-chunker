@@ -189,14 +189,17 @@ class BaseStrategy(ABC):
 
         current_content = ""
         current_start = start_line
-        current_line = start_line
+        current_line = (
+            start_line - 1
+        )  # Track the last line NUMBER (0-indexed relative offset)
 
         for para in paragraphs:
             para_with_sep = para + "\n\n" if para != paragraphs[-1] else para
+            para_line_count = para_with_sep.count("\n")
 
             if len(current_content) + len(para_with_sep) <= config.max_chunk_size:
                 current_content += para_with_sep
-                current_line += para_with_sep.count("\n")
+                current_line += para_line_count
             else:
                 # Save current chunk
                 if current_content.strip():
@@ -211,7 +214,7 @@ class BaseStrategy(ABC):
                 # Start new chunk
                 current_content = para_with_sep
                 current_start = current_line + 1
-                current_line = current_start + para_with_sep.count("\n")
+                current_line = current_start - 1 + para_line_count
 
         # Save last chunk
         if current_content.strip():

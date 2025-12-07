@@ -1,10 +1,10 @@
 # Chunking Strategies
 
-Detailed documentation for all 3 chunking strategies in v2.0.
+Detailed documentation for all 4 chunking strategies in v2.0.
 
 ## Overview
 
-The Dify Markdown Chunker v2.0 uses 3 intelligent strategies to chunk markdown documents. The system automatically selects the best strategy based on content analysis, or you can force a specific strategy using `strategy_override`.
+The Dify Markdown Chunker v2.0 uses 4 intelligent strategies to chunk markdown documents. The system automatically selects the best strategy based on content analysis, or you can force a specific strategy using `strategy_override`.
 
 ## Strategy Selection
 
@@ -13,9 +13,11 @@ The chunker analyzes content and selects a strategy based on:
 - **Code ratio**: Percentage of content that is code (threshold: 30%)
 - **Code blocks**: Presence of fenced code blocks
 - **Tables**: Presence of markdown tables
+- **List ratio**: Percentage of content that is lists (threshold: 40%)
+- **List count**: Number of list items (threshold: 5)
 - **Headers**: Number of headers (threshold: 3)
 
-## The 3 Strategies
+## The 4 Strategies
 
 ### 1. Code-Aware Strategy
 
@@ -60,7 +62,56 @@ config = ChunkConfig(strategy_override="code_aware")
 config = ChunkConfig.for_code_heavy()
 ```
 
-### 2. Structural Strategy
+### 2. List-Aware Strategy
+
+**When Used:**
+- Documents with ≥40% list content (list_ratio ≥ 0.4)
+- Documents with ≥5 list items
+- Changelogs, release notes, feature lists
+
+**Behavior:**
+- Preserves list hierarchy intact (never splits parent from children)
+- Detects and binds introduction context to lists
+- Handles bullet lists (`-`, `*`, `+`)
+- Handles numbered lists (`1.`, `2.`)
+- Handles checkbox lists (`- [ ]`, `- [x]`)
+- Maintains nested list structure
+
+**Best For:**
+- Changelogs and release notes
+- Feature lists and requirements
+- Task lists and TODO lists
+- Documentation with extensive lists
+- Meeting notes with action items
+
+**Example:**
+```markdown
+# Release Notes v2.0
+
+New features include:
+
+- Authentication improvements
+  - OAuth2 support
+  - JWT tokens
+- Performance optimizations
+  - Caching layer
+  - Database indexing
+- Bug fixes
+```
+
+**Chunking Result:**
+- Chunk 1: Header + introduction + complete list hierarchy
+- Lists are never split mid-hierarchy
+- Parent items always kept with their children
+
+**Configuration:**
+```python
+config = ChunkConfig(strategy_override="list_aware")
+# or use profile
+config = ChunkConfig.for_changelogs()
+```
+
+### 3. Structural Strategy
 
 **When Used:** Documents with ≥3 headers
 
@@ -108,7 +159,7 @@ config = ChunkConfig(strategy_override="structural")
 config = ChunkConfig.for_structured()
 ```
 
-### 3. Fallback Strategy
+### 4. Fallback Strategy
 
 **When Used:** 
 - Simple text without special structure
@@ -150,15 +201,26 @@ config = ChunkConfig(strategy_override="fallback")
    - Calculate code_ratio
    - Count code blocks
    - Count tables
+   - Calculate list_ratio
+   - Count list items
    - Count headers
 
-2. Select strategy:
-   if code_ratio >= 0.30 OR has_code_blocks OR has_tables:
-       use CodeAwareStrategy
-   elif header_count >= 3:
-       use StructuralStrategy
-   else:
-       use FallbackStrategy
+2. Select strategy (by priority):
+   Priority 1: CodeAwareStrategy
+      if code_ratio >= 0.30 OR has_code_blocks OR has_tables:
+          use CodeAwareStrategy
+   
+   Priority 2: ListAwareStrategy
+      elif list_ratio >= 0.40 OR list_count >= 5:
+          use ListAwareStrategy
+   
+   Priority 3: StructuralStrategy
+      elif header_count >= 3:
+          use StructuralStrategy
+   
+   Priority 4: FallbackStrategy
+      else:
+          use FallbackStrategy
 ```
 
 ## Performance Characteristics
@@ -166,6 +228,7 @@ config = ChunkConfig(strategy_override="fallback")
 | Strategy | Speed | Quality | Best For |
 |----------|-------|---------|----------|
 | Code-Aware | Fast | High | Code/table-heavy docs |
+| List-Aware | Fast | High | List-heavy docs, changelogs |
 | Structural | Medium | Very High | Structured docs |
 | Fallback | Very Fast | Medium | Simple text |
 
@@ -178,6 +241,10 @@ from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
 
 # Force code-aware strategy
 config = ChunkConfig(strategy_override="code_aware")
+chunker = MarkdownChunker(config)
+
+# Force list-aware strategy
+config = ChunkConfig(strategy_override="list_aware")
 chunker = MarkdownChunker(config)
 
 # Force structural strategy
@@ -208,6 +275,7 @@ More text.
 ```
 
 **Code-Aware Strategy:** 1 chunk (code block preserved)
+**List-Aware Strategy:** 2 chunks (by list hierarchy if large)
 **Structural Strategy:** 1 chunk (one section)
 **Fallback Strategy:** 2-3 chunks (by paragraphs)
 
@@ -218,7 +286,7 @@ More text.
 | Code | CodeAware |
 | Table | CodeAware |
 | Mixed | CodeAware |
-| List | CodeAware |
+| List | ListAware |
 | Structural | Structural |
 | Sentences | Fallback |
 

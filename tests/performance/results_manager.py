@@ -5,7 +5,6 @@ Collects, stores, and exports benchmark results in multiple formats.
 """
 
 import json
-import os
 import platform
 import sys
 from datetime import datetime
@@ -46,12 +45,7 @@ class ResultsManager:
             "machine": platform.machine(),
         }
 
-    def add_benchmark_result(
-        self,
-        category: str,
-        name: str,
-        result: Dict[str, Any]
-    ):
+    def add_benchmark_result(self, category: str, name: str, result: Dict[str, Any]):
         """
         Add a benchmark result.
 
@@ -107,7 +101,9 @@ class ResultsManager:
         lines.append("## Test Environment")
         lines.append("")
         lines.append(f"- **Platform**: {self.results['metadata']['platform']}")
-        lines.append(f"- **Python**: {self.results['metadata']['python_version'].split()[0]}")
+        lines.append(
+            f"- **Python**: {self.results['metadata']['python_version'].split()[0]}"
+        )
         lines.append(f"- **Machine**: {self.results['metadata']['machine']}")
         lines.append("")
 
@@ -136,8 +132,12 @@ class ResultsManager:
     def _format_size_benchmarks(self, benchmarks: Dict) -> List[str]:
         """Format size-based benchmark results."""
         lines = []
-        lines.append("| Size Category | Avg Time (ms) | Min (ms) | Max (ms) | Throughput (KB/s) | Peak Memory (MB) |")
-        lines.append("|---------------|---------------|----------|----------|-------------------|------------------|")
+        lines.append(
+            "| Size Category | Avg Time (ms) | Min (ms) | Max (ms) | Throughput (KB/s) | Peak Memory (MB) |"
+        )
+        lines.append(
+            "|---------------|---------------|----------|----------|-------------------|------------------|"
+        )
 
         for size_cat, data in sorted(benchmarks.items()):
             avg_time_ms = data["time"]["mean"] * 1000
@@ -156,8 +156,12 @@ class ResultsManager:
     def _format_content_type_benchmarks(self, benchmarks: Dict) -> List[str]:
         """Format content type benchmark results."""
         lines = []
-        lines.append("| Content Type | Avg Time (ms) | Strategy | Chunks | Avg Chunk Size |")
-        lines.append("|--------------|---------------|----------|--------|----------------|")
+        lines.append(
+            "| Content Type | Avg Time (ms) | Strategy | Chunks | Avg Chunk Size |"
+        )
+        lines.append(
+            "|--------------|---------------|----------|--------|----------------|"
+        )
 
         for content_type, data in sorted(benchmarks.items()):
             avg_time_ms = data["time"]["mean"] * 1000
@@ -192,8 +196,12 @@ class ResultsManager:
     def _format_config_benchmarks(self, benchmarks: Dict) -> List[str]:
         """Format configuration impact results."""
         lines = []
-        lines.append("| Configuration | Avg Time (ms) | Memory (MB) | Relative Performance |")
-        lines.append("|---------------|---------------|-------------|----------------------|")
+        lines.append(
+            "| Configuration | Avg Time (ms) | Memory (MB) | Relative Performance |"
+        )
+        lines.append(
+            "|---------------|---------------|-------------|----------------------|"
+        )
 
         # Get baseline (default config) for comparison
         baseline_time = benchmarks.get("default", {}).get("time", {}).get("mean", 1.0)
@@ -201,7 +209,9 @@ class ResultsManager:
         for config, data in sorted(benchmarks.items()):
             avg_time_ms = data["time"]["mean"] * 1000
             memory = data["memory"]["mean"]
-            relative = data["time"]["mean"] / baseline_time if baseline_time > 0 else 1.0
+            relative = (
+                data["time"]["mean"] / baseline_time if baseline_time > 0 else 1.0
+            )
 
             lines.append(
                 f"| {config} | {avg_time_ms:.2f} | {memory:.2f} | {relative:.2f}x |"
@@ -217,7 +227,9 @@ class ResultsManager:
             reg = benchmarks["regression"]
             lines.append("### Linear Regression Analysis")
             lines.append("")
-            lines.append(f"**Processing Time Model**: Time(ms) = {reg.get('coefficient', 0):.4f} × Size(KB) + {reg.get('intercept', 0):.2f}")
+            lines.append(
+                f"**Processing Time Model**: Time(ms) = {reg.get('coefficient', 0):.4f} × Size(KB) + {reg.get('intercept', 0):.2f}"
+            )
             lines.append(f"**R-squared**: {reg.get('r_squared', 0):.4f}")
             lines.append("")
 
@@ -270,11 +282,18 @@ class ResultsManager:
             writer = csv.writer(f)
 
             # Write header
-            writer.writerow([
-                "Category", "Name", "Avg Time (s)", "Min Time (s)",
-                "Max Time (s)", "Stddev Time", "Avg Memory (MB)",
-                "Peak Memory (MB)"
-            ])
+            writer.writerow(
+                [
+                    "Category",
+                    "Name",
+                    "Avg Time (s)",
+                    "Min Time (s)",
+                    "Max Time (s)",
+                    "Stddev Time",
+                    "Avg Memory (MB)",
+                    "Peak Memory (MB)",
+                ]
+            )
 
             # Write data
             benchmarks = self.results["benchmarks"]
@@ -283,16 +302,18 @@ class ResultsManager:
 
             for cat, results in benchmarks.items():
                 for name, data in results.items():
-                    writer.writerow([
-                        cat,
-                        name,
-                        data.get("time", {}).get("mean", 0),
-                        data.get("time", {}).get("min", 0),
-                        data.get("time", {}).get("max", 0),
-                        data.get("time", {}).get("stddev", 0),
-                        data.get("memory", {}).get("mean", 0),
-                        data.get("memory", {}).get("max", 0),
-                    ])
+                    writer.writerow(
+                        [
+                            cat,
+                            name,
+                            data.get("time", {}).get("mean", 0),
+                            data.get("time", {}).get("min", 0),
+                            data.get("time", {}).get("max", 0),
+                            data.get("time", {}).get("stddev", 0),
+                            data.get("memory", {}).get("mean", 0),
+                            data.get("memory", {}).get("max", 0),
+                        ]
+                    )
 
     def print_summary(self):
         """Print a console summary of results."""

@@ -323,11 +323,8 @@ class TestProperty4NonEmptyHeaderPath:
                     # For chunks with only H3+ headers, header_path
                     # can be empty but section_tags should contain
                     # the headers
-                    assert isinstance(
-                        header_path, str
-                    ), (
-                        f"header_path must be a string, "
-                        f"got {type(header_path)}"
+                    assert isinstance(header_path, str), (
+                        f"header_path must be a string, " f"got {type(header_path)}"
                     )
 
 

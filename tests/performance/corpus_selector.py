@@ -4,10 +4,8 @@ Corpus selector for benchmark testing.
 Selects representative test documents from the corpus for performance measurement.
 """
 
-import os
 from pathlib import Path
 from typing import Dict, List
-
 
 # Meta-documentation files to exclude from benchmarks
 EXCLUDED_FILES = {
@@ -55,17 +53,23 @@ class CorpusSelector:
             # Determine category from path
             try:
                 relative_path = md_file.relative_to(self.corpus_root)
-                category = str(relative_path.parts[0]) if len(relative_path.parts) > 1 else "root"
+                category = (
+                    str(relative_path.parts[0])
+                    if len(relative_path.parts) > 1
+                    else "root"
+                )
             except ValueError:
                 category = "unknown"
 
-            documents.append({
-                "path": md_file,
-                "name": md_file.name,
-                "size_bytes": size_bytes,
-                "category": category,
-                "relative_path": str(md_file.relative_to(self.corpus_root)),
-            })
+            documents.append(
+                {
+                    "path": md_file,
+                    "name": md_file.name,
+                    "size_bytes": size_bytes,
+                    "category": category,
+                    "relative_path": str(md_file.relative_to(self.corpus_root)),
+                }
+            )
 
         return documents
 
@@ -111,8 +115,7 @@ class CorpusSelector:
         return categories
 
     def select_by_size(
-        self,
-        target_counts: Dict[str, int] = None
+        self, target_counts: Dict[str, int] = None
     ) -> Dict[str, List[Dict]]:
         """
         Select representative documents by size category.
@@ -153,9 +156,7 @@ class CorpusSelector:
         return selected
 
     def select_by_category(
-        self,
-        categories: List[str] = None,
-        samples_per_category: int = 10
+        self, categories: List[str] = None, samples_per_category: int = 10
     ) -> Dict[str, List[Dict]]:
         """
         Select documents by content category.

@@ -345,5 +345,5 @@ See [Migration Guide](../MIGRATION.md) for full details.
 
 ---
 
-**Last Updated:** December 5, 2024  
+**Last Updated:** December 5, 2025  
 **Version:** 2.0.0

@@ -5,7 +5,6 @@ Tests the new functionality that merges small header-only chunks
 with their section body to improve chunking quality.
 """
 
-
 from markdown_chunker_v2 import ChunkConfig, MarkdownChunker
 
 

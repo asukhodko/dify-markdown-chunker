@@ -5,7 +5,6 @@ Tests the new small_chunk flagging logic that considers structural strength
 to avoid false positives on content-rich but compact sections.
 """
 
-
 from markdown_chunker_v2 import ChunkConfig, MarkdownChunker
 
 

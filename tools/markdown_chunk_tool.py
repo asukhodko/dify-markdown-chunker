@@ -26,7 +26,11 @@ class MarkdownChunkTool(Tool):
     - Supporting configurable chunk size and overlap
     - Providing rich metadata for each chunk
 
-    Uses markdown_chunker v2 with simplified 3-strategy architecture.
+    Uses markdown_chunker v2 with 4-strategy architecture:
+    1. CodeAware - for code-heavy documents
+    2. ListAware - for list-heavy documents (changelogs, feature lists)
+    3. Structural - for header-based documents
+    4. Fallback - for simple text
     """
 
     def _filter_metadata_for_rag(self, metadata: dict) -> dict:
@@ -160,13 +164,17 @@ class MarkdownChunkTool(Tool):
             chunks = chunker.chunk(input_text)
 
             # 5. Format results for Dify
-            # Dify UI expects result to be an array of strings
+            # NOTE: Dify UI expects result to be an array of strings
+            # The 'result' variable is returned as an array, not through JSON channel.
+            # JSON channel (json[0].data) is currently NOT used - all output goes through 'result'.
+            # This allows Dify to display chunks as separate items in the Knowledge Base UI.
             formatted_result = [
                 self._format_chunk_output(chunk, include_metadata)
                 for chunk in chunks
             ]
 
-            # 6. Return results as array of strings
+            # 6. Return results as array of strings via 'result' variable
+            # Each chunk is a separate string in the array
             yield self.create_variable_message("result", formatted_result)
 
         except ValueError as e:

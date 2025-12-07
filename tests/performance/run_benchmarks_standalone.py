@@ -12,11 +12,10 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from markdown_chunker_v2 import MarkdownChunker
-from markdown_chunker_v2.config import ChunkConfig
-from tests.performance.corpus_selector import CorpusSelector
-from tests.performance.results_manager import ResultsManager
-from tests.performance.utils import calculate_throughput, run_benchmark
+from markdown_chunker_v2 import MarkdownChunker  # noqa: E402
+from tests.performance.corpus_selector import CorpusSelector  # noqa: E402
+from tests.performance.results_manager import ResultsManager  # noqa: E402
+from tests.performance.utils import calculate_throughput, run_benchmark  # noqa: E402
 
 
 def benchmark_by_size(corpus_selector, results_manager, chunker):
@@ -42,7 +41,7 @@ def benchmark_by_size(corpus_selector, results_manager, chunker):
 
         for doc in documents:
             content = corpus_selector.load_document(doc)
-            size_bytes = len(content.encode('utf-8'))
+            size_bytes = len(content.encode("utf-8"))
 
             def chunk_doc():
                 return chunker.chunk(content)
@@ -52,7 +51,7 @@ def benchmark_by_size(corpus_selector, results_manager, chunker):
 
             chunks = result["result"]
             chunk_count = len(chunks)
-            avg_chunk_size = statistics.mean([len(c.content) for c in chunks]) if chunks else 0
+            _ = statistics.mean([len(c.content) for c in chunks]) if chunks else 0
 
             category_times.append(result["time"]["mean"])
             category_memories.append(result["memory"]["mean"])
@@ -65,7 +64,9 @@ def benchmark_by_size(corpus_selector, results_manager, chunker):
                 "mean": statistics.mean(category_times),
                 "min": min(category_times),
                 "max": max(category_times),
-                "stddev": statistics.stdev(category_times) if len(category_times) > 1 else 0,
+                "stddev": (
+                    statistics.stdev(category_times) if len(category_times) > 1 else 0
+                ),
             },
             "memory": {
                 "mean": statistics.mean(category_memories),
@@ -85,7 +86,9 @@ def benchmark_by_size(corpus_selector, results_manager, chunker):
         }
 
         print(f"  ✓ Avg time: {size_results[size_category]['time']['mean']*1000:.2f}ms")
-        print(f"  ✓ Throughput: {size_results[size_category]['throughput']['kb_per_sec']:.1f} KB/s")
+        print(
+            f"  ✓ Throughput: {size_results[size_category]['throughput']['kb_per_sec']:.1f} KB/s"
+        )
         print(f"  ✓ Memory: {size_results[size_category]['memory']['mean']:.2f} MB")
 
     for size_cat, data in size_results.items():
@@ -120,7 +123,9 @@ def benchmark_by_content_type(corpus_selector, results_manager, chunker):
                 chunks, strategy, analysis = chunker.chunk_with_analysis(content)
                 return {"chunks": chunks, "strategy": strategy}
 
-            result = run_benchmark(chunk_with_analysis, warmup_runs=1, measurement_runs=2)
+            result = run_benchmark(
+                chunk_with_analysis, warmup_runs=1, measurement_runs=2
+            )
             output = result["result"]
 
             category_times.append(result["time"]["mean"])
@@ -130,7 +135,11 @@ def benchmark_by_content_type(corpus_selector, results_manager, chunker):
         strategy_counts = {}
         for s in category_strategies:
             strategy_counts[s] = strategy_counts.get(s, 0) + 1
-        dominant_strategy = max(strategy_counts, key=strategy_counts.get) if strategy_counts else "unknown"
+        dominant_strategy = (
+            max(strategy_counts, key=strategy_counts.get)
+            if strategy_counts
+            else "unknown"
+        )
 
         content_results[content_type] = {
             "time": {
@@ -145,7 +154,9 @@ def benchmark_by_content_type(corpus_selector, results_manager, chunker):
             "document_count": len(documents),
         }
 
-        print(f"  ✓ Avg time: {content_results[content_type]['time']['mean']*1000:.2f}ms")
+        print(
+            f"  ✓ Avg time: {content_results[content_type]['time']['mean']*1000:.2f}ms"
+        )
         print(f"  ✓ Strategy: {dominant_strategy}")
 
     for content_type, data in content_results.items():
@@ -178,7 +189,7 @@ def benchmark_scalability(corpus_selector, results_manager, chunker):
 
     for doc in sample_docs:
         content = corpus_selector.load_document(doc)
-        size_bytes = len(content.encode('utf-8'))
+        size_bytes = len(content.encode("utf-8"))
         size_kb = size_bytes / 1024
 
         def chunk_doc():
@@ -193,7 +204,6 @@ def benchmark_scalability(corpus_selector, results_manager, chunker):
         print(f"  {size_kb:6.1f} KB -> {time_ms:6.2f} ms")
 
     # Linear regression
-    n = len(sizes_kb)
     x_mean = statistics.mean(sizes_kb)
     y_mean = statistics.mean(times_ms)
 
@@ -208,7 +218,7 @@ def benchmark_scalability(corpus_selector, results_manager, chunker):
     ss_residual = sum((y - yp) ** 2 for y, yp in zip(times_ms, y_predicted))
     r_squared = 1 - (ss_residual / ss_total) if ss_total > 0 else 0
 
-    print(f"\nRegression Model:")
+    print("\nRegression Model:")
     print(f"  Time(ms) = {coefficient:.4f} × Size(KB) + {intercept:.2f}")
     print(f"  R² = {r_squared:.4f}")
 
@@ -218,7 +228,9 @@ def benchmark_scalability(corpus_selector, results_manager, chunker):
         "r_squared": r_squared,
     }
 
-    results_manager.add_benchmark_result("scalability", "analysis", {"regression": regression})
+    results_manager.add_benchmark_result(
+        "scalability", "analysis", {"regression": regression}
+    )
 
     return regression
 
@@ -240,7 +252,7 @@ def main():
     # Run benchmarks
     try:
         size_results = benchmark_by_size(corpus_selector, results_manager, chunker)
-        content_results = benchmark_by_content_type(corpus_selector, results_manager, chunker)
+        _ = benchmark_by_content_type(corpus_selector, results_manager, chunker)
         regression = benchmark_scalability(corpus_selector, results_manager, chunker)
 
         # Save results
@@ -265,17 +277,22 @@ def main():
         for size_cat in ["tiny", "small", "medium", "large"]:
             if size_cat in size_results:
                 data = size_results[size_cat]
-                print(f"  {size_cat.title():10s}: {data['time']['mean']*1000:6.2f}ms  "
-                      f"{data['throughput']['kb_per_sec']:7.1f} KB/s  "
-                      f"{data['memory']['mean']:5.2f} MB")
+                print(
+                    f"  {size_cat.title():10s}: {data['time']['mean']*1000:6.2f}ms  "
+                    f"{data['throughput']['kb_per_sec']:7.1f} KB/s  "
+                    f"{data['memory']['mean']:5.2f} MB"
+                )
 
-        print(f"\nScaling: {regression['coefficient']:.4f} ms/KB  (R² = {regression['r_squared']:.4f})")
+        print(
+            f"\nScaling: {regression['coefficient']:.4f} ms/KB  (R² = {regression['r_squared']:.4f})"
+        )
 
         return 0
 
     except Exception as e:
         print(f"\n❌ ERROR: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 

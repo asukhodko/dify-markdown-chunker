@@ -12,7 +12,7 @@ from markdown_chunker_v2 import MarkdownChunker
 from markdown_chunker_v2.config import ChunkConfig
 
 
-class TestSDE12ImpactCase:
+class TestDEVImpactCase:
     """
     Test that chunk with Impact/Complexity/Leadership has header_path
     ending with "Impact (Delivery)", not "Complexity".
@@ -29,9 +29,9 @@ class TestSDE12ImpactCase:
         which includes ancestor headers from the document structure.
         """
         # Create a document where Impact/Complexity/Leadership will be in one chunk
-        md_text = """# Критерии грейдов SDE
+        md_text = """# Критерии грейдов DEV
 
-## SDE 12 (Junior-, Младший разработчик)
+## DEV-4 (Junior-, Младший разработчик)
 
 ### Scope
 Разработчик помогает разрабатывать отдельные компоненты продукта.
@@ -69,9 +69,9 @@ class TestSDE12ImpactCase:
         resulting in fewer chunks than before.
         """
         # Create content with H1/H2 structural context and multiple H3 headers
-        md_text = """# Критерии грейдов SDE
+        md_text = """# Критерии грейдов DEV
 
-## SDE 12 (Junior-, Младший разработчик)
+## DEV-4 (Junior-, Младший разработчик)
 
 ### Impact (Delivery)
 Основная задача Junior — учиться.
@@ -89,20 +89,20 @@ class TestSDE12ImpactCase:
         # With header merging, may have 1 chunk (H1 merged with H2) or 2 chunks
         assert len(chunks) >= 1
 
-        # Find a chunk that contains SDE 12 content (either in header_path or content)
-        sde12_chunk = None
+        # Find a chunk that contains DEV-4 content (either in header_path or content)
+        dev4_chunk = None
         for chunk in chunks:
             if (
-                "SDE 12" in chunk.metadata.get("header_path", "")
-                or "SDE 12" in chunk.content
+                "DEV-4" in chunk.metadata.get("header_path", "")
+                or "DEV-4" in chunk.content
             ):
-                sde12_chunk = chunk
+                dev4_chunk = chunk
                 break
 
-        assert sde12_chunk is not None, "Should have a chunk containing SDE 12"
+        assert dev4_chunk is not None, "Should have a chunk containing DEV-4"
 
-        header_path = sde12_chunk.metadata.get("header_path", "")
-        section_tags = sde12_chunk.metadata.get("section_tags", [])
+        header_path = dev4_chunk.metadata.get("header_path", "")
+        section_tags = dev4_chunk.metadata.get("section_tags", [])
 
         # header_path should NOT contain any H3 headers
         assert (
@@ -129,7 +129,7 @@ class TestSDE12ImpactCase:
 
 class TestPreambleSeparation:
     """
-    Test that links before # Критерии грейдов SDE are in separate preamble chunk.
+    Test that links before # Критерии грейдов DEV are in separate preamble chunk.
 
     Validates: Requirements 5.3
     """
@@ -143,9 +143,9 @@ class TestPreambleSeparation:
 Матрица для Тимлидов: https://wiki.example.com/page2
 Есть также репозиторий: https://gitlab.example.com/repo
 
-# Критерии грейдов SDE
+# Критерии грейдов DEV
 
-## SDE 12 (Junior)
+## DEV-4 (Junior)
 
 ### Scope
 Разработчик помогает разрабатывать компоненты.
@@ -174,7 +174,7 @@ class TestPreambleSeparation:
 
         # Check preamble does NOT contain the main header
         assert (
-            "# Критерии грейдов SDE" not in preamble.content
+            "# Критерии грейдов DEV" not in preamble.content
         ), "Preamble should not contain main header"
 
         # Check first structural chunk starts with header

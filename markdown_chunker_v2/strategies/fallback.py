@@ -19,7 +19,7 @@ class FallbackStrategy(BaseStrategy):
     Works for any document by splitting on paragraph boundaries
     and grouping paragraphs to fit within max_chunk_size.
 
-    Priority: 3 (lowest - used when no other strategy applies)
+    Priority: 4 (lowest - used when no other strategy applies)
     """
 
     @property
@@ -28,7 +28,7 @@ class FallbackStrategy(BaseStrategy):
 
     @property
     def priority(self) -> int:
-        return 3
+        return 4
 
     def can_handle(self, analysis: ContentAnalysis, config: ChunkConfig) -> bool:
         """Always returns True - fallback handles everything."""

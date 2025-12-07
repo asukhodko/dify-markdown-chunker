@@ -497,7 +497,9 @@ This is the final section of the document. It should not have next_content overl
             # Middle chunks should have previous_content/next_content
             if i > 0:
                 # Not first chunk - should have previous_content
-                assert "previous_content" in metadata, f"Chunk {i} should have previous_content"
+                assert (
+                    "previous_content" in metadata
+                ), f"Chunk {i} should have previous_content"
             if i < len(result) - 1:
                 # Not last chunk - should have next_content
                 assert "next_content" in metadata, f"Chunk {i} should have next_content"
@@ -544,7 +546,8 @@ This is the final section of the document. It should not have next_content overl
             metadata_end = chunk_with_meta.find("</metadata>")
             metadata_json = chunk_with_meta[metadata_start:metadata_end].strip()
             metadata = json.loads(metadata_json)
-            main_content = chunk_with_meta[metadata_end + len("</metadata>"):].strip()
+            # Extract main content after metadata (not used but calculated for consistency)
+            _ = chunk_with_meta[metadata_end + len("</metadata>"):].strip()
 
             # Get overlap values from metadata
             prev_content = metadata.get("previous_content", "")
@@ -552,13 +555,13 @@ This is the final section of the document. It should not have next_content overl
 
             # Verify overlap is embedded in no-metadata version
             if prev_content:
-                assert prev_content in chunk_no_meta, (
-                    f"Chunk {i}: previous_content should be embedded in chunk text"
-                )
+                assert (
+                    prev_content in chunk_no_meta
+                ), f"Chunk {i}: previous_content should be embedded in chunk text"
             if next_content:
-                assert next_content in chunk_no_meta, (
-                    f"Chunk {i}: next_content should be embedded in chunk text"
-                )
+                assert (
+                    next_content in chunk_no_meta
+                ), f"Chunk {i}: next_content should be embedded in chunk text"
 
     def test_first_chunk_no_previous_content(self, tool_instance):
         """
@@ -589,9 +592,9 @@ This is the final section of the document. It should not have next_content overl
         metadata = json.loads(metadata_json)
 
         # First chunk should NOT have previous_content
-        assert "previous_content" not in metadata or not metadata.get("previous_content"), (
-            "First chunk should not have previous_content"
-        )
+        assert "previous_content" not in metadata or not metadata.get(
+            "previous_content"
+        ), "First chunk should not have previous_content"
 
     def test_last_chunk_no_next_content(self, tool_instance):
         """
@@ -621,9 +624,9 @@ This is the final section of the document. It should not have next_content overl
         metadata = json.loads(metadata_json)
 
         # Last chunk should NOT have next_content
-        assert "next_content" not in metadata or not metadata.get("next_content"), (
-            "Last chunk should not have next_content"
-        )
+        assert "next_content" not in metadata or not metadata.get(
+            "next_content"
+        ), "Last chunk should not have next_content"
 
     def test_zero_overlap_no_extra_content(self, tool_instance):
         """
@@ -656,7 +659,9 @@ This is the final section of the document. It should not have next_content overl
             metadata = json.loads(metadata_json)
 
             # With overlap=0, should have no overlap fields
-            assert "previous_content" not in metadata or not metadata.get("previous_content")
+            assert "previous_content" not in metadata or not metadata.get(
+                "previous_content"
+            )
             assert "next_content" not in metadata or not metadata.get("next_content")
 
         # No-metadata chunks should be identical to main content only
@@ -669,9 +674,9 @@ This is the final section of the document. It should not have next_content overl
             main_content = chunk_with_meta[metadata_end + len("</metadata>"):].strip()
 
             # Should be identical (no overlap added)
-            assert chunk_no_meta.strip() == main_content, (
-                f"Chunk {i} with overlap=0 should be identical to main content"
-            )
+            assert (
+                chunk_no_meta.strip() == main_content
+            ), f"Chunk {i} with overlap=0 should be identical to main content"
 
     def test_overlap_consistency_between_modes(self, tool_instance):
         """
@@ -696,9 +701,9 @@ This is the final section of the document. It should not have next_content overl
         result_false = messages_false[0].message.variable_value
 
         # Same number of chunks
-        assert len(result_true) == len(result_false), (
-            "Both modes should produce the same number of chunks"
-        )
+        assert len(result_true) == len(
+            result_false
+        ), "Both modes should produce the same number of chunks"
 
 
 if __name__ == "__main__":

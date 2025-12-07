@@ -11,6 +11,7 @@ import pytest
 
 from markdown_chunker_v2 import MarkdownChunker
 from markdown_chunker_v2.config import ChunkConfig
+
 from .corpus_selector import CorpusSelector
 from .results_manager import ResultsManager
 from .utils import run_benchmark
@@ -37,8 +38,7 @@ class TestStrategyBenchmarks:
         """Benchmark CodeAware strategy on appropriate documents."""
         # Select code-heavy documents
         selection = corpus_selector.select_by_category(
-            categories=["debug_logs", "technical_docs"],
-            samples_per_category=10
+            categories=["debug_logs", "technical_docs"], samples_per_category=10
         )
 
         all_docs = []
@@ -94,8 +94,7 @@ class TestStrategyBenchmarks:
         """Benchmark Structural strategy on appropriate documents."""
         # Select structured documents
         selection = corpus_selector.select_by_category(
-            categories=["changelogs", "github_readmes"],
-            samples_per_category=10
+            categories=["changelogs", "github_readmes"], samples_per_category=10
         )
 
         all_docs = []
@@ -151,8 +150,7 @@ class TestStrategyBenchmarks:
         """Benchmark Fallback strategy on simple documents."""
         # Select simple documents
         selection = corpus_selector.select_by_category(
-            categories=["personal_notes"],
-            samples_per_category=10
+            categories=["personal_notes"], samples_per_category=10
         )
 
         all_docs = []
@@ -212,8 +210,7 @@ class TestStrategyBenchmarks:
         """
         # Pick a medium-sized mixed content document
         selection = corpus_selector.select_by_category(
-            categories=["mixed_content"],
-            samples_per_category=3
+            categories=["mixed_content"], samples_per_category=3
         )
 
         if not selection.get("mixed_content"):
@@ -242,6 +239,7 @@ class TestStrategyBenchmarks:
 
         ratio = max_time / min_time if min_time > 0 else 1.0
 
-        assert ratio < 3.0, \
-            f"Strategy performance too variable: {ratio:.2f}x difference. " \
+        assert ratio < 3.0, (
+            f"Strategy performance too variable: {ratio:.2f}x difference. "
             f"Times: {strategy_times}"
+        )

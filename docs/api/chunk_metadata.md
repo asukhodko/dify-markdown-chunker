@@ -52,7 +52,7 @@ When a chunk contains multiple headers, the `sub_headers` field lists additional
 ```python
 # Example chunk with multiple headers
 chunk.metadata = {
-    "header_path": "/Grades/SDE 12/Impact (Delivery)",
+    "header_path": "/Grades/DEV-4/Impact (Delivery)",
     "sub_headers": ["Complexity", "Leadership"],  # Additional ### headers
     ...
 }

@@ -10,9 +10,10 @@ from pathlib import Path
 import pytest
 
 from markdown_chunker_v2 import MarkdownChunker
+
 from .corpus_selector import CorpusSelector
 from .results_manager import ResultsManager
-from .utils import calculate_throughput, run_benchmark
+from .utils import run_benchmark
 
 
 @pytest.fixture(scope="module")
@@ -48,9 +49,7 @@ class TestContentTypeBenchmarks:
         - Chunk quality metrics
         """
         # Select documents by category
-        content_selection = corpus_selector.select_by_category(
-            samples_per_category=10
-        )
+        content_selection = corpus_selector.select_by_category(samples_per_category=10)
 
         content_results = {}
 
@@ -68,17 +67,19 @@ class TestContentTypeBenchmarks:
 
             for doc in documents:
                 content = corpus_selector.load_document(doc)
-                size_bytes = len(content.encode('utf-8'))
+                _ = len(content.encode("utf-8"))
 
                 # Run benchmark with strategy analysis
                 def chunk_with_analysis():
                     chunks, strategy, analysis = chunker.chunk_with_analysis(content)
-                    return {"chunks": chunks, "strategy": strategy, "analysis": analysis}
+                    return {
+                        "chunks": chunks,
+                        "strategy": strategy,
+                        "analysis": analysis,
+                    }
 
                 result = run_benchmark(
-                    chunk_with_analysis,
-                    warmup_runs=1,
-                    measurement_runs=3
+                    chunk_with_analysis, warmup_runs=1, measurement_runs=3
                 )
 
                 # Extract result details
@@ -100,14 +101,22 @@ class TestContentTypeBenchmarks:
             strategy_counts = {}
             for s in category_strategies:
                 strategy_counts[s] = strategy_counts.get(s, 0) + 1
-            dominant_strategy = max(strategy_counts, key=strategy_counts.get) if strategy_counts else "unknown"
+            dominant_strategy = (
+                max(strategy_counts, key=strategy_counts.get)
+                if strategy_counts
+                else "unknown"
+            )
 
             content_results[content_type] = {
                 "time": {
                     "mean": statistics.mean(category_times),
                     "min": min(category_times),
                     "max": max(category_times),
-                    "stddev": statistics.stdev(category_times) if len(category_times) > 1 else 0,
+                    "stddev": (
+                        statistics.stdev(category_times)
+                        if len(category_times) > 1
+                        else 0
+                    ),
                 },
                 "memory": {
                     "mean": statistics.mean(category_memories),
@@ -118,14 +127,22 @@ class TestContentTypeBenchmarks:
                 "strategy_distribution": strategy_counts,
                 "output": {
                     "avg_chunk_count": statistics.mean(category_chunks),
-                    "avg_chunk_size": statistics.mean(category_chunk_sizes) if category_chunk_sizes else 0,
+                    "avg_chunk_size": (
+                        statistics.mean(category_chunk_sizes)
+                        if category_chunk_sizes
+                        else 0
+                    ),
                 },
                 "document_count": len(documents),
             }
 
-            print(f"  Avg time: {content_results[content_type]['time']['mean']*1000:.2f}ms")
+            print(
+                f"  Avg time: {content_results[content_type]['time']['mean']*1000:.2f}ms"
+            )
             print(f"  Dominant strategy: {dominant_strategy}")
-            print(f"  Avg chunks: {content_results[content_type]['output']['avg_chunk_count']:.1f}")
+            print(
+                f"  Avg chunks: {content_results[content_type]['output']['avg_chunk_count']:.1f}"
+            )
 
         # Save results
         for content_type, data in content_results.items():
@@ -148,8 +165,7 @@ class TestContentTypeBenchmarks:
 
         for category, expected_strategies in categories_to_test.items():
             selection = corpus_selector.select_by_category(
-                categories=[category],
-                samples_per_category=5
+                categories=[category], samples_per_category=5
             )
 
             if category not in selection or not selection[category]:
@@ -169,6 +185,7 @@ class TestContentTypeBenchmarks:
             match_rate = matches / len(strategies_seen) if strategies_seen else 0
 
             # At least 50% should match expected pattern
-            assert match_rate >= 0.5, \
-                f"Category {category} expected strategies {expected_strategies}, " \
+            assert match_rate >= 0.5, (
+                f"Category {category} expected strategies {expected_strategies}, "
                 f"but only {match_rate*100:.1f}% matched. Seen: {set(strategies_seen)}"
+            )

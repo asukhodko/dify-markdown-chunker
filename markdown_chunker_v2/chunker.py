@@ -17,6 +17,12 @@ from .parser import Parser
 from .strategies import StrategySelector
 from .types import Chunk, ChunkingMetrics
 
+# Maximum overlap context as a fraction of chunk size
+# This prevents metadata bloat while allowing larger context for larger chunks
+# For a 4KB chunk, max overlap context = 4096 * 0.35 = 1433 characters
+# For a 1KB chunk, max overlap context = 1024 * 0.35 = 358 characters
+MAX_OVERLAP_CONTEXT_RATIO = 0.35
+
 
 class MarkdownChunker:
     """
@@ -138,8 +144,23 @@ class MarkdownChunker:
         - next_content: First N characters from next chunk (all except last)
         - overlap_size: Size of context window used
 
+        Context window size:
+        - Determined by config.overlap_size (default: 200 characters)
+        - Capped at adaptive maximum based on chunk size:
+          max_overlap = min(config.overlap_size, chunk_size * MAX_OVERLAP_CONTEXT_RATIO)
+        - This allows larger overlap for larger chunks while preventing bloat
+        - Word boundary-aware: attempts to break at spaces when possible
+
+        next_content and previous_content behavior:
+        - Contains preview/follow-up text from adjacent chunks
+        - NOT duplicated in chunk.content (metadata-only)
+        - Limited to configured overlap_size or adaptive maximum
+        - Helps language models understand chunk boundaries
+        - Avoids index bloat and semantic search confusion
+
         Key points:
-        - overlap_size parameter determines context window size
+        - overlap_size parameter determines base context window size
+        - Maximum overlap scales with chunk size (35% of chunk size)
         - chunk.content remains distinct and non-overlapping
         - Context extraction respects word boundaries
         - Helps language models understand chunk boundaries without text duplication
@@ -154,20 +175,30 @@ class MarkdownChunker:
         if len(chunks) <= 1:
             return chunks
 
-        overlap_size = self.config.overlap_size
-
         for i in range(len(chunks)):
             # Previous content (for all except first)
             if i > 0:
-                prev_content = chunks[i - 1].content
-                overlap_text = self._extract_overlap_end(prev_content, overlap_size)
+                prev_chunk = chunks[i - 1]
+                # Adaptive cap: max overlap = 35% of previous chunk size
+                max_overlap = int(len(prev_chunk.content) * MAX_OVERLAP_CONTEXT_RATIO)
+                effective_overlap_size = min(self.config.overlap_size, max_overlap)
+
+                overlap_text = self._extract_overlap_end(
+                    prev_chunk.content, effective_overlap_size
+                )
                 chunks[i].metadata["previous_content"] = overlap_text
                 chunks[i].metadata["overlap_size"] = len(overlap_text)
 
             # Next content (for all except last)
             if i < len(chunks) - 1:
-                next_content = chunks[i + 1].content
-                overlap_text = self._extract_overlap_start(next_content, overlap_size)
+                next_chunk = chunks[i + 1]
+                # Adaptive cap: max overlap = 35% of next chunk size
+                max_overlap = int(len(next_chunk.content) * MAX_OVERLAP_CONTEXT_RATIO)
+                effective_overlap_size = min(self.config.overlap_size, max_overlap)
+
+                overlap_text = self._extract_overlap_start(
+                    next_chunk.content, effective_overlap_size
+                )
                 chunks[i].metadata["next_content"] = overlap_text
 
         return chunks
@@ -176,12 +207,19 @@ class MarkdownChunker:
         """
         Extract overlap from end of content, respecting word boundaries.
 
+        This is used for previous_content metadata field.
+
+        Strategy:
+        - If content <= size, return entire content
+        - Otherwise, extract last 'size' characters
+        - Try to start at word boundary (first space in first half of extracted text)
+
         Args:
             content: Source content
-            size: Target overlap size
+            size: Target overlap size (adaptive, capped at 35% of chunk size)
 
         Returns:
-            Overlap text from end of content
+            Overlap text from end of content, at most 'size' characters
         """
         if len(content) <= size:
             return content
@@ -199,12 +237,19 @@ class MarkdownChunker:
         """
         Extract overlap from start of content, respecting word boundaries.
 
+        This is used for next_content metadata field.
+
+        Strategy:
+        - If content <= size, return entire content
+        - Otherwise, extract first 'size' characters
+        - Try to end at word boundary (last space in second half of extracted text)
+
         Args:
             content: Source content
-            size: Target overlap size
+            size: Target overlap size (adaptive, capped at 35% of chunk size)
 
         Returns:
-            Overlap text from start of content
+            Overlap text from start of content, at most 'size' characters
         """
         if len(content) <= size:
             return content

@@ -5,7 +5,68 @@ All types in one file - no duplication between parser and chunker.
 """
 
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any, Dict, List, Optional
+
+
+class ListType(Enum):
+    """Type of markdown list."""
+
+    BULLET = "bullet"  # -, *, + markers
+    NUMBERED = "numbered"  # 1., 2., etc.
+    CHECKBOX = "checkbox"  # - [ ], - [x]
+
+
+@dataclass
+class ListItem:
+    """
+    Represents a single item in a markdown list.
+
+    Attributes:
+        content: Item text without marker
+        marker: Original markdown marker (e.g., '-', '*', '1.', '- [ ]')
+        depth: Nesting level (0 = top-level)
+        line_number: Line position in document (1-indexed)
+        list_type: Type of list item
+        is_checked: For checkbox items: True/False/None
+    """
+
+    content: str
+    marker: str
+    depth: int
+    line_number: int
+    list_type: ListType
+    is_checked: Optional[bool] = None
+
+
+@dataclass
+class ListBlock:
+    """
+    Represents a contiguous block of list items.
+
+    Attributes:
+        items: All items in this list block
+        start_line: First line of block (1-indexed)
+        end_line: Last line of block (1-indexed)
+        list_type: Predominant type in block
+        max_depth: Maximum nesting level in block
+    """
+
+    items: List[ListItem]
+    start_line: int
+    end_line: int
+    list_type: ListType
+    max_depth: int
+
+    @property
+    def item_count(self) -> int:
+        """Total number of items in block."""
+        return len(self.items)
+
+    @property
+    def has_nested(self) -> bool:
+        """Whether block contains nested items."""
+        return self.max_depth > 0
 
 
 @dataclass
@@ -89,15 +150,20 @@ class ContentAnalysis:
     max_header_depth: int
     table_count: int
     list_count: int = 0
+    list_item_count: int = 0
 
     # Extracted elements
     code_blocks: List[FencedBlock] = field(default_factory=list)
     headers: List[Header] = field(default_factory=list)
     tables: List[TableBlock] = field(default_factory=list)
+    list_blocks: List[ListBlock] = field(default_factory=list)
 
     # Additional metrics
     has_preamble: bool = False
     preamble_end_line: int = 0
+    list_ratio: float = 0.0
+    max_list_depth: int = 0
+    has_checkbox_lists: bool = False
 
 
 @dataclass

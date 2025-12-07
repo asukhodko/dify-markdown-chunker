@@ -4,7 +4,7 @@
 
 **Intelligent Markdown document chunking for RAG systems with structural awareness**
 
-[![Version](https://img.shields.io/badge/version-2.0.0--a3-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1.0-orange.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Dify Plugin](https://img.shields.io/badge/dify-1.9.0+-green.svg)](https://dify.ai/)
@@ -51,17 +51,19 @@ This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** w
 | Breaks code blocks mid-function | Preserves code blocks as atomic units |
 | Loses header context | Maintains hierarchical section structure |
 | Splits tables and lists | Keeps tables and lists intact |
-| One-size-fits-all approach | 6 adaptive strategies based on content |
+| One-size-fits-all approach | 4 adaptive strategies based on content |
 | No overlap support | Smart overlap for better retrieval |
+| **Destroys list hierarchies** | **Smart list grouping with context binding** |
 
 ---
 
 ## ✨ Features
 
 ### 🎯 Adaptive Chunking
-- **3 intelligent strategies** — automatic selection based on content analysis
+- **4 intelligent strategies** — automatic selection based on content analysis
+- **List-Aware Strategy** — preserves nested list hierarchies and context (unique competitive advantage)
 - **Structure preservation** — headers, lists, tables, and code stay intact
-- **Smart overlap** — configurable context overlap between chunks
+- **Adaptive overlap** — context window scales with chunk size (up to 35%)
 
 ### 🔍 Deep Content Analysis
 - **AST parsing** — full Markdown syntax analysis
@@ -160,8 +162,8 @@ Add the chunker to your Dify workflow:
 |-----------|------|---------|-------------|
 | `input_text` | string | required | Markdown text to chunk |
 | `max_chunk_size` | number | 4096 | Maximum chunk size in characters |
-| `chunk_overlap` | number | 200 | Overlap between consecutive chunks (see below) |
-| `strategy` | select | auto | Chunking strategy (auto/code_aware/structural/fallback) |
+| `chunk_overlap` | number | 200 | Base overlap size (adaptive: actual max = min(overlap_size, chunk_size * 0.35)) |
+| `strategy` | select | auto | Chunking strategy (auto/code_aware/list_aware/structural/fallback) |
 | `include_metadata` | boolean | true | Embed metadata in chunk text (see below) |
 
 ### Understanding `chunk_overlap`
@@ -306,8 +308,45 @@ chunker = MarkdownChunker()
 chunks = chunker.chunk(text)
 
 # Force specific strategy
-chunks = chunker.chunk(text, strategy="code")
+chunks = chunker.chunk(text, strategy="code_aware")
+chunks = chunker.chunk(text, strategy="list_aware")  # For list-heavy docs
 chunks = chunker.chunk(text, strategy="structural")
+```
+
+### List-Aware Strategy Example
+
+```python
+from markdown_chunker import MarkdownChunker, ChunkConfig
+
+# Changelog processing with list-aware strategy
+changelog = """
+# Changelog
+
+## Version 2.0
+
+New features:
+- **Authentication**
+  - OAuth 2.0 support
+  - SAML integration
+  - MFA with SMS and authenticator apps
+- **Performance**
+  - 50% faster processing
+  - Reduced memory usage
+"""
+
+config = ChunkConfig(
+    max_chunk_size=2000,
+    list_ratio_threshold=0.35,  # Lower threshold for changelogs
+    list_count_threshold=3       # Activate with fewer lists
+)
+
+chunker = MarkdownChunker(config)
+chunks = chunker.chunk(changelog)
+
+# Result: Nested items stay together, context preserved
+for chunk in chunks:
+    print(f"Chunk type: {chunk.metadata['content_type']}")
+    print(f"List depth: {chunk.metadata.get('max_list_depth', 0)}")
 ```
 
 ### Configuration Profiles
@@ -365,8 +404,57 @@ The system automatically selects the optimal strategy based on content analysis:
 | Strategy | Priority | Activation Conditions | Best For |
 |----------|----------|----------------------|----------|
 | **Code-Aware** | 1 (highest) | code_ratio ≥ 30% OR has code blocks/tables | Technical docs, API docs |
-| **Structural** | 2 | ≥3 headers | Documentation, guides |
-| **Fallback** | 3 (default) | Always applicable | Simple text, mixed content |
+| **List-Aware** | 2 | list_ratio > 40% OR list_count ≥ 5 (AND logic for structured docs) | Changelogs, feature lists, task lists, outlines |
+| **Structural** | 3 | ≥3 headers with hierarchy | Documentation, guides |
+| **Fallback** | 4 (default) | Always applicable | Simple text, mixed content |
+
+### List-Aware Strategy: Competitive Advantage
+
+**Unique capability not found in competing solutions** (LangChain, LlamaIndex, Unstructured, Chonkie):
+
+**Intelligent List Processing:**
+- **Hierarchy Preservation** — nested lists never split across depth levels
+- **Context Binding** — introduction paragraphs automatically attached to their lists
+- **Smart Grouping** — related list items kept together based on structure
+- **Type Detection** — handles bullet lists, numbered lists, and checkboxes
+
+**Activation Logic:**
+```python
+# For documents with strong hierarchical structure (many headers):
+activate_if: list_ratio > 0.40 AND list_count >= 5
+
+# For documents without strong structure:
+activate_if: list_ratio > 0.40 OR list_count >= 5
+```
+
+**Perfect for:**
+- **Changelogs** — version releases with nested changes
+- **Feature lists** — product capabilities with descriptions
+- **Task lists** — todos with sub-tasks and checkboxes
+- **Outlines** — structured notes and cheatsheets
+
+**Example Input:**
+```markdown
+Our product includes:
+
+- **Authentication**
+  - OAuth 2.0 support
+  - SAML integration
+  - MFA options
+    - SMS
+    - Authenticator app
+    - Hardware keys
+
+- **Authorization**
+  - Role-based access
+  - Permission groups
+```
+
+**Result:** Two coherent chunks preserving full hierarchies:
+- Chunk 1: Introduction + Authentication with all nested items
+- Chunk 2: Authorization with all nested items
+
+**Competitor Behavior:** Would split nested items, losing context and relationships.
 
 ---
 
@@ -382,19 +470,22 @@ config = ChunkConfig(
     max_chunk_size=4096,      # Maximum chunk size (chars)
     min_chunk_size=512,       # Minimum chunk size
     
-    # Overlap
-    overlap_size=200,         # Overlap size (0 = disabled)
+    # Overlap (adaptive sizing)
+    overlap_size=200,         # Base overlap size (0 = disabled)
+                              # Actual max = min(overlap_size, chunk_size * 0.35)
     
     # Behavior
     preserve_atomic_blocks=True,  # Keep code blocks and tables intact
     extract_preamble=True,        # Extract content before first header
     
     # Strategy selection thresholds
-    code_threshold=0.3,       # Code ratio for CodeAwareStrategy
-    structure_threshold=3,    # Min headers for StructuralStrategy
+    code_threshold=0.3,           # Code ratio for CodeAwareStrategy
+    structure_threshold=3,        # Min headers for StructuralStrategy
+    list_ratio_threshold=0.40,    # List ratio for ListAwareStrategy
+    list_count_threshold=5,       # Min list blocks for ListAwareStrategy
     
     # Override
-    strategy_override=None,   # Force specific strategy (code_aware/structural/fallback)
+    strategy_override=None,   # Force specific strategy (code_aware/list_aware/structural/fallback)
 )
 ```
 
@@ -519,10 +610,10 @@ class ChunkingResult:
 
 | Module | Description |
 |--------|-------------|
-| `markdown_chunker_v2/parser.py` | Markdown parsing and content analysis |
-| `markdown_chunker_v2/chunker.py` | Main chunking orchestration |
-| `markdown_chunker_v2/strategies/` | 3 chunking strategies (code_aware, structural, fallback) |
-| `markdown_chunker_v2/config.py` | Configuration (8 parameters) |
+| `markdown_chunker_v2/parser.py` | Markdown parsing and content analysis (with list detection) |
+| `markdown_chunker_v2/chunker.py` | Main chunking orchestration (with adaptive overlap) |
+| `markdown_chunker_v2/strategies/` | 4 chunking strategies (code_aware, list_aware, structural, fallback) |
+| `markdown_chunker_v2/config.py` | Configuration (10 parameters) |
 | `markdown_chunker_v2/types.py` | Core data types |
 | `provider/` | Dify plugin provider |
 | `tools/` | Dify plugin tools |
@@ -532,11 +623,15 @@ class ChunkingResult:
 ```
 dify-markdown-chunker/
 ├── markdown_chunker_v2/       # Core library (v2.0 redesign)
-│   ├── parser.py              # Markdown parsing
-│   ├── chunker.py             # Main chunking logic
-│   ├── config.py              # Configuration (8 params)
+│   ├── parser.py              # Markdown parsing (with list detection)
+│   ├── chunker.py             # Main chunking logic (adaptive overlap)
+│   ├── config.py              # Configuration (10 params)
 │   ├── types.py               # Data types
-│   └── strategies/            # 3 chunking strategies
+│   └── strategies/            # 4 chunking strategies
+│       ├── code_aware.py      # Code-heavy documents
+│       ├── list_aware.py      # List-heavy documents
+│       ├── structural.py      # Header-based structure
+│       └── fallback.py        # Universal fallback
 ├── provider/                  # Dify plugin provider
 ├── tools/                     # Dify plugin tools
 ├── tests/                     # Test suite (498 tests)
@@ -688,13 +783,26 @@ MIT License — see [LICENSE](LICENSE)
 
 ## 📝 Changelog
 
-**Current Version:** 2.0.2-a0 (December 2024)
+**Current Version:** 2.0.2-a3 (December 2025)
+
+### v2.0.2-a3 - List-Aware Strategy & Adaptive Overlap
+- **NEW: List-Aware Strategy** - intelligent processing for list-heavy documents
+  - Preserves nested list hierarchies (parent-child relationships)
+  - Automatic context binding (introduction paragraphs + lists)
+  - Smart activation (AND logic for structured docs, OR for plain lists)
+  - Handles bullet lists, numbered lists, and checkboxes
+- **Adaptive overlap sizing** - context window scales with chunk size (up to 35%)
+  - Small chunks: respects configured overlap_size
+  - Large chunks: allows larger overlap (max 35% of chunk size)
+  - Formula: `min(overlap_size, chunk_size * 0.35)`
+- **Enhanced list detection in parser** - full list analysis with hierarchy depth
+- **Comprehensive test coverage** - 24 new tests for list strategy and overlap behavior
 
 ### v2.0.2-a0 - Major Redesign
-- **Simplified architecture**: 3 strategies instead of 6
-- **Simplified configuration**: 8 parameters instead of 32
+- **Simplified architecture**: 3 base strategies (code_aware, structural, fallback)
+- **Simplified configuration**: 8 core parameters (expanded to 10 in a3)
 - **Consolidated types**: Single types.py module
-- **Improved test suite**: 445 focused property-based tests
+- **Improved test suite**: 498 focused property-based tests
 - **Metadata-based overlap**: Context stored in metadata, not merged into content
 
 Full changelog: [CHANGELOG.md](CHANGELOG.md)

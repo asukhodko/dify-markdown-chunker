@@ -2,7 +2,49 @@
 
 All notable changes to the Advanced Markdown Chunker plugin will be documented in this file.
 
-## [2.0.2-a0] - 2024-12-05
+## [2.1.0] - 2025-12-07
+
+### Added
+- **List-Aware Strategy** — Intelligent chunking for list-heavy documents
+  - Preserves nested list hierarchies (never splits across depth levels)
+  - Automatically binds introduction paragraphs to their lists
+  - Smart grouping of related list items based on structure
+  - Handles bullet lists, numbered lists, and checkboxes
+  - Activation logic: `list_ratio > 0.40 AND list_count >= 5` (for structured docs) or `list_ratio > 0.40 OR list_count >= 5` (for plain lists)
+  - Perfect for changelogs, feature lists, task lists, and outlines
+  - **Competitive advantage:** Unique capability not found in LangChain, LlamaIndex, Unstructured, or Chonkie
+
+- **Adaptive Overlap Sizing** — Context window scales with chunk size
+  - Replaced fixed `MAX_OVERLAP_CONTEXT_SIZE = 500` with adaptive ratio-based sizing
+  - Formula: `min(config.overlap_size, chunk_size * 0.35)`
+  - Small chunks respect configured `overlap_size`
+  - Large chunks allow up to 35% overlap (e.g., 8KB chunk = up to 2.8KB overlap)
+  - Prevents metadata bloat while providing sufficient context
+  - Automatic scaling without manual tuning
+
+### Changed
+- **Configuration**: Added 2 new parameters for list-aware strategy
+  - `list_ratio_threshold=0.40` — minimum ratio of list content to activate strategy
+  - `list_count_threshold=5` — minimum number of list items to activate strategy
+- **Architecture**: Total strategies increased from 3 to 4 (code_aware, structural, list_aware, fallback)
+- **Documentation**: Comprehensive README update highlighting competitive advantages
+  - List-aware strategy prominently featured as unique capability
+  - Practical examples for changelog processing
+  - Updated architecture and configuration sections
+
+### Fixed
+- PEP 8 compliance: Fixed E203 linter errors (whitespace before ':' in slice notation)
+- Code quality: All quality checks pass with 0 errors
+
+### Testing
+- Added comprehensive tests for adaptive overlap behavior
+  - Test for large chunks (validates scaling works)
+  - Test for small chunks (validates config limit still applies)
+  - Test for proportional scaling comparison
+- Created demonstration script `demo_adaptive_overlap.py`
+- All 24 tests in `test_preamble_scenarios.py` pass
+
+## [2.0.2-a0] - 2025-12-05
 
 ### Major Redesign
 This release is a complete architectural redesign focused on simplification and reliability.
@@ -30,7 +72,7 @@ See [docs/MIGRATION.md](docs/MIGRATION.md) for migration guide from v1.x.
 
 ---
 
-## [2.0.0-a3] - 2024-12-03
+## [2.0.0-a3] - 2025-12-03
 
 ### Added
 - Regression and duplication validation to improve chunking reliability

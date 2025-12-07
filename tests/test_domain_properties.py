@@ -7,7 +7,6 @@ during the markdown_chunker redesign.
 **Feature: architecture-redesign**
 """
 
-
 import pytest
 from hypothesis import assume, given, settings
 from hypothesis import strategies as st
