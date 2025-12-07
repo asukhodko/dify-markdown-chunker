@@ -29,6 +29,7 @@
 - [Performance](#-performance)
 - [Development](#-development)
 - [Contributing](#-contributing)
+- [Author & Support](#-author--support)
 - [License](#-license)
 
 ---
@@ -583,6 +584,18 @@ make test && make quality-check
 
 # 5. Submit Pull Request
 ```
+
+---
+
+## 👤 Author & Support
+
+**Author:** Aleksandr Sukhodko ([@asukhodko](https://github.com/asukhodko))  
+**Repository:** https://github.com/asukhodko/dify-markdown-chunker
+
+### Getting Help
+
+- **Bug Reports & Feature Requests:** [GitHub Issues](https://github.com/asukhodko/dify-markdown-chunker/issues)
+- **Questions & Discussions:** [GitHub Discussions](https://github.com/asukhodko/dify-markdown-chunker/discussions)
 
 ---
 
