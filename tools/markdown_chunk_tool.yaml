@@ -60,10 +60,10 @@ parameters:
       zh_Hans: 块重叠
       ru_RU: Перекрытие частей
     human_description:
-      en_US: "Number of characters to overlap between consecutive chunks (default: 200, 0 to disable). Overlap is stored in chunk metadata."
-      zh_Hans: "连续块之间重叠的字符数（默认：200，0 表示禁用）。重叠存储在块元数据中。"
-      ru_RU: "Количество символов для перекрытия между последовательными частями (по умолчанию: 200, 0 для отключения). Перекрытие хранится в метаданных."
-    llm_description: Number of characters that overlap between consecutive chunks to maintain context continuity. Set to 0 to disable overlap.
+      en_US: "Characters to overlap between chunks (default: 200, 0 to disable). With include_metadata=true, overlap is in metadata fields. With include_metadata=false, overlap is embedded in chunk text."
+      zh_Hans: "块之间重叠的字符数（默认：200，0 表示禁用）。include_metadata=true 时，重叠存储在元数据字段。include_metadata=false 时，重叠嵌入到块文本中。"
+      ru_RU: "Символов перекрытия между частями (по умолчанию: 200, 0 для отключения). При include_metadata=true перекрытие в полях метаданных. При include_metadata=false перекрытие встраивается в текст части."
+    llm_description: Number of characters that overlap between consecutive chunks. With include_metadata=true, overlap is in metadata fields (previous_content/next_content). With include_metadata=false, overlap is embedded directly into chunk text.
 
   - name: strategy
     type: select
@@ -111,10 +111,10 @@ parameters:
       zh_Hans: 包含元数据
       ru_RU: Включить метаданные
     human_description:
-      en_US: "Include structural metadata with each chunk (default: true). Metadata includes content type, header path, line numbers, and overlap context."
-      zh_Hans: "在每个块中包含结构元数据（默认：true）。元数据包括内容类型、标题路径、行号和重叠上下文。"
-      ru_RU: "Включить структурные метаданные в каждую часть (по умолчанию: true). Метаданные включают тип контента, путь заголовков, номера строк и контекст перекрытия."
-    llm_description: "Whether to include metadata about chunk structure, content type, header path, line numbers, and overlap context for better RAG retrieval."
+      en_US: "Embed metadata in chunk text (default: true). When enabled, chunks have <metadata> block with content_type, header_path, line numbers; overlap stays in metadata. When disabled, overlap is embedded into chunk text as: previous_content + main + next_content."
+      zh_Hans: "在块文本中嵌入元数据（默认：true）。启用时，块有 <metadata> 块包含 content_type、header_path、行号；重叠在元数据中。禁用时，重叠嵌入块文本：previous_content + main + next_content。"
+      ru_RU: "Встраивать метаданные в текст (по умолчанию: true). При включении части имеют блок <metadata> с content_type, header_path, номерами строк; перекрытие в метаданных. При отключении перекрытие встраивается в текст: previous_content + main + next_content."
+    llm_description: "Embed metadata in chunk text. When true, chunks have <metadata> block; overlap context in metadata fields. When false, no metadata block; overlap embedded directly into chunk text (previous_content + main + next_content)."
 
 output_schema:
   type: object

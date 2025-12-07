@@ -38,6 +38,12 @@
 
 **Advanced Markdown Chunker** is a Dify plugin that intelligently splits Markdown documents into semantically meaningful chunks optimized for RAG (Retrieval-Augmented Generation) systems. Unlike simple text splitting, it preserves document structure, keeps code blocks intact, and automatically selects the best chunking strategy based on content analysis.
 
+### Primary Use Case: RAG Systems
+
+This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** workflows where chunks are embedded and stored in vector databases for semantic search. By default, each chunk includes embedded metadata (header paths, content type, line numbers) directly in the chunk text, which improves retrieval quality by providing additional context for embeddings.
+
+> **Note for Model Training:** If you need clean text without metadata (e.g., for fine-tuning language models), set `include_metadata: false` or post-process chunks to remove the `<metadata>` block.
+
 ### Why Use This Plugin?
 
 | Simple Chunking Problems | Advanced Markdown Chunker Solution |
@@ -153,10 +159,85 @@ Add the chunker to your Dify workflow:
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `input_text` | string | required | Markdown text to chunk |
-| `max_chunk_size` | number | 1000 | Maximum chunk size in characters |
-| `chunk_overlap` | number | 100 | Overlap between consecutive chunks |
-| `strategy` | select | auto | Chunking strategy (auto/code/structural/mixed) |
-| `include_metadata` | boolean | true | Include chunk metadata |
+| `max_chunk_size` | number | 4096 | Maximum chunk size in characters |
+| `chunk_overlap` | number | 200 | Overlap between consecutive chunks (see below) |
+| `strategy` | select | auto | Chunking strategy (auto/code_aware/structural/fallback) |
+| `include_metadata` | boolean | true | Embed metadata in chunk text (see below) |
+
+### Understanding `chunk_overlap`
+
+**Chunk Overlap** controls how many characters of context are shared between consecutive chunks to preserve semantic continuity.
+
+**Behavior depends on `include_metadata`:**
+
+| `include_metadata` | Overlap Behavior |
+|--------------------|------------------|
+| `true` (default) | Overlap stored in metadata fields `previous_content` / `next_content`. Chunk content stays clean. |
+| `false` | Overlap embedded directly into chunk text: `previous_content + "\n" + main + "\n" + next_content` |
+
+**Example with `include_metadata: true`:**
+```
+<metadata>
+{
+  "previous_content": "...end of previous chunk...",
+  "next_content": "...start of next chunk..."
+}
+</metadata>
+# Current Section
+
+Main content of this chunk...
+```
+
+**Example with `include_metadata: false`:**
+```
+...end of previous chunk...
+# Current Section
+
+Main content of this chunk...
+...start of next chunk...
+```
+
+This allows `chunk_overlap` to work predictably in both modes:
+- **RAG mode** (`include_metadata: true`): Overlap available as structured metadata for embeddings
+- **Clean text mode** (`include_metadata: false`): Overlap physically present in text for sliding window processing
+
+### Understanding `include_metadata`
+
+When `include_metadata: true` (default), each chunk includes a `<metadata>` block prepended to the content:
+
+```
+<metadata>
+{
+  "content_type": "text",
+  "header_path": "/Installation/Requirements",
+  "start_line": 45,
+  "end_line": 52
+}
+</metadata>
+# Requirements
+
+Python 3.12 or higher is required...
+```
+
+**Typical metadata fields:**
+- `content_type` — type of content (text, code, table, list, mixed)
+- `header_path` — hierarchical path of section headers
+- `start_line` / `end_line` — source line numbers
+- `code_language` — programming language (for code blocks)
+- `previous_content` / `next_content` — overlap context from adjacent chunks
+
+**When to disable metadata:**
+- Fine-tuning language models (need clean training data)
+- Exporting chunks for external processing
+- When metadata would interfere with downstream tasks
+
+With `include_metadata: false`, chunks contain only the raw Markdown content:
+
+```
+# Requirements
+
+Python 3.12 or higher is required...
+```
 
 ### Example: Knowledge Base Ingestion
 

@@ -424,5 +424,282 @@ Regular paragraph text here.
         assert len(messages) == 1
 
 
+class TestOverlapBehavior:
+    """
+    Tests for chunk_overlap behavior with include_metadata.
+
+    Verifies:
+    - include_metadata=true: overlap in metadata fields
+    - include_metadata=false: overlap embedded in chunk text
+    - Edge cases: first/last chunks, zero overlap
+
+    **Feature: overlap-embedding, Overlap Behavior Tests**
+    **Validates: Requirements for overlap handling**
+    """
+
+    # Sample document with multiple sections for overlap testing
+    MULTI_SECTION_DOC = """
+# Introduction
+
+This is the introduction section with some text content that will be used to test overlap behavior.
+
+## First Section
+
+Content of the first section. This paragraph contains enough text to demonstrate overlap between chunks. We need multiple paragraphs here.
+
+More content in the first section to ensure we have enough text for chunking and overlap testing.
+
+## Second Section
+
+Content of the second section. This is another section that should create a separate chunk. The overlap should include content from the first section.
+
+### Subsection
+
+Subsection content that adds more depth to the document structure.
+
+## Final Section
+
+This is the final section of the document. It should not have next_content overlap.
+"""
+
+    def test_overlap_in_metadata_with_include_metadata_true(self, tool_instance):
+        """
+        Test: include_metadata=true keeps overlap in metadata fields.
+
+        Verifies:
+        - Chunks have <metadata> block
+        - Metadata contains previous_content/next_content fields
+        - Chunk content does NOT contain overlap text
+        """
+        tool_parameters = {
+            "input_text": self.MULTI_SECTION_DOC,
+            "max_chunk_size": 500,
+            "chunk_overlap": 100,
+            "include_metadata": True,
+        }
+
+        messages = list(tool_instance._invoke(tool_parameters))
+        result = messages[0].message.variable_value
+
+        # Need at least 2 chunks to test overlap
+        assert len(result) >= 2, "Document should produce multiple chunks"
+
+        # Check middle chunks have overlap in metadata
+        for i, chunk_str in enumerate(result):
+            assert "<metadata>" in chunk_str, f"Chunk {i} should have metadata block"
+
+            # Extract metadata
+            metadata_start = chunk_str.find("<metadata>") + len("<metadata>")
+            metadata_end = chunk_str.find("</metadata>")
+            metadata_json = chunk_str[metadata_start:metadata_end].strip()
+            metadata = json.loads(metadata_json)
+
+            # Middle chunks should have previous_content/next_content
+            if i > 0:
+                # Not first chunk - should have previous_content
+                assert "previous_content" in metadata, f"Chunk {i} should have previous_content"
+            if i < len(result) - 1:
+                # Not last chunk - should have next_content
+                assert "next_content" in metadata, f"Chunk {i} should have next_content"
+
+    def test_overlap_embedded_with_include_metadata_false(self, tool_instance):
+        """
+        Test: include_metadata=false embeds overlap in chunk text.
+
+        Verifies:
+        - Chunks have NO <metadata> block
+        - Chunk text contains overlap from adjacent chunks
+        - Formula: previous_content + "\n" + main + "\n" + next_content
+        """
+        tool_parameters = {
+            "input_text": self.MULTI_SECTION_DOC,
+            "max_chunk_size": 500,
+            "chunk_overlap": 100,
+            "include_metadata": False,
+        }
+
+        messages = list(tool_instance._invoke(tool_parameters))
+        result_no_meta = messages[0].message.variable_value
+
+        # Also get version with metadata for comparison
+        tool_parameters["include_metadata"] = True
+        messages_meta = list(tool_instance._invoke(tool_parameters))
+        result_with_meta = messages_meta[0].message.variable_value
+
+        # Same number of chunks
+        assert len(result_no_meta) == len(result_with_meta)
+
+        # No metadata tags in result without metadata
+        for chunk_str in result_no_meta:
+            assert "<metadata>" not in chunk_str
+            assert "</metadata>" not in chunk_str
+
+        # Compare chunks - verify overlap is embedded
+        for i in range(len(result_with_meta)):
+            chunk_with_meta = result_with_meta[i]
+            chunk_no_meta = result_no_meta[i]
+
+            # Extract metadata and main content from metadata version
+            metadata_start = chunk_with_meta.find("<metadata>") + len("<metadata>")
+            metadata_end = chunk_with_meta.find("</metadata>")
+            metadata_json = chunk_with_meta[metadata_start:metadata_end].strip()
+            metadata = json.loads(metadata_json)
+            main_content = chunk_with_meta[metadata_end + len("</metadata>"):].strip()
+
+            # Get overlap values from metadata
+            prev_content = metadata.get("previous_content", "")
+            next_content = metadata.get("next_content", "")
+
+            # Verify overlap is embedded in no-metadata version
+            if prev_content:
+                assert prev_content in chunk_no_meta, (
+                    f"Chunk {i}: previous_content should be embedded in chunk text"
+                )
+            if next_content:
+                assert next_content in chunk_no_meta, (
+                    f"Chunk {i}: next_content should be embedded in chunk text"
+                )
+
+    def test_first_chunk_no_previous_content(self, tool_instance):
+        """
+        Test: First chunk has no leading overlap.
+
+        Verifies:
+        - First chunk does not start with overlap from previous chunk
+        - Content starts with actual document start (or just next_content)
+        """
+        tool_parameters = {
+            "input_text": self.MULTI_SECTION_DOC,
+            "max_chunk_size": 500,
+            "chunk_overlap": 100,
+            "include_metadata": True,
+        }
+
+        messages = list(tool_instance._invoke(tool_parameters))
+        result = messages[0].message.variable_value
+
+        if len(result) < 1:
+            pytest.skip("No chunks produced")
+
+        # First chunk metadata
+        first_chunk = result[0]
+        metadata_start = first_chunk.find("<metadata>") + len("<metadata>")
+        metadata_end = first_chunk.find("</metadata>")
+        metadata_json = first_chunk[metadata_start:metadata_end].strip()
+        metadata = json.loads(metadata_json)
+
+        # First chunk should NOT have previous_content
+        assert "previous_content" not in metadata or not metadata.get("previous_content"), (
+            "First chunk should not have previous_content"
+        )
+
+    def test_last_chunk_no_next_content(self, tool_instance):
+        """
+        Test: Last chunk has no trailing overlap.
+
+        Verifies:
+        - Last chunk does not end with overlap from next chunk
+        """
+        tool_parameters = {
+            "input_text": self.MULTI_SECTION_DOC,
+            "max_chunk_size": 500,
+            "chunk_overlap": 100,
+            "include_metadata": True,
+        }
+
+        messages = list(tool_instance._invoke(tool_parameters))
+        result = messages[0].message.variable_value
+
+        if len(result) < 1:
+            pytest.skip("No chunks produced")
+
+        # Last chunk metadata
+        last_chunk = result[-1]
+        metadata_start = last_chunk.find("<metadata>") + len("<metadata>")
+        metadata_end = last_chunk.find("</metadata>")
+        metadata_json = last_chunk[metadata_start:metadata_end].strip()
+        metadata = json.loads(metadata_json)
+
+        # Last chunk should NOT have next_content
+        assert "next_content" not in metadata or not metadata.get("next_content"), (
+            "Last chunk should not have next_content"
+        )
+
+    def test_zero_overlap_no_extra_content(self, tool_instance):
+        """
+        Test: chunk_overlap=0 produces no overlap.
+
+        Verifies:
+        - With include_metadata=false and chunk_overlap=0
+        - Chunks contain only main content (no extra newlines)
+        """
+        tool_parameters = {
+            "input_text": self.MULTI_SECTION_DOC,
+            "max_chunk_size": 500,
+            "chunk_overlap": 0,
+            "include_metadata": False,
+        }
+
+        messages = list(tool_instance._invoke(tool_parameters))
+        result_no_overlap = messages[0].message.variable_value
+
+        # Also get with metadata to compare
+        tool_parameters["include_metadata"] = True
+        messages_meta = list(tool_instance._invoke(tool_parameters))
+        result_with_meta = messages_meta[0].message.variable_value
+
+        # Verify no overlap metadata
+        for i, chunk_with_meta in enumerate(result_with_meta):
+            metadata_start = chunk_with_meta.find("<metadata>") + len("<metadata>")
+            metadata_end = chunk_with_meta.find("</metadata>")
+            metadata_json = chunk_with_meta[metadata_start:metadata_end].strip()
+            metadata = json.loads(metadata_json)
+
+            # With overlap=0, should have no overlap fields
+            assert "previous_content" not in metadata or not metadata.get("previous_content")
+            assert "next_content" not in metadata or not metadata.get("next_content")
+
+        # No-metadata chunks should be identical to main content only
+        for i in range(len(result_with_meta)):
+            chunk_with_meta = result_with_meta[i]
+            chunk_no_meta = result_no_overlap[i]
+
+            # Extract main content
+            metadata_end = chunk_with_meta.find("</metadata>")
+            main_content = chunk_with_meta[metadata_end + len("</metadata>"):].strip()
+
+            # Should be identical (no overlap added)
+            assert chunk_no_meta.strip() == main_content, (
+                f"Chunk {i} with overlap=0 should be identical to main content"
+            )
+
+    def test_overlap_consistency_between_modes(self, tool_instance):
+        """
+        Test: Same document produces consistent chunk count in both modes.
+
+        Verifies:
+        - include_metadata=true and include_metadata=false produce same number of chunks
+        - Overlap doesn't affect chunking logic, only output format
+        """
+        tool_parameters = {
+            "input_text": self.MULTI_SECTION_DOC,
+            "max_chunk_size": 500,
+            "chunk_overlap": 100,
+            "include_metadata": True,
+        }
+
+        messages_true = list(tool_instance._invoke(tool_parameters))
+        result_true = messages_true[0].message.variable_value
+
+        tool_parameters["include_metadata"] = False
+        messages_false = list(tool_instance._invoke(tool_parameters))
+        result_false = messages_false[0].message.variable_value
+
+        # Same number of chunks
+        assert len(result_true) == len(result_false), (
+            "Both modes should produce the same number of chunks"
+        )
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

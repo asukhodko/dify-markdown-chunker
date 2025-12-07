@@ -73,28 +73,47 @@ class MarkdownChunkTool(Tool):
 
     def _format_chunk_output(self, chunk: Any, include_metadata: bool) -> str:
         """Format single chunk for output.
-        
+
         Args:
             chunk: Chunk object
             include_metadata: Whether to include metadata in output
-            
+
         Returns:
             Formatted chunk string
+
+        Behavior:
+            - include_metadata=True: Returns <metadata> block + content.
+              Overlap context stays in metadata fields (previous_content, next_content).
+            - include_metadata=False: Returns clean content with overlap embedded.
+              Formula: previous_content + "\n" + main + "\n" + next_content
+              (with edge case handling for first/last chunks and zero overlap)
         """
         import json
-        
+
         content = chunk.content
-        metadata = chunk.metadata
-        
-        if include_metadata and metadata:
+        metadata = chunk.metadata or {}
+
+        if include_metadata:
+            # Metadata mode: overlap stays in metadata fields
             filtered_metadata = self._filter_metadata_for_rag(metadata)
-            # Add line info to metadata
             filtered_metadata['start_line'] = chunk.start_line
             filtered_metadata['end_line'] = chunk.end_line
             metadata_json = json.dumps(filtered_metadata, ensure_ascii=False, indent=2)
             return f"<metadata>\n{metadata_json}\n</metadata>\n{content}"
         else:
-            return content
+            # Clean mode: embed overlap into content
+            previous_content = metadata.get("previous_content", "")
+            next_content = metadata.get("next_content", "")
+
+            # Build content with overlap embedded
+            parts = []
+            if previous_content:
+                parts.append(previous_content)
+            parts.append(content)
+            if next_content:
+                parts.append(next_content)
+
+            return "\n".join(parts)
 
     def _invoke(
         self, tool_parameters: dict[str, Any]
