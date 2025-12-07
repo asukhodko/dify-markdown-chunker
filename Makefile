@@ -60,9 +60,9 @@ lint:
 
 format:
 	@echo "Formatting code with black..."
-	@$(PYTHON) -m black markdown_chunker_v2/ tests/ scripts/ --line-length=88
+	@$(PYTHON) -m black markdown_chunker_v2/ tests/ --line-length=88
 	@echo "Sorting imports with isort..."
-	@$(PYTHON) -m isort markdown_chunker_v2/ tests/ scripts/ --profile=black
+	@$(PYTHON) -m isort markdown_chunker_v2/ tests/ --profile=black
 	@echo "✅ Code formatted"
 
 quality-check: lint
@@ -71,8 +71,7 @@ quality-check: lint
 	@echo "✅ Quality checks completed"
 
 benchmark:
-	@echo "Running benchmarks..."
-	@$(PYTHON) -m benchmarks.benchmark_chunker 2>/dev/null || echo "⚠️  Benchmarks not available"
+	@echo "⚠️  Benchmarks not available in production release"
 
 demo:
 	@echo "Running basic functionality demo..."

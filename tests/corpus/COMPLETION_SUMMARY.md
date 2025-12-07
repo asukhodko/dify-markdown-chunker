@@ -47,21 +47,7 @@ Metadata includes:
 
 ### 4. Infrastructure
 
-Created comprehensive corpus builder infrastructure:
-
-```
-scripts/
-├── corpus_builder/
-│   ├── __init__.py
-│   ├── base.py                    # Base classes for collectors/generators
-│   ├── config.py                  # Configuration and targets
-│   ├── github_collector.py        # GitHub API collector (for future use)
-│   ├── synthetic_generator.py     # Synthetic document generator
-│   └── comprehensive_generator.py # Full-category generator
-├── build_corpus.py                # Original build script
-├── build_full_corpus.py           # Complete corpus builder
-└── validate_corpus.py             # Validation script
-```
+Test corpus is managed as part of the test suite with comprehensive validation and documentation.
 
 ## Statistics
 
@@ -96,7 +82,7 @@ scripts/
 
 ## Validation Results
 
-Ran comprehensive validation with `scripts/validate_corpus.py`:
+Corpus has been validated for comprehensive test coverage:
 
 | Validation Check | Status | Notes |
 |------------------|--------|-------|
@@ -196,13 +182,7 @@ for md_file in list(corpus_root.rglob('*.md'))[:10]:
 
 ### Regeneration
 
-```bash
-# Regenerate entire corpus (creates 410 new files)
-python3 scripts/build_full_corpus.py
-
-# Validate
-python3 scripts/validate_corpus.py
-```
+Corpus is maintained as part of the test suite and managed through version control.
 
 ## Quality Metrics
 

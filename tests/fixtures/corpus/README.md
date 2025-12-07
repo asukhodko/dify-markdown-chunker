@@ -15,17 +15,7 @@ corpus/
 
 ## Использование
 
-### Сохранение baseline
-
-```bash
-python scripts/save_baseline.py --corpus tests/fixtures/corpus --output baseline.json
-```
-
-### Сравнение результатов
-
-```bash
-python scripts/compare_results.py --baseline baseline.json --corpus tests/fixtures/corpus
-```
+Тестовый корпус используется в автоматических тестах для валидации функциональности чанкера.
 
 ## Критерии выбора документов
 

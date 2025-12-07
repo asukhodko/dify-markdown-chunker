@@ -438,29 +438,9 @@ if __name__ == "__main__":
 
 ## Maintenance
 
-### Regenerating Corpus
+### Corpus Management
 
-```bash
-# Full regeneration
-python3 scripts/build_full_corpus.py
-
-# Validate after regeneration
-python3 scripts/validate_corpus.py
-```
-
-### Adding New Documents
-
-```python
-from scripts.corpus_builder.synthetic_generator import SyntheticGenerator
-from pathlib import Path
-
-# Add more debug logs
-gen = SyntheticGenerator(
-    Path("tests/corpus/debug_logs"),
-    category="debug_logs"
-)
-gen.generate(5)  # Generate 5 more
-```
+Корпус является частью тестового набора и обновляется автоматически при необходимости.
 
 ## See Also
 
