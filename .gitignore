@@ -46,3 +46,8 @@ htmlcov/
 manual_testing/
 
 *.out
+
+# Performance benchmark results (generated)
+tests/performance/results/
+*.log
+benchmark_output.log
