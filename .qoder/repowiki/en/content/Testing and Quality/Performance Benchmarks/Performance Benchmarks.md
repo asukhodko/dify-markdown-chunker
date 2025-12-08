@@ -2,15 +2,25 @@
 
 <cite>
 **Referenced Files in This Document**
-- [benchmarks/benchmark_chunker.py](file://benchmarks/benchmark_chunker.py)
-- [benchmarks/utils.py](file://benchmarks/utils.py)
-- [benchmarks/benchmark_parser.py](file://benchmarks/benchmark_parser.py)
-- [benchmarks/benchmark_strategies.py](file://benchmarks/benchmark_strategies.py)
-- [tests/performance/test_benchmarks.py](file://tests/performance/test_benchmarks.py)
-- [baseline.json](file://baseline.json)
-- [markdown_chunker/__init__.py](file://markdown_chunker/__init__.py)
-- [markdown_chunker_legacy/chunker/performance.py](file://markdown_chunker_legacy/chunker/performance.py)
+- [tests/performance/results_manager.py](file://tests/performance/results_manager.py)
+- [tests/performance/run_all_benchmarks.py](file://tests/performance/run_all_benchmarks.py)
+- [tests/performance/utils.py](file://tests/performance/utils.py)
+- [tests/performance/test_benchmark_size.py](file://tests/performance/test_benchmark_size.py)
+- [tests/performance/test_benchmark_content_type.py](file://tests/performance/test_benchmark_content_type.py)
+- [tests/performance/test_benchmark_strategy.py](file://tests/performance/test_benchmark_strategy.py)
+- [tests/performance/test_benchmark_config.py](file://tests/performance/test_benchmark_config.py)
+- [tests/performance/test_benchmark_scalability.py](file://tests/performance/test_benchmark_scalability.py)
+- [tests/performance/corpus_selector.py](file://tests/performance/corpus_selector.py)
+- [docs/guides/performance.md](file://docs/guides/performance.md)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Updated to reflect new comprehensive benchmarking suite in tests/performance/
+- Added documentation for scalability, configuration impact, and content type performance testing
+- Integrated results management via results_manager.py
+- Updated architectural diagrams to reflect new benchmark categories
+- Enhanced performance measurement infrastructure details
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -18,17 +28,17 @@
 3. [Benchmark Suite Components](#benchmark-suite-components)
 4. [Performance Measurement Infrastructure](#performance-measurement-infrastructure)
 5. [Content-Type Benchmarking](#content-type-benchmarking)
-6. [Utility Functions](#utility-functions)
-7. [Validation Framework](#validation-framework)
-8. [Historical Comparison System](#historical-comparison-system)
-9. [Best Practices](#best-practices)
-10. [Troubleshooting Guide](#troubleshooting-guide)
+6. [Configuration Impact Testing](#configuration-impact-testing)
+7. [Scalability Analysis](#scalability-analysis)
+8. [Utility Functions](#utility-functions)
+9. [Results Management](#results-management)
+10. [Best Practices](#best-practices)
 
 ## Introduction
 
-The performance benchmarking system is a comprehensive suite designed to measure and optimize the chunking performance of the Markdown Chunker across different document sizes, content types, and processing strategies. This system provides quantitative metrics for throughput, memory usage, processing time, and strategy effectiveness, enabling developers to identify performance bottlenecks and optimize chunking operations for RAG (Retrieval-Augmented Generation) systems.
+The performance benchmarking system is a comprehensive suite designed to measure and optimize the chunking performance of the Markdown Chunker across different document sizes, content types, configurations, and processing strategies. This system provides quantitative metrics for throughput, memory usage, processing time, and strategy effectiveness, enabling developers to identify performance bottlenecks and optimize chunking operations for RAG (Retrieval-Augmented Generation) systems.
 
-The benchmarking infrastructure consists of multiple specialized benchmark suites that evaluate different aspects of the chunking pipeline: document size performance, content-type-specific benchmarks, parser efficiency, and individual strategy performance. All measurements are captured with precision timing, memory profiling, and result serialization for historical comparison.
+The benchmarking infrastructure consists of multiple specialized benchmark suites that evaluate different aspects of the chunking pipeline: document size performance, content-type-specific benchmarks, parser efficiency, strategy performance, configuration impact, and scalability characteristics. All measurements are captured with precision timing, memory profiling, and result serialization for historical comparison and regression detection.
 
 ## System Architecture
 
@@ -37,13 +47,16 @@ The performance benchmarking system follows a modular architecture with clear se
 ```mermaid
 graph TB
 subgraph "Benchmark Suite"
-BC[Benchmark Chunker]
-BP[Benchmark Parser]
-BS[Benchmark Strategies]
-TB[Test Benchmarks]
+SB[Size Benchmarks]
+CB[Content-Type Benchmarks]
+STB[Strategy Benchmarks]
+CFB[Configuration Benchmarks]
+SCB[Scalability Analysis]
 end
-subgraph "Measurement Infrastructure"
+subgraph "Infrastructure"
 UT[Utils Module]
+CS[Corpus Selector]
+RM[Results Manager]
 PM[Performance Monitor]
 MM[Memory Profiler]
 TM[Timing Engine]
@@ -53,80 +66,76 @@ VF[Validation Framework]
 BF[Baseline Comparisons]
 RF[Result Formatting]
 end
-BC --> UT
-BP --> UT
-BS --> UT
-TB --> UT
+SB --> UT
+CB --> UT
+STB --> UT
+CFB --> UT
+SCB --> UT
 UT --> PM
 UT --> MM
 UT --> TM
-TB --> VF
-TB --> BF
-TB --> RF
+SB --> CS
+CB --> CS
+SCB --> CS
+SB --> RM
+CB --> RM
+STB --> RM
+CFB --> RM
+SCB --> RM
+RM --> BF
+RM --> RF
 ```
 
 **Diagram sources**
-- [benchmarks/benchmark_chunker.py](file://benchmarks/benchmark_chunker.py#L1-L195)
-- [benchmarks/utils.py](file://benchmarks/utils.py#L1-L259)
-- [tests/performance/test_benchmarks.py](file://tests/performance/test_benchmarks.py#L1-L319)
+- [tests/performance/run_all_benchmarks.py](file://tests/performance/run_all_benchmarks.py#L17-L76)
+- [tests/performance/results_manager.py](file://tests/performance/results_manager.py#L15-L331)
 
 **Section sources**
-- [benchmarks/benchmark_chunker.py](file://benchmarks/benchmark_chunker.py#L1-L195)
-- [benchmarks/utils.py](file://benchmarks/utils.py#L1-L259)
+- [tests/performance/run_all_benchmarks.py](file://tests/performance/run_all_benchmarks.py#L17-L76)
+- [tests/performance/results_manager.py](file://tests/performance/results_manager.py#L15-L331)
 
 ## Benchmark Suite Components
 
-### Main Chunker Benchmark
+### Size-Based Benchmark
 
-The primary benchmarking component focuses on measuring end-to-end chunking performance across different document characteristics:
+The size-based benchmark measures performance across different document size categories:
 
 ```mermaid
 flowchart TD
-Start([Benchmark Start]) --> SizeLoop["Document Size Loop<br/>(1KB, 10KB, 50KB, 100KB, 500KB)"]
-SizeLoop --> GenDoc["Generate Test Document<br/>(Mixed content)"]
-GenDoc --> Measure["Measure Performance<br/>(Time + Memory)"]
+Start([Benchmark Start]) --> SizeLoop["Document Size Categories<br/>(Tiny, Small, Medium, Large, Very Large)"]
+SizeLoop --> SelectDocs["Select Documents<br/>(Representative sampling)"]
+SelectDocs --> Measure["Measure Performance<br/>(Time + Memory)"]
 Measure --> CalcMetrics["Calculate Metrics<br/>(Throughput, Chunks)"]
 CalcMetrics --> StoreResults["Store Results"]
-StoreResults --> MoreSizes{"More Sizes?"}
+StoreResults --> MoreSizes{"More Categories?"}
 MoreSizes --> |Yes| SizeLoop
-MoreSizes --> |No| ContentType["Content Type Benchmark"]
-ContentType --> TypeLoop["Content Type Loop<br/>(Text, Code, Mixed, List, Table)"]
-TypeLoop --> GenTypeDoc["Generate Type-Specific Document"]
-GenTypeDoc --> MeasureType["Measure Performance + Analysis"]
-MeasureType --> StoreTypeResults["Store Type Results"]
-StoreTypeResults --> MoreTypes{"More Types?"}
-MoreTypes --> |Yes| TypeLoop
-MoreTypes --> |No| SaveResults["Save All Results"]
+MoreSizes --> |No| SaveResults["Save All Results"]
 SaveResults --> End([Benchmark Complete])
 ```
 
 **Diagram sources**
-- [benchmarks/benchmark_chunker.py](file://benchmarks/benchmark_chunker.py#L27-L147)
+- [tests/performance/test_benchmark_size.py](file://tests/performance/test_benchmark_size.py#L39-L195)
 
-### Parser Benchmark
+### Content-Type Benchmark
 
-Specialized benchmark for measuring Stage 1 parser performance:
+The content-type benchmark evaluates performance across different document categories:
 
 ```mermaid
-sequenceDiagram
-participant BM as Benchmark Manager
-participant PI as Parser Interface
-participant UT as Utils
-participant TR as Timing Recorder
-BM->>UT : generate_markdown_document(1KB, "mixed")
-UT-->>BM : Test document
-BM->>PI : process_document(content)
-PI->>PI : Parse markdown
-PI->>PI : Detect elements
-PI-->>BM : ContentAnalysis
-BM->>TR : measure_all(process_document)
-TR-->>BM : {result, time, memory}
-BM->>BM : Extract element count
-BM->>BM : Format and display results
+flowchart TD
+Start([Content-Type Benchmark]) --> CategoryLoop["Content Categories<br/>(Technical Docs, READMEs, Changelogs, etc.)"]
+CategoryLoop --> SelectDocs["Select Documents<br/>(By category)"]
+SelectDocs --> Measure["Measure Performance<br/>(Time + Memory + Strategy)"]
+Measure --> Analyze["Analyze Results<br/>(Strategy Selection Patterns)"]
+Analyze --> StoreResults["Store Results"]
+StoreResults --> MoreCategories{"More Categories?"}
+MoreCategories --> |Yes| CategoryLoop
+MoreCategories --> |No| Validate["Validate Strategy Appropriateness"]
+Validate --> SaveResults["Save All Results"]
+SaveResults --> End([Benchmark Complete])
 ```
 
 **Diagram sources**
-- [benchmarks/benchmark_parser.py](file://benchmarks/benchmark_parser.py#L17-L43)
+- [tests/performance/test_benchmark_content_type.py](file://tests/performance/test_benchmark_content_type.py#L39-L192)
 
 ### Strategy Benchmark
 
@@ -134,35 +143,72 @@ Individual strategy performance evaluation:
 
 ```mermaid
 flowchart LR
-StrategyLoop["Strategy Loop"] --> DocGen["Generate Test Document"]
-DocGen --> Config["Create Chunker<br/>with Strategy"]
+StrategyLoop["Strategy Loop"] --> SelectDocs["Select Documents<br/>(Appropriate for strategy)"]
+SelectDocs --> Config["Create Chunker<br/>with Strategy Override"]
 Config --> Measure["Measure Performance"]
 Measure --> Analyze["Analyze Results"]
 Analyze --> Report["Report Metrics"]
 Report --> NextStrategy["Next Strategy"]
 subgraph "Strategies Tested"
-Code["Code Strategy"]
+Code["CodeAware Strategy"]
 Struct["Structural Strategy"]
-Mixed["Mixed Strategy"]
-List["List Strategy"]
-Table["Table Strategy"]
-Sentences["Sentences Strategy"]
+Fallback["Fallback Strategy"]
 end
 StrategyLoop --> Code
 StrategyLoop --> Struct
-StrategyLoop --> Mixed
-StrategyLoop --> List
-StrategyLoop --> Table
-StrategyLoop --> Sentences
+StrategyLoop --> Fallback
 ```
 
 **Diagram sources**
-- [benchmarks/benchmark_strategies.py](file://benchmarks/benchmark_strategies.py#L19-L96)
+- [tests/performance/test_benchmark_strategy.py](file://tests/performance/test_benchmark_strategy.py#L34-L246)
+
+### Configuration Benchmark
+
+Configuration impact testing:
+
+```mermaid
+flowchart TD
+Start([Configuration Benchmark]) --> ConfigLoop["Configuration Profiles<br/>(Default, Code-Heavy, Structured, Minimal, No-Overlap)"]
+ConfigLoop --> SelectDocs["Select Documents<br/>(Medium-sized)"]
+SelectDocs --> Measure["Measure Performance<br/>(Time + Memory)"]
+Measure --> Analyze["Analyze Results<br/>(Overhead Analysis)"]
+Analyze --> StoreResults["Store Results"]
+StoreResults --> MoreConfigs{"More Configurations?"}
+MoreConfigs --> |Yes| ConfigLoop
+MoreConfigs --> |No| Validate["Validate Performance Impact"]
+Validate --> SaveResults["Save All Results"]
+SaveResults --> End([Benchmark Complete])
+```
+
+**Diagram sources**
+- [tests/performance/test_benchmark_config.py](file://tests/performance/test_benchmark_config.py#L34-L225)
+
+### Scalability Analysis
+
+Scalability analysis with regression modeling:
+
+```mermaid
+flowchart TD
+Start([Scalability Analysis]) --> SampleDocs["Sample Documents<br/>(Across size range)"]
+SampleDocs --> Measure["Measure Performance<br/>(Time + Memory)"]
+Measure --> Regression["Linear Regression Analysis<br/>(Time vs. Size)"]
+Regression --> Model["Generate Performance Model<br/>(Coefficient + Intercept)"]
+Model --> CalculateR2["Calculate R-squared<br/>(Linearity measure)"]
+CalculateR2 --> Project["Performance Projections<br/>(1MB, 5MB, 10MB)"]
+Project --> Validate["Validate Scaling<br/>(R² > 0.70 threshold)"]
+Validate --> SaveResults["Save All Results"]
+SaveResults --> End([Analysis Complete])
+```
+
+**Diagram sources**
+- [tests/performance/test_benchmark_scalability.py](file://tests/performance/test_benchmark_scalability.py#L39-L267)
 
 **Section sources**
-- [benchmarks/benchmark_chunker.py](file://benchmarks/benchmark_chunker.py#L27-L147)
-- [benchmarks/benchmark_parser.py](file://benchmarks/benchmark_parser.py#L17-L43)
-- [benchmarks/benchmark_strategies.py](file://benchmarks/benchmark_strategies.py#L19-L96)
+- [tests/performance/test_benchmark_size.py](file://tests/performance/test_benchmark_size.py#L39-L195)
+- [tests/performance/test_benchmark_content_type.py](file://tests/performance/test_benchmark_content_type.py#L39-L192)
+- [tests/performance/test_benchmark_strategy.py](file://tests/performance/test_benchmark_strategy.py#L34-L246)
+- [tests/performance/test_benchmark_config.py](file://tests/performance/test_benchmark_config.py#L34-L225)
+- [tests/performance/test_benchmark_scalability.py](file://tests/performance/test_benchmark_scalability.py#L39-L267)
 
 ## Performance Measurement Infrastructure
 
@@ -174,9 +220,10 @@ The timing infrastructure provides precise execution time measurement with multi
 
 | Measurement Mode | Purpose | Implementation |
 |------------------|---------|----------------|
-| `measure_time` | Single function timing | `time.time()` wrapper |
+| `measure_time` | Single function timing | `time.perf_counter()` wrapper |
 | `measure_memory` | Peak memory usage | `tracemalloc` integration |
 | `measure_all` | Combined timing and memory | Dual measurement system |
+| `run_benchmark` | Statistical benchmarking | Multiple runs with warm-up |
 
 ### Memory Profiling
 
@@ -196,54 +243,121 @@ MF->>PM : Record memory_mb = peak / 1024 / 1024
 ```
 
 **Diagram sources**
-- [benchmarks/utils.py](file://benchmarks/utils.py#L30-L49)
+- [tests/performance/utils.py](file://tests/performance/utils.py#L31-L49)
 
 ### Throughput Calculation
 
 Throughput metrics are calculated using the formula: `(size_bytes / 1024) / time_seconds` for KB/s measurement.
 
 **Section sources**
-- [benchmarks/utils.py](file://benchmarks/utils.py#L12-L76)
+- [tests/performance/utils.py](file://tests/performance/utils.py#L132-L152)
 
 ## Content-Type Benchmarking
 
-The system evaluates performance across five distinct content types, each requiring specialized handling:
+The system evaluates performance across multiple distinct content types, each requiring specialized handling:
 
 ### Content Type Categories
 
 | Content Type | Characteristics | Benchmark Focus |
 |--------------|-----------------|-----------------|
-| **Text** | Pure textual content with headers and paragraphs | Structural preservation, sentence boundary detection |
-| **Code** | Code blocks with syntax highlighting | Code block integrity, language detection |
-| **Mixed** | Combination of text, code, lists, and tables | Strategy selection, content type detection |
-| **List** | Hierarchical lists with nested items | List structure preservation, indentation handling |
-| **Table** | Tabular data with headers and cells | Table integrity, cell boundary detection |
+| **Technical Documentation** | Mix of code and text with headers | Strategy selection, code block handling |
+| **GitHub READMEs** | Well-structured with code examples | Structural preservation, header hierarchy |
+| **Changelogs** | List-heavy with regular structure | List structure preservation, indentation handling |
+| **Engineering Blogs** | Narrative with code examples | Content type detection, mixed content handling |
+| **Personal Notes** | Simple text with minimal structure | Basic chunking efficiency |
+| **Debug Logs** | Code-heavy with technical content | Code block integrity, language detection |
+| **Mixed Content** | Combination of all element types | Strategy selection, content type detection |
 
-### Document Generation Strategy
+### Document Selection Strategy
 
-Each content type generates documents with characteristic patterns:
+Each content type uses representative documents from the corpus:
 
 ```mermaid
 flowchart TD
-ContentType["Content Type"] --> Decision{"Type Selection"}
-Decision --> |Text| TextGen["Generate Text Document<br/>• Multiple sections<br/>• Header hierarchy<br/>• Paragraph structure"]
-Decision --> |Code| CodeGen["Generate Code Document<br/>• Function definitions<br/>• Code blocks<br/>• Syntax examples"]
-Decision --> |List| ListGen["Generate List Document<br/>• Hierarchical lists<br/>• Nested items<br/>• Mixed list types"]
-Decision --> |Table| TableGen["Generate Table Document<br/>• Structured data<br/>• Header rows<br/>• Cell alignment"]
-Decision --> |Mixed| MixedGen["Generate Mixed Document<br/>• All element types<br/>• Balanced composition<br/>• Realistic structure"]
-TextGen --> SizeControl["Size Control<br/>(KB target)"]
-CodeGen --> SizeControl
-ListGen --> SizeControl
-TableGen --> SizeControl
+ContentType["Content Type"] --> Decision{"Category Selection"}
+Decision --> |Technical Docs| TechGen["Select Technical Documentation<br/>• API references<br/>• Code examples<br/>• Technical explanations"]
+Decision --> |GitHub READMEs| ReadmeGen["Select GitHub READMEs<br/>• Project descriptions<br/>• Installation guides<br/>• Usage examples"]
+Decision --> |Changelogs| ChangelogGen["Select Changelogs<br/>• Version history<br/>• Feature lists<br/>• Bug fixes"]
+Decision --> |Engineering Blogs| BlogGen["Select Engineering Blogs<br/>• Technical narratives<br/>• Code snippets<br/>• Architecture diagrams"]
+Decision --> |Personal Notes| NotesGen["Select Personal Notes<br/>• Journals<br/>• Cheatsheets<br/>• Unstructured text"]
+Decision --> |Debug Logs| LogGen["Select Debug Logs<br/>• Error messages<br/>• Stack traces<br/>• System output"]
+Decision --> |Mixed Content| MixedGen["Select Mixed Content<br/>• All element types<br/>• Balanced composition<br/>• Realistic structure"]
+TechGen --> SizeControl["Size Control<br/>(Representative sampling)"]
+ReadmeGen --> SizeControl
+ChangelogGen --> SizeControl
+BlogGen --> SizeControl
+NotesGen --> SizeControl
+LogGen --> SizeControl
 MixedGen --> SizeControl
-SizeControl --> FinalDoc["Final Document"]
+SizeControl --> FinalDoc["Final Document Selection"]
 ```
 
 **Diagram sources**
-- [benchmarks/utils.py](file://benchmarks/utils.py#L79-L224)
+- [tests/performance/corpus_selector.py](file://tests/performance/corpus_selector.py)
+- [tests/performance/test_benchmark_content_type.py](file://tests/performance/test_benchmark_content_type.py#L39-L192)
 
 **Section sources**
-- [benchmarks/utils.py](file://benchmarks/utils.py#L79-L224)
+- [tests/performance/test_benchmark_content_type.py](file://tests/performance/test_benchmark_content_type.py#L39-L192)
+
+## Configuration Impact Testing
+
+The benchmarking suite evaluates how different configurations affect performance:
+
+### Configuration Profiles
+
+| Profile | max_chunk_size | overlap_size | Use Case |
+|---------|----------------|--------------|-----------|
+| **Default** | 4096 | 200 | General purpose |
+| **Code Heavy** | 8192 | 100 | Technical documentation |
+| **Structured** | 4096 | 200 | User guides |
+| **Minimal** | 1024 | 50 | Small chunks |
+| **No Overlap** | 4096 | 0 | No context needed |
+
+### Overlap Processing Impact
+
+The v2 architecture uses metadata-only overlap, resulting in minimal overhead:
+
+| Overlap Size | Expected Overhead | Notes |
+|--------------|-------------------|-------|
+| 0 (disabled) | Baseline | No overlap processing |
+| 50 | < 2% | Minimal metadata |
+| 100 | < 5% | Standard setting |
+| 200 | < 10% | Default setting |
+| 400 | < 15% | Large context |
+
+**Section sources**
+- [tests/performance/test_benchmark_config.py](file://tests/performance/test_benchmark_config.py#L34-L225)
+
+## Scalability Analysis
+
+The system performs regression analysis to validate scaling characteristics:
+
+### Linear Regression Model
+
+The chunker exhibits linear scaling with document size:
+
+```
+Processing Time = coefficient × Document Size (KB) + baseline overhead
+```
+
+- **Coefficient**: ~0.5-1.0 ms per KB (see scalability benchmarks)
+- **Baseline Overhead**: ~5-10 ms (parsing, analysis, strategy selection)
+- **R-squared**: > 0.70 (acceptable linear trend)
+
+### Performance Projections
+
+Based on linear scaling model:
+
+| Document Size | Projected Time | Projected Memory | Recommendation |
+|---------------|----------------|------------------|----------------|
+| 1 MB | ~500-800 ms | ~150-200 MB | ✓ Suitable |
+| 5 MB | ~2.5-4 s | ~750 MB-1 GB | ✓ Suitable |
+| 10 MB | ~5-8 s | ~1.5-2 GB | ⚠ Memory intensive |
+| 50 MB | ~25-40 s | ~7-10 GB | ⚠ Consider streaming |
+| 100 MB | ~50-80 s | ~14-20 GB | ⚠ Not recommended |
+
+**Section sources**
+- [tests/performance/test_benchmark_scalability.py](file://tests/performance/test_benchmark_scalability.py#L39-L267)
 
 ## Utility Functions
 
@@ -255,83 +369,55 @@ The utility module provides essential functions for benchmarking operations:
 |----------|---------|------------|---------|
 | `measure_time` | Time function execution | `func`, `*args`, `**kwargs` | `(result, time_in_seconds)` |
 | `measure_memory` | Track peak memory usage | `func`, `*args`, `**kwargs` | `(result, peak_memory_mb)` |
-| `measure_all` | Combined timing and memory | `func`, `*args`, `**kwargs` | `{"result": ..., "time": ..., "memory_mb": ...}` |
+| `measure_all` | Combined timing and memory | `func`, `*args`, `**kwargs` | `(result, time, memory_mb)` |
+| `run_benchmark` | Statistical benchmarking | `func`, `args`, `kwargs`, `warmup_runs`, `measurement_runs` | `{"time": ..., "memory": ..., "result": ...}` |
+| `calculate_throughput` | Calculate throughput metrics | `size_bytes`, `time_seconds` | `{"kb_per_sec": ..., "mb_per_sec": ...}` |
+| `aggregate_results` | Aggregate multiple benchmark results | `results` | Aggregated statistics |
 
-### Formatting Utilities
-
-The system provides human-readable formatting for performance metrics:
+### Benchmark Execution Flow
 
 ```mermaid
 flowchart LR
-RawData["Raw Metrics"] --> FormatSize["format_size(bytes)<br/>• B, KB, MB, GB conversion"]
-RawData --> FormatTime["format_time(seconds)<br/>• μs, ms, s conversion"]
-RawData --> CalcThroughput["calculate_throughput()<br/>• KB/s calculation"]
-FormatSize --> HumanReadable["Human-Readable Output"]
-FormatTime --> HumanReadable
-CalcThroughput --> HumanReadable
+RawData["Raw Metrics"] --> Warmup["Warm-up Runs<br/>(1-2 iterations)"]
+Warmup --> Measurement["Measurement Runs<br/>(3-5 iterations)"]
+Measurement --> Aggregate["Statistical Aggregation<br/>(Mean, Min, Max, Stddev)"]
+Aggregate --> Format["Format Results<br/>(Human-readable)"]
+Format --> Validate["Validation<br/>(Threshold checks)"]
+Validate --> Store["Store Results<br/>(Results Manager)"]
 ```
 
 **Diagram sources**
-- [benchmarks/utils.py](file://benchmarks/utils.py#L226-L259)
-
-### Document Generation Functions
-
-Specialized generators for each content type:
-
-- `_generate_text_document()`: Creates text-heavy documents with headers and paragraphs
-- `_generate_code_document()`: Generates code-heavy documents with function definitions
-- `_generate_list_document()`: Produces list-heavy documents with hierarchical structure
-- `_generate_table_document()`: Creates table-heavy documents with structured data
-- `_generate_mixed_document()`: Combines all element types for realistic testing
+- [tests/performance/utils.py](file://tests/performance/utils.py#L77-L185)
 
 **Section sources**
-- [benchmarks/utils.py](file://benchmarks/utils.py#L12-L259)
+- [tests/performance/utils.py](file://tests/performance/utils.py#L13-L185)
 
-## Validation Framework
+## Results Management
 
-The validation framework ensures benchmark reliability and provides regression testing capabilities:
+The ResultsManager class handles collection, storage, and reporting of benchmark results:
 
-### Performance Validation Tests
-
-The validation system includes comprehensive performance checks:
+### Results Manager Architecture
 
 ```mermaid
-flowchart TD
-ValidationStart["Performance Validation"] --> SizeBench["Size-Based Benchmarks<br/>(Small, Medium, Large)"]
-ValidationStart --> MemCheck["Memory Usage Validation<br/>(Consistency Check)"]
-ValidationStart --> RegCheck["Performance Regression<br/>(Variance Analysis)"]
-SizeBench --> SizeTargets["Check Time Targets<br/>• Small: < 0.1s<br/>• Medium: < 1.0s<br/>• Large: < 5.0s"]
-MemCheck --> MemConsistency["Check Consistent Chunk Count<br/>• 10 iterations<br/>• Compare results"]
-RegCheck --> VarAnalysis["Analyze Performance Variance<br/>• 5 iterations<br/>• Min/Max/AVG time<br/>• Allowable variance: 100ms"]
-SizeTargets --> ValidationResults["Validation Results"]
-MemConsistency --> ValidationResults
-VarAnalysis --> ValidationResults
-ValidationResults --> PassFail{"All Tests Pass?"}
-PassFail --> |Yes| Success["✅ All Benchmarks PASSED"]
-PassFail --> |No| Failure["❌ Performance Issues Detected"]
+classDiagram
+class ResultsManager {
++results_dir : Path
++results : Dict
++__init__(results_dir : Path)
++_collect_environment_metadata() Dict[str, str]
++add_benchmark_result(category : str, name : str, result : Dict[str, Any])
++save_baseline()
++save_latest_run()
++load_baseline() Dict
++generate_markdown_report() str
++save_report()
++export_csv(category : str = None)
++print_summary()
+}
 ```
 
 **Diagram sources**
-- [tests/performance/test_benchmarks.py](file://tests/performance/test_benchmarks.py#L268-L319)
-
-### Baseline Comparison System
-
-The system maintains historical performance baselines for regression detection:
-
-| Baseline Component | Purpose | Storage Format |
-|-------------------|---------|----------------|
-| **Performance Baselines** | Historical timing data | JSON with timestamps |
-| **Strategy Performance** | Individual strategy metrics | Per-strategy timing data |
-| **Content Type Results** | Content-specific benchmarks | Per-content-type metrics |
-| **Memory Usage Patterns** | Memory consumption trends | Peak memory tracking |
-
-**Section sources**
-- [tests/performance/test_benchmarks.py](file://tests/performance/test_benchmarks.py#L1-L319)
-- [baseline.json](file://baseline.json#L1-L826)
-
-## Historical Comparison System
-
-The benchmarking system maintains comprehensive historical performance data for trend analysis and regression detection:
+- [tests/performance/results_manager.py](file://tests/performance/results_manager.py#L15-L331)
 
 ### Result Storage Format
 
@@ -339,51 +425,77 @@ Benchmark results are stored in a structured JSON format that captures comprehen
 
 ```json
 {
-  "timestamp": "2025-12-03T10:30:00.000Z",
-  "version": "1.4.0",
-  "by_size": [
-    {
-      "label": "small",
-      "size_kb": 1,
-      "actual_size_bytes": 1024,
-      "time_seconds": 0.0008,
-      "throughput_kbps": 1.3,
-      "chunks_count": 6,
-      "memory_mb": 1.2
+  "metadata": {
+    "timestamp": "2024-12-03T10:30:00.000Z",
+    "python_version": "3.11.5",
+    "platform": "Linux-5.15.0-86-generic-x86_64-with-glibc2.35",
+    "processor": "x86_64",
+    "machine": "x86_64"
+  },
+  "benchmarks": {
+    "size": {
+      "small": {
+        "time": {
+          "mean": 0.0008,
+          "min": 0.0007,
+          "max": 0.0009,
+          "stddev": 0.0001
+        },
+        "memory": {
+          "mean": 1.2,
+          "min": 1.1,
+          "max": 1.3
+        },
+        "throughput": {
+          "kb_per_sec": 1.3
+        },
+        "document_count": 45
+      }
+    },
+    "content_type": {
+      "technical_docs": {
+        "time": {
+          "mean": 0.0015,
+          "min": 0.0012,
+          "max": 0.0021
+        },
+        "strategy": "code_aware",
+        "output": {
+          "avg_chunk_count": 8.5,
+          "avg_chunk_size": 1200
+        }
+      }
     }
-  ],
-  "by_content_type": [
-    {
-      "content_type": "text",
-      "time_seconds": 0.0005,
-      "strategy_used": "structural",
-      "chunks_count": 4,
-      "avg_chunk_size": 1200
-    }
-  ]
+  }
 }
 ```
 
-### Trend Analysis Capabilities
+### Report Generation
 
-The system enables analysis of performance trends over time:
+The ResultsManager generates human-readable reports in multiple formats:
 
-- **Throughput Trends**: Monitor processing speed improvements or regressions
-- **Memory Efficiency**: Track memory usage patterns and optimizations
-- **Strategy Performance**: Compare strategy effectiveness across versions
-- **Content Type Impact**: Analyze how different content types affect performance
+```mermaid
+flowchart TD
+Start([Generate Report]) --> Collect["Collect All Results"]
+Collect --> Format["Format Results<br/>(Markdown, CSV, JSON)"]
+Format --> Markdown["Generate Markdown Report"]
+Markdown --> Console["Generate Console Summary"]
+Console --> Export["Export to Files"]
+Export --> Save["Save Files<br/>(latest_run.json, performance_report.md, results_all.csv)"]
+Save --> End([Report Complete])
+```
 
 **Section sources**
-- [benchmarks/benchmark_chunker.py](file://benchmarks/benchmark_chunker.py#L150-L166)
+- [tests/performance/results_manager.py](file://tests/performance/results_manager.py#L15-L331)
 
 ## Best Practices
 
 ### Benchmark Design Principles
 
-1. **Representative Test Data**: Use realistic document structures that reflect production usage
-2. **Comprehensive Coverage**: Test all content types and document sizes
-3. **Statistical Significance**: Run multiple iterations for reliable metrics
-4. **Baseline Establishment**: Maintain historical performance baselines
+1. **Representative Test Data**: Use realistic document structures that reflect production usage from the corpus
+2. **Comprehensive Coverage**: Test all content types, document sizes, configurations, and strategies
+3. **Statistical Significance**: Run multiple iterations with warm-up for reliable metrics
+4. **Baseline Establishment**: Maintain historical performance baselines for regression detection
 5. **Incremental Testing**: Test individual components alongside end-to-end scenarios
 
 ### Performance Optimization Guidelines
@@ -393,8 +505,8 @@ The system enables analysis of performance trends over time:
 | **Memory Usage** | Monitor peak memory allocation | Use `tracemalloc` for memory profiling |
 | **Processing Time** | Track function-level timing | Implement micro-benchmarking |
 | **Strategy Selection** | Test strategy effectiveness | Compare strategy performance across content types |
-| **Caching** | Implement intelligent caching | Measure cache hit rates and effectiveness |
-| **Streaming** | Optimize for large documents | Test memory usage with large inputs |
+| **Configuration Impact** | Evaluate configuration profiles | Test different chunk sizes and overlap settings |
+| **Scalability** | Validate linear scaling | Perform regression analysis on size vs. time |
 
 ### Testing Methodology
 
@@ -406,61 +518,34 @@ The system enables analysis of performance trends over time:
 
 ### Performance Monitoring Integration
 
-The system integrates with the chunker's built-in performance monitoring:
+The system integrates with the comprehensive benchmark suite:
 
 ```mermaid
 sequenceDiagram
-participant App as Application
-participant Chunker as MarkdownChunker
-participant Monitor as PerformanceMonitor
-participant Cache as PerformanceOptimizer
-App->>Chunker : Enable performance monitoring
-Chunker->>Monitor : Initialize monitor
-Chunker->>Cache : Initialize optimizer
-loop Processing Documents
-App->>Chunker : chunk(document)
-Chunker->>Monitor : Record operation metrics
-Chunker->>Cache : Cache results
-Chunker-->>App : Return chunks
-end
-App->>Chunker : get_performance_stats()
-Chunker->>Monitor : Get aggregated stats
-Monitor-->>Chunker : Performance metrics
-Chunker-->>App : Statistics report
+participant CLI as Command Line
+participant Runner as run_all_benchmarks.py
+participant Results as ResultsManager
+participant Benchmark as Individual Test
+CLI->>Runner : Execute benchmark suite
+Runner->>Results : Initialize results manager
+Runner->>Benchmark : Run size benchmarks
+Benchmark->>Results : Add size results
+Runner->>Benchmark : Run content-type benchmarks
+Benchmark->>Results : Add content-type results
+Runner->>Benchmark : Run strategy benchmarks
+Benchmark->>Results : Add strategy results
+Runner->>Benchmark : Run configuration benchmarks
+Benchmark->>Results : Add configuration results
+Runner->>Benchmark : Run scalability analysis
+Benchmark->>Results : Add scalability results
+Runner->>Results : Generate final report
+Results-->>CLI : Complete report (JSON, Markdown, CSV)
 ```
 
 **Diagram sources**
-- [markdown_chunker_legacy/chunker/performance.py](file://markdown_chunker_legacy/chunker/performance.py#L32-L82)
+- [tests/performance/run_all_benchmarks.py](file://tests/performance/run_all_benchmarks.py#L17-L76)
+- [tests/performance/results_manager.py](file://tests/performance/results_manager.py#L15-L331)
 
 **Section sources**
-- [markdown_chunker_legacy/chunker/performance.py](file://markdown_chunker_legacy/chunker/performance.py#L32-L243)
-
-## Troubleshooting Guide
-
-### Common Performance Issues
-
-| Issue | Symptoms | Diagnosis | Solution |
-|-------|----------|-----------|----------|
-| **High Memory Usage** | Out-of-memory errors, slow processing | Monitor peak memory with `measure_memory` | Optimize chunk size, implement streaming |
-| **Slow Processing** | High processing time, poor throughput | Use `measure_time` to identify bottlenecks | Profile code, optimize algorithms |
-| **Inconsistent Results** | Variable performance across runs | Run multiple iterations, analyze variance | Check system resources, warm-up runs |
-| **Strategy Selection Issues** | Wrong strategy chosen | Enable content analysis with `include_analysis=True` | Review content analysis metrics |
-
-### Debugging Performance Problems
-
-1. **Enable Detailed Logging**: Use the performance monitor to track operation timing
-2. **Isolate Components**: Test individual strategies and parser separately
-3. **Memory Profiling**: Use `tracemalloc` to identify memory leaks
-4. **System Resource Monitoring**: Check CPU, memory, and I/O usage
-5. **Baseline Comparison**: Compare current results against historical baselines
-
-### Optimization Strategies
-
-- **Caching**: Implement intelligent caching for repeated documents
-- **Lazy Loading**: Load strategies only when needed
-- **Memory Management**: Use streaming for large documents
-- **Algorithm Optimization**: Profile and optimize critical paths
-- **Configuration Tuning**: Adjust chunk sizes and overlap parameters
-
-**Section sources**
-- [tests/performance/test_benchmarks.py](file://tests/performance/test_benchmarks.py#L143-L319)
+- [tests/performance/run_all_benchmarks.py](file://tests/performance/run_all_benchmarks.py#L17-L76)
+- [docs/guides/performance.md](file://docs/guides/performance.md)

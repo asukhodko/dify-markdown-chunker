@@ -7,11 +7,15 @@
 - [manifest.yaml](file://manifest.yaml)
 - [tools/markdown_chunk_tool.yaml](file://tools/markdown_chunk_tool.yaml)
 - [tools/markdown_chunk_tool.py](file://tools/markdown_chunk_tool.py)
-- [markdown_chunker_legacy/api/adapter.py](file://markdown_chunker_legacy/api/adapter.py)
-- [markdown_chunker_legacy/api/validator.py](file://markdown_chunker_legacy/api/validator.py)
-- [markdown_chunker_legacy/api/error_handler.py](file://markdown_chunker_legacy/api/error_handler.py)
-- [requirements.txt](file://requirements.txt)
+- [PRIVACY.md](file://PRIVACY.md)
 </cite>
+
+## Update Summary
+**Changes Made**   
+- Added privacy and data processing information from PRIVACY.md to reflect local-only processing and no data transmission
+- Updated manifest.yaml references to include the privacy field pointing to PRIVACY.md
+- Enhanced security considerations section with privacy policy details
+- Added new section on privacy and data handling
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -24,6 +28,7 @@
 8. [Security Considerations](#security-considerations)
 9. [Deployment Topology](#deployment-topology)
 10. [Communication Patterns](#communication-patterns)
+11. [Privacy and Data Handling](#privacy-and-data-handling)
 
 ## Introduction
 The Dify integration architecture enables seamless integration of the Advanced Markdown Chunker with the Dify platform. This documentation details the plugin architecture that facilitates intelligent, structure-aware chunking of Markdown documents for enhanced RAG (Retrieval-Augmented Generation) performance. The integration leverages the Dify plugin framework to expose the markdown_chunker library as a tool within Dify's Knowledge Base processing pipelines. The architecture incorporates an adapter pattern to translate between Dify's data format and the internal chunking API, ensuring compatibility and optimal performance. Security considerations are addressed through comprehensive input validation and error handling mechanisms.
@@ -50,14 +55,10 @@ ToolProvider --> Tool : "implements"
 Plugin --> ToolProvider : "contains"
 ```
 
-**Diagram sources**
-- [main.py](file://main.py#L1-L31)
-- [provider/markdown_chunker.py](file://provider/markdown_chunker.py#L1-L36)
-- [tools/markdown_chunk_tool.py](file://tools/markdown_chunk_tool.py#L1-L157)
-
 **Section sources**
 - [main.py](file://main.py#L1-L31)
 - [provider/markdown_chunker.py](file://provider/markdown_chunker.py#L1-L36)
+- [tools/markdown_chunk_tool.py](file://tools/markdown_chunk_tool.py#L1-L157)
 
 ## Entry Point Implementation
 The entry point implementation in main.py serves as the bootstrap for the Dify plugin, configuring the plugin environment and initiating execution. The entry point imports the necessary Dify plugin components and configures a 300-second timeout to accommodate processing of large documents. The plugin instance is created with the configured environment and executed when the script is run directly. This implementation supports both debug mode (connecting to a remote Dify instance via .env configuration) and production mode (running as a packaged plugin within Dify).
@@ -77,14 +78,11 @@ Main->>Plugin : Run plugin
 Plugin-->>User : Process requests
 ```
 
-**Diagram sources**
-- [main.py](file://main.py#L1-L31)
-
 **Section sources**
 - [main.py](file://main.py#L1-L31)
 
 ## Configuration Mechanism
-The configuration mechanism is implemented through the manifest.yaml file, which defines the plugin's metadata, resource requirements, and integration points with the Dify platform. The manifest specifies the plugin version, author, name, and multi-language labels for internationalization. It defines the memory requirement (512MB) and specifies the Python runtime (version 3.12) with main.py as the entrypoint. The manifest also declares compatibility with Dify version 1.9.0 or later and includes tags for categorization within the Dify marketplace.
+The configuration mechanism is implemented through the manifest.yaml file, which defines the plugin's metadata, resource requirements, and integration points with the Dify platform. The manifest specifies the plugin version, author, name, and multi-language labels for internationalization. It defines the memory requirement (512MB) and specifies the Python runtime (version 3.12) with main.py as the entrypoint. The manifest also declares compatibility with Dify version 1.9.0 or later and includes tags for categorization within the Dify marketplace. The privacy field references PRIVACY.md, indicating compliance with Dify's marketplace requirements for data handling transparency.
 
 ```mermaid
 flowchart TD
@@ -92,7 +90,8 @@ A[manifest.yaml] --> B[Plugin Metadata]
 A --> C[Resource Configuration]
 A --> D[Runtime Configuration]
 A --> E[Tool Integration]
-B --> F[version: 2.0.2-a0]
+A --> F[Privacy Policy]
+B --> F[version: 2.1.0]
 B --> G[type: plugin]
 B --> H[author: asukhodko]
 B --> I[name: markdown_chunker]
@@ -104,17 +103,16 @@ D --> N[meta: arch: amd64, arm64]
 D --> O[meta: runner: python, version: "3.12"]
 D --> P[meta: entrypoint: main]
 E --> Q[plugins: tools: provider/markdown_chunker.yaml]
+F --> R[privacy: PRIVACY.md]
 F --> Z[Plugin Registration]
 M --> Z
 O --> Z
 Q --> Z
+R --> Z
 ```
 
-**Diagram sources**
-- [manifest.yaml](file://manifest.yaml#L1-L48)
-
 **Section sources**
-- [manifest.yaml](file://manifest.yaml#L1-L48)
+- [manifest.yaml](file://manifest.yaml#L1-L49)
 
 ## Tool Definition
 The tool definition in markdown_chunk_tool.yaml specifies the interface for the Markdown Chunker tool, including its parameters, input validation, and output schema. The tool accepts input text, maximum chunk size, chunk overlap, chunking strategy, and metadata inclusion as configurable parameters. Each parameter includes multi-language labels and descriptions for user guidance. The output schema references Dify's general structure JSON schema, ensuring compatibility with Dify's data processing pipeline. The tool implementation is specified in the extra.python.source field, pointing to the Python implementation file.
@@ -153,9 +151,6 @@ string label
 }
 ```
 
-**Diagram sources**
-- [tools/markdown_chunk_tool.yaml](file://tools/markdown_chunk_tool.yaml#L1-L128)
-
 **Section sources**
 - [tools/markdown_chunk_tool.yaml](file://tools/markdown_chunk_tool.yaml#L1-L128)
 
@@ -180,10 +175,6 @@ L --> M
 M --> A
 E --> A
 ```
-
-**Diagram sources**
-- [tools/markdown_chunk_tool.py](file://tools/markdown_chunk_tool.py#L1-L157)
-- [markdown_chunker_legacy/api/adapter.py](file://markdown_chunker_legacy/api/adapter.py#L1-L169)
 
 **Section sources**
 - [tools/markdown_chunk_tool.py](file://tools/markdown_chunk_tool.py#L1-L157)
@@ -233,11 +224,6 @@ APIAdapter --> MarkdownChunker : "delegates"
 APIValidator --> APIRequest : "validates"
 ```
 
-**Diagram sources**
-- [markdown_chunker_legacy/api/adapter.py](file://markdown_chunker_legacy/api/adapter.py#L1-L169)
-- [markdown_chunker_legacy/api/types.py](file://markdown_chunker_legacy/api/types.py#L1-L162)
-- [markdown_chunker_legacy/api/validator.py](file://markdown_chunker_legacy/api/validator.py#L1-L321)
-
 **Section sources**
 - [markdown_chunker_legacy/api/adapter.py](file://markdown_chunker_legacy/api/adapter.py#L1-L169)
 
@@ -268,10 +254,6 @@ style J fill:#f8b7bd,stroke:#333
 style N fill:#f8b7bd,stroke:#333
 style Q fill:#b8e4b4,stroke:#333
 ```
-
-**Diagram sources**
-- [markdown_chunker_legacy/api/validator.py](file://markdown_chunker_legacy/api/validator.py#L1-L321)
-- [markdown_chunker_legacy/api/error_handler.py](file://markdown_chunker_legacy/api/error_handler.py#L1-L235)
 
 **Section sources**
 - [markdown_chunker_legacy/api/validator.py](file://markdown_chunker_legacy/api/validator.py#L1-L321)
@@ -305,11 +287,6 @@ style G fill:#50E3C2,stroke:#333,color:#fff
 style H fill:#B8E986,stroke:#333,color:#fff
 ```
 
-**Diagram sources**
-- [package.sh](file://package.sh#L1-L71)
-- [requirements.txt](file://requirements.txt#L1-L21)
-- [manifest.yaml](file://manifest.yaml#L1-L48)
-
 **Section sources**
 - [package.sh](file://package.sh#L1-L71)
 - [requirements.txt](file://requirements.txt#L1-L21)
@@ -342,9 +319,63 @@ Plugin->>Dify : Yield result variable
 end
 ```
 
-**Diagram sources**
-- [tools/markdown_chunk_tool.py](file://tools/markdown_chunk_tool.py#L1-L157)
-- [tests/integration/test_dify_plugin_integration.py](file://tests/integration/test_dify_plugin_integration.py#L1-L398)
-
 **Section sources**
 - [tools/markdown_chunk_tool.py](file://tools/markdown_chunk_tool.py#L1-L157)
+
+## Privacy and Data Handling
+The Advanced Markdown Chunker plugin adheres to strict privacy principles by processing all data locally within the Dify environment without any external data transmission. This section details the privacy policy and data handling practices that ensure user data remains secure and private.
+
+### Privacy Policy Overview
+The plugin operates entirely within the user's Dify instance and processes data locally. No user information, identifiers, or personal details are collected, stored, or transmitted at any point. The privacy policy explicitly states that the plugin does not collect personal data, transmit content to external services, or store data beyond the immediate processing session.
+
+```mermaid
+flowchart TD
+A[Input Text] --> B{Processing}
+B --> C[Local AST Analysis]
+B --> D[Structure Preservation]
+B --> E[Chunk Generation]
+E --> F[Metadata Enrichment]
+F --> G[Output Chunks]
+G --> H[Dify Workflow]
+style C fill:#4A90E2,stroke:#333,color:#fff
+style D fill:#4A90E2,stroke:#333,color:#fff
+style E fill:#4A90E2,stroke:#333,color:#fff
+style F fill:#4A90E2,stroke:#333,color:#fff
+```
+
+### Data Processing Principles
+The plugin follows these core data processing principles:
+- **Local Processing**: All Markdown text is processed locally within the Dify runtime environment
+- **No Data Storage**: Input text exists only during processing and is not stored beyond the session
+- **No External Transmission**: No data is sent to external APIs, services, or third parties
+- **No Logging**: User content is not logged or recorded by the plugin
+- **No Analytics**: No telemetry or usage data is collected
+
+### Third-Party Services
+The plugin does not integrate with or transmit data to any external services, APIs, or platforms. All processing is performed locally using built-in Python libraries. The only dependencies are open-source libraries for local processing:
+- `markdown-it-py` — Markdown parsing (local processing only)
+- `pydantic` — Data validation (local processing only)
+
+These libraries do not collect or transmit any data.
+
+### Data Security
+Since all processing occurs locally within the Dify environment:
+- Data security is managed by the Dify platform
+- No additional network exposure is introduced by the plugin
+- No credentials or API keys are required or stored
+
+### Privacy Compliance
+The manifest.yaml file includes a reference to PRIVACY.md in the privacy field, ensuring compliance with Dify marketplace requirements. This transparent declaration of data handling practices allows users to understand exactly how their data is processed and protected.
+
+| Category | Status |
+|----------|--------|
+| Personal data collection | ❌ None |
+| Content transmission | ❌ None |
+| External API calls | ❌ None |
+| Data storage | ❌ None (beyond Dify's standard handling) |
+| Third-party sharing | ❌ None |
+| Analytics/Telemetry | ❌ None |
+
+**Section sources**
+- [PRIVACY.md](file://PRIVACY.md)
+- [manifest.yaml](file://manifest.yaml#L17)
