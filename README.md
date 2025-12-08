@@ -783,29 +783,15 @@ MIT License — see [LICENSE](LICENSE)
 
 ## 📝 Changelog
 
-**Current Version:** 2.0.2-a3 (December 2025)
+**Current Version:** 2.1.0 (December 2025)
 
-### v2.0.2-a3 - List-Aware Strategy & Adaptive Overlap
-- **NEW: List-Aware Strategy** - intelligent processing for list-heavy documents
-  - Preserves nested list hierarchies (parent-child relationships)
-  - Automatic context binding (introduction paragraphs + lists)
-  - Smart activation (AND logic for structured docs, OR for plain lists)
-  - Handles bullet lists, numbered lists, and checkboxes
-- **Adaptive overlap sizing** - context window scales with chunk size (up to 35%)
-  - Small chunks: respects configured overlap_size
-  - Large chunks: allows larger overlap (max 35% of chunk size)
-  - Formula: `min(overlap_size, chunk_size * 0.35)`
-- **Enhanced list detection in parser** - full list analysis with hierarchy depth
-- **Comprehensive test coverage** - 24 new tests for list strategy and overlap behavior
+### Latest: v2.1.0
+- **List-Aware Strategy** — intelligent processing for list-heavy documents with hierarchy preservation
+- **Adaptive Overlap Sizing** — context window scales with chunk size (up to 35%)
+- **Configuration** — 2 new parameters (`list_ratio_threshold`, `list_count_threshold`)
+- **Architecture** — 4 strategies (code_aware, list_aware, structural, fallback)
 
-### v2.0.2-a0 - Major Redesign
-- **Simplified architecture**: 3 base strategies (code_aware, structural, fallback)
-- **Simplified configuration**: 8 core parameters (expanded to 10 in a3)
-- **Consolidated types**: Single types.py module
-- **Improved test suite**: 498 focused property-based tests
-- **Metadata-based overlap**: Context stored in metadata, not merged into content
-
-Full changelog: [CHANGELOG.md](CHANGELOG.md)
+For full release history, see [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
