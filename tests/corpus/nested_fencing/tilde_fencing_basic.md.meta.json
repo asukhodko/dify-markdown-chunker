@@ -1,0 +1,12 @@
+{
+  "file_name": "tilde_fencing_basic.md",
+  "category": "nested_fencing",
+  "total_lines": 48,
+  "total_chars": 856,
+  "code_ratio": 0.35,
+  "nested_fence_count": 1,
+  "max_nesting_depth": 2,
+  "fence_types": ["tilde"],
+  "has_unclosed_fence": false,
+  "purpose": "Demonstrate tilde fencing support with basic and nested examples"
+}

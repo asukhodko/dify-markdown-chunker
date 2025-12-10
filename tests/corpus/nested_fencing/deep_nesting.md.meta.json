@@ -1,0 +1,12 @@
+{
+  "file_name": "deep_nesting.md",
+  "category": "nested_fencing",
+  "total_lines": 102,
+  "total_chars": 1876,
+  "code_ratio": 0.48,
+  "nested_fence_count": 4,
+  "max_nesting_depth": 5,
+  "fence_types": ["backtick"],
+  "has_unclosed_fence": false,
+  "purpose": "Demonstrate deep nesting up to 6-backtick level for meta-meta-documentation"
+}

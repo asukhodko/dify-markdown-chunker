@@ -102,3 +102,8 @@ unstructured_007.md,personal_notes,unstructured,713,26,synthetic,0.1153846153846
 unstructured_003.md,personal_notes,unstructured,800,34,synthetic,0.17647058823529413,0,3,4,structural
 unstructured_000.md,personal_notes,unstructured,1550,42,synthetic,0.0,0,3,3,structural
 docker_005.md,technical_docs,docker,5405,348,synthetic,0.34195402298850575,2,45,53,code_aware
+tilde_fencing_basic.md,nested_fencing,,842,48,manual,0.4264,0,0,5,code_aware
+mixed_fence_types.md,nested_fencing,,1170,78,manual,0.4915,0,0,6,code_aware
+deep_nesting.md,nested_fencing,,1531,102,manual,0.4592,0,1,8,code_aware
+edge_cases.md,nested_fencing,,251,15,manual,0.2351,0,0,3,code_aware
+meta_documentation.md,nested_fencing,,2053,144,manual,0.5826,0,0,10,code_aware

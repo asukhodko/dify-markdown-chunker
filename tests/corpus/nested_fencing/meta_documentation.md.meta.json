@@ -1,0 +1,12 @@
+{
+  "file_name": "meta_documentation.md",
+  "category": "nested_fencing",
+  "total_lines": 144,
+  "total_chars": 2548,
+  "code_ratio": 0.45,
+  "nested_fence_count": 5,
+  "max_nesting_depth": 3,
+  "fence_types": ["backtick"],
+  "has_unclosed_fence": false,
+  "purpose": "Realistic meta-documentation example showing documentation about writing documentation"
+}

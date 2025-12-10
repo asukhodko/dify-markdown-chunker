@@ -81,6 +81,9 @@ class FencedBlock:
         end_line: Line number where block ends (1-indexed)
         start_pos: Character position in document
         end_pos: Character position in document
+        fence_char: The fence character used ('`' for backtick, '~' for tilde)
+        fence_length: Number of fence characters (3, 4, 5, etc.)
+        is_closed: Whether the fence has a matching closing fence
     """
 
     language: Optional[str]
@@ -89,6 +92,9 @@ class FencedBlock:
     end_line: int
     start_pos: int = 0
     end_pos: int = 0
+    fence_char: str = "`"
+    fence_length: int = 3
+    is_closed: bool = True
 
 
 @dataclass

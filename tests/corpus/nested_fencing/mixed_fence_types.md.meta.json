@@ -1,0 +1,12 @@
+{
+  "file_name": "mixed_fence_types.md",
+  "category": "nested_fencing",
+  "total_lines": 78,
+  "total_chars": 1342,
+  "code_ratio": 0.42,
+  "nested_fence_count": 3,
+  "max_nesting_depth": 2,
+  "fence_types": ["backtick", "tilde"],
+  "has_unclosed_fence": false,
+  "purpose": "Demonstrate mixing backtick and tilde fences with nested examples"
+}

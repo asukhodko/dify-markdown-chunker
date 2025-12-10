@@ -179,7 +179,8 @@ class TestSPEC036ContentTypeDetection:
     def test_mixed_content_type(self):
         """Test mixed content is detected as 'mixed'."""
         chunker = MarkdownChunker()
-        text = "```code```\n\n| A | B |\n|---|---|\n| 1 | 2 |"
+        # Use valid markdown: code block on separate lines
+        text = "```python\ncode\n```\n\n| A | B |\n|---|---|\n| 1 | 2 |"
         chunks = chunker.chunk(text)
 
         # At least one chunk should be mixed or have both types

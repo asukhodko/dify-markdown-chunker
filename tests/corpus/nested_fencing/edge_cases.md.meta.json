@@ -1,0 +1,12 @@
+{
+  "file_name": "edge_cases.md",
+  "category": "nested_fencing",
+  "total_lines": 15,
+  "total_chars": 245,
+  "code_ratio": 0.28,
+  "nested_fence_count": 1,
+  "max_nesting_depth": 1,
+  "fence_types": ["backtick"],
+  "has_unclosed_fence": true,
+  "purpose": "Demonstrate edge case of unclosed fence extending to document end"
+}

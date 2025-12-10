@@ -187,7 +187,9 @@ Some text.
             isinstance(c.metadata.get("header_path", ""), str) for c in chunks
         ), "All chunks should have header_path as string"
         # Verify at least one chunk has a populated header_path
-        assert found_valid_path, "At least one list chunk should have populated header_path"
+        assert (
+            found_valid_path
+        ), "At least one list chunk should have populated header_path"
 
     def test_header_path_consistency_with_structural(self):
         """Test that header_path format matches structural strategy."""

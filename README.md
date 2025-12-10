@@ -4,11 +4,11 @@
 
 **Intelligent Markdown document chunking for RAG systems with structural awareness**
 
-[![Version](https://img.shields.io/badge/version-2.1.0-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1.1-orange.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Dify Plugin](https://img.shields.io/badge/dify-1.9.0+-green.svg)](https://dify.ai/)
-[![Tests](https://img.shields.io/badge/tests-498-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-652-brightgreen.svg)](#testing)
 
 </div>
 
@@ -54,6 +54,7 @@ This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** w
 | One-size-fits-all approach | 4 adaptive strategies based on content |
 | No overlap support | Smart overlap for better retrieval |
 | **Destroys list hierarchies** | **Smart list grouping with context binding** |
+| **Breaks nested code examples** | **Handles nested fencing (````, ``````, ~~~~)** |
 
 ---
 
@@ -62,6 +63,7 @@ This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** w
 ### 🎯 Adaptive Chunking
 - **4 intelligent strategies** — automatic selection based on content analysis
 - **List-Aware Strategy** — preserves nested list hierarchies and context (unique competitive advantage)
+- **Nested Fencing Support** — correctly handles quadruple/quintuple backticks and tilde fencing for meta-documentation (unique capability)
 - **Structure preservation** — headers, lists, tables, and code stay intact
 - **Adaptive overlap** — context window scales with chunk size (up to 35%)
 
@@ -71,7 +73,7 @@ This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** w
 - **Complexity scoring** — optimizes strategy selection
 
 ### 🛡️ Reliability
-- **498 tests** — comprehensive test coverage with property-based testing
+- **652 tests** — comprehensive test coverage with property-based testing
 - **Property-Based Testing** — formal correctness guarantees with Hypothesis
 - **Automatic fallback** — graceful degradation on errors
 - **Performance benchmarks** — automated performance regression detection
@@ -349,12 +351,49 @@ for chunk in chunks:
     print(f"List depth: {chunk.metadata.get('max_list_depth', 0)}")
 ```
 
+### Nested Fencing Support Example
+
+~~~python
+from markdown_chunker import MarkdownChunker
+
+# Meta-documentation with nested code blocks
+meta_doc = '''
+# How to Write Documentation
+
+## Code Examples
+
+When documenting code, use triple backticks. For showing markdown examples,
+use quadruple backticks:
+
+````markdown
+Here's how to show Python code:
+
+```python
+def example():
+    return "Hello, World!"
+```
+````
+
+This preserves the nested structure correctly.
+'''
+
+chunker = MarkdownChunker()
+chunks = chunker.chunk(meta_doc)
+
+# Result: Nested fences preserved as single code block
+# Inner ```python``` stays inside outer ````markdown````
+for chunk in chunks:
+    if '````' in chunk.content:
+        print("Nested fencing preserved!")
+        print(f"Has code blocks: {chunk.metadata.get('has_code', False)}")
+~~~
+
 ### Configuration Profiles
 
 ```python
 from markdown_chunker import MarkdownChunker, ChunkConfig
 
-# For code-heavy documents
+# For code-heavy documents (handles nested fencing)
 config = ChunkConfig.for_code_heavy()
 chunker = MarkdownChunker(config)
 
@@ -783,13 +822,18 @@ MIT License — see [LICENSE](LICENSE)
 
 ## 📝 Changelog
 
-**Current Version:** 2.1.0 (December 2025)
+**Current Version:** 2.1.1 (December 2025)
 
-### Latest: v2.1.0
-- **List-Aware Strategy** — intelligent processing for list-heavy documents with hierarchy preservation
-- **Adaptive Overlap Sizing** — context window scales with chunk size (up to 35%)
-- **Configuration** — 2 new parameters (`list_ratio_threshold`, `list_count_threshold`)
-- **Architecture** — 4 strategies (code_aware, list_aware, structural, fallback)
+### Latest: v2.1.1
+
+**Released:** December 10, 2025
+
+**Key Features:**
+- ✅ **Nested Fencing Support** — Correctly handles quadruple/quintuple backticks and tilde fencing
+- ✅ **Enhanced Parser** — State machine-based fence detection with proper nesting support  
+- ✅ **652 Tests** — Comprehensive test coverage including nested fencing validation
+- ✅ **List-Aware Strategy** — Intelligent processing for list-heavy documents with hierarchy preservation
+- ✅ **Adaptive Overlap Sizing** — Context window scales with chunk size (up to 35%)
 
 For full release history, see [CHANGELOG.md](CHANGELOG.md).
 

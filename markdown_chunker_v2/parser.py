@@ -109,14 +109,81 @@ class Parser:
         # First convert CRLF to LF, then convert remaining CR to LF
         return text.replace("\r\n", "\n").replace("\r", "\n")
 
+    def _is_fence_opening(self, line: str) -> Optional[Tuple[str, int, str]]:
+        """
+        Check if line is a fence opening.
+
+        Args:
+            line: Line to check
+
+        Returns:
+            Tuple of (fence_char, fence_length, language) if fence opening,
+            None otherwise.
+
+        Examples:
+            >>> parser._is_fence_opening("```python")
+            ('`', 3, 'python')
+            >>> parser._is_fence_opening("~~~~")
+            ('~', 4, '')
+            >>> parser._is_fence_opening("regular text")
+            None
+        """
+        # Match fence opening: optional whitespace, 3+ backticks or tildes,
+        # optional language
+        match = re.match(r"^(\s*)(`{3,}|~{3,})(\w*)\s*$", line)
+        if not match:
+            return None
+
+        fence_chars = match.group(2)
+        fence_char = fence_chars[0]
+        fence_length = len(fence_chars)
+        language = match.group(3) or ""
+
+        return (fence_char, fence_length, language)
+
+    def _is_fence_closing(self, line: str, fence_char: str, fence_length: int) -> bool:
+        """
+        Check if line is a valid closing fence.
+
+        Args:
+            line: Line to check
+            fence_char: Expected fence character ('`' or '~')
+            fence_length: Minimum fence length required
+
+        Returns:
+            True if line closes fence, False otherwise.
+
+        Examples:
+            >>> parser._is_fence_closing("```", '`', 3)
+            True
+            >>> parser._is_fence_closing("````", '`', 3)
+            True
+            >>> parser._is_fence_closing("```", '`', 4)
+            False
+            >>> parser._is_fence_closing("~~~", '`', 3)
+            False
+        """
+        # Closing fence must:
+        # 1. Start with same fence character
+        # 2. Have equal or greater length
+        # 3. Contain only fence characters and whitespace
+        pattern = rf"^(\s*)({re.escape(fence_char)}{{{fence_length},}})\s*$"
+        return bool(re.match(pattern, line))
+
     def _extract_code_blocks(self, md_text: str) -> List[FencedBlock]:
         """
-        Extract fenced code blocks.
+        Extract fenced code blocks with nested fencing support.
 
         Handles:
         - Standard ``` fences
-        - Language specifiers (```python)
-        - Multiple backticks (````, `````)
+        - Quadruple ````, quintuple ````` fences
+        - Tilde fencing (~~~, ~~~~, ~~~~~)
+        - Mixed fence types (backticks containing tildes and vice versa)
+        - Unclosed fences (extend to end of document)
+        - Indented fences
+
+        Returns:
+            List of FencedBlock objects with complete metadata.
         """
         blocks = []
         lines = md_text.split("\n")
@@ -125,34 +192,40 @@ class Parser:
         while i < len(lines):
             line = lines[i]
 
-            # Check for fence start
-            fence_match = re.match(r"^(`{3,})(\w*)$", line)
-            if fence_match:
-                fence = fence_match.group(1)
-                language = fence_match.group(2) or None
+            # Check for fence opening
+            fence_info = self._is_fence_opening(line)
+            if fence_info:
+                fence_char, fence_length, language = fence_info
                 start_line = i + 1  # 1-indexed
                 start_pos = sum(len(lines[j]) + 1 for j in range(i))
 
-                # Find matching fence end
+                # Collect fence content
                 content_lines = []
                 i += 1
+                is_closed = False
+
                 while i < len(lines):
-                    if lines[i].startswith(fence) and lines[i].strip() == fence:
+                    if self._is_fence_closing(lines[i], fence_char, fence_length):
+                        is_closed = True
                         break
                     content_lines.append(lines[i])
                     i += 1
 
-                end_line = min(i + 1, len(lines))  # 1-indexed, capped at file length
+                # Calculate end position
+                end_line = min(i + 1, len(lines))  # 1-indexed
                 end_pos = sum(len(lines[j]) + 1 for j in range(min(i + 1, len(lines))))
 
                 blocks.append(
                     FencedBlock(
-                        language=language,
+                        language=language if language else None,
                         content="\n".join(content_lines),
                         start_line=start_line,
                         end_line=end_line,
                         start_pos=start_pos,
                         end_pos=end_pos,
+                        fence_char=fence_char,
+                        fence_length=fence_length,
+                        is_closed=is_closed,
                     )
                 )
 
@@ -167,21 +240,33 @@ class Parser:
         Handles:
         - ATX headers (# through ######)
         - Ignores headers inside code blocks
+        - Supports nested fences and tilde fencing
         """
         headers = []
         lines = md_text.split("\n")
 
-        # Track code block state to skip headers inside code
-        in_code_block = False
-        fence_pattern = re.compile(r"^`{3,}")
+        # Track fence state with stack for nested fences
+        fence_stack: list[tuple[str, int]] = []  # (char, length) tuples
 
         for i, line in enumerate(lines):
-            # Toggle code block state
-            if fence_pattern.match(line):
-                in_code_block = not in_code_block
+            # Check for fence closing FIRST (if inside fence)
+            if fence_stack:
+                current_fence_char, current_fence_length = fence_stack[-1]
+                if self._is_fence_closing(
+                    line, current_fence_char, current_fence_length
+                ):
+                    fence_stack.pop()
+                    continue
+
+            # Check for fence opening
+            fence_info = self._is_fence_opening(line)
+            if fence_info:
+                fence_char, fence_length, _ = fence_info
+                fence_stack.append((fence_char, fence_length))
                 continue
 
-            if in_code_block:
+            # Skip if inside fence
+            if fence_stack:
                 continue
 
             # Check for header
@@ -209,25 +294,39 @@ class Parser:
         A table is identified by:
         - Row with | characters
         - Followed by separator row with |---|
+        - Ignores tables inside code blocks
+        - Supports nested fences and tilde fencing
         """
         tables = []
         lines = md_text.split("\n")
 
-        # Track code block state
-        in_code_block = False
-        fence_pattern = re.compile(r"^`{3,}")
+        # Track fence state with stack for nested fences
+        fence_stack: list[tuple[str, int]] = []  # (char, length) tuples
 
         i = 0
         while i < len(lines):
             line = lines[i]
 
-            # Toggle code block state
-            if fence_pattern.match(line):
-                in_code_block = not in_code_block
+            # Check for fence closing FIRST (if inside fence)
+            if fence_stack:
+                current_fence_char, current_fence_length = fence_stack[-1]
+                if self._is_fence_closing(
+                    line, current_fence_char, current_fence_length
+                ):
+                    fence_stack.pop()
+                    i += 1
+                    continue
+
+            # Check for fence opening
+            fence_info = self._is_fence_opening(line)
+            if fence_info:
+                fence_char, fence_length, _ = fence_info
+                fence_stack.append((fence_char, fence_length))
                 i += 1
                 continue
 
-            if in_code_block:
+            # Skip if inside fence
+            if fence_stack:
                 i += 1
                 continue
 
@@ -299,25 +398,39 @@ class Parser:
         - Checkbox lists (- [ ], - [x])
         - Nested lists
         - Continuation lines
+        - Ignores lists inside code blocks
+        - Supports nested fences and tilde fencing
         """
         blocks = []
         lines = md_text.split("\n")
 
-        # Track code block state to skip lists inside code
-        in_code_block = False
-        fence_pattern = re.compile(r"^`{3,}")
+        # Track fence state with stack for nested fences
+        fence_stack: list[tuple[str, int]] = []  # (char, length) tuples
 
         i = 0
         while i < len(lines):
             line = lines[i]
 
-            # Toggle code block state
-            if fence_pattern.match(line):
-                in_code_block = not in_code_block
+            # Check for fence closing FIRST (if inside fence)
+            if fence_stack:
+                current_fence_char, current_fence_length = fence_stack[-1]
+                if self._is_fence_closing(
+                    line, current_fence_char, current_fence_length
+                ):
+                    fence_stack.pop()
+                    i += 1
+                    continue
+
+            # Check for fence opening
+            fence_info = self._is_fence_opening(line)
+            if fence_info:
+                fence_char, fence_length, _ = fence_info
+                fence_stack.append((fence_char, fence_length))
                 i += 1
                 continue
 
-            if in_code_block:
+            # Skip if inside fence
+            if fence_stack:
                 i += 1
                 continue
 

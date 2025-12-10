@@ -391,6 +391,14 @@ class MarkdownChunker:
                 )
 
                 # Update metadata after merge
+                # Re-detect content_type only if merging atomic blocks
+                # (to handle code+table mixed content)
+                curr_type = current.metadata.get("content_type", "")
+                next_type = next_chunk.metadata.get("content_type", "")
+                if curr_type in ("code", "table") or next_type in ("code", "table"):
+                    merged_chunk.metadata["content_type"] = self._detect_content_type(
+                        merged_content
+                    )
                 # Preserve top-level header_path from current chunk
                 if (
                     "section_tags" in current.metadata
@@ -537,59 +545,92 @@ class MarkdownChunker:
 
         Returns True if merge was successful.
         """
-        # Never merge preamble with structural content
-        chunk_is_preamble = chunk.metadata.get("content_type") == "preamble"
-
         # Try merging with previous chunk (left preference per Requirement 4.4)
-        if result:
-            prev_chunk = result[-1]
-            prev_is_preamble = prev_chunk.metadata.get("content_type") == "preamble"
-
-            # Don't merge preamble with non-preamble
-            if chunk_is_preamble != prev_is_preamble:
-                pass  # Skip this merge option
-            else:
-                combined_size = prev_chunk.size + chunk.size
-
-                if combined_size <= self.config.max_chunk_size:
-                    # Check if same logical section (Requirement 4.3)
-                    if self._same_logical_section(prev_chunk, chunk):
-                        # Merge with previous
-                        merged_content = prev_chunk.content + "\n\n" + chunk.content
-                        merged_chunk = Chunk(
-                            content=merged_content,
-                            start_line=prev_chunk.start_line,
-                            end_line=chunk.end_line,
-                            metadata={**prev_chunk.metadata},
-                        )
-                        result[-1] = merged_chunk
-                        return True
+        if result and self._try_merge_with_previous(chunk, result):
+            return True
 
         # Try merging with next chunk
         if index + 1 < len(all_chunks):
-            next_chunk = all_chunks[index + 1]
-            next_is_preamble = next_chunk.metadata.get("content_type") == "preamble"
-
-            # Don't merge preamble with non-preamble
-            if chunk_is_preamble != next_is_preamble:
-                pass  # Skip this merge option
-            else:
-                combined_size = chunk.size + next_chunk.size
-
-                if combined_size <= self.config.max_chunk_size:
-                    # Check if same logical section
-                    if self._same_logical_section(chunk, next_chunk):
-                        # Merge with next - modify next chunk in place
-                        merged_content = chunk.content + "\n\n" + next_chunk.content
-                        all_chunks[index + 1] = Chunk(
-                            content=merged_content,
-                            start_line=chunk.start_line,
-                            end_line=next_chunk.end_line,
-                            metadata={**next_chunk.metadata},
-                        )
-                        return True
+            return self._try_merge_with_next(chunk, all_chunks, index)
 
         return False
+
+    def _can_merge_chunks(self, chunk1: Chunk, chunk2: Chunk) -> bool:
+        """Check if two chunks can be merged (preamble compatibility)."""
+        chunk1_is_preamble = chunk1.metadata.get("content_type") == "preamble"
+        chunk2_is_preamble = chunk2.metadata.get("content_type") == "preamble"
+        # Only merge if both are preamble or both are not preamble
+        return chunk1_is_preamble == chunk2_is_preamble
+
+    def _create_merged_chunk(
+        self, chunk1: Chunk, chunk2: Chunk, metadata_base: dict
+    ) -> Chunk:
+        """Create a merged chunk from two chunks."""
+        merged_content = chunk1.content + "\n\n" + chunk2.content
+        merged_chunk = Chunk(
+            content=merged_content,
+            start_line=chunk1.start_line,
+            end_line=chunk2.end_line,
+            metadata={**metadata_base},
+        )
+
+        # Re-detect content_type only if merging atomic blocks
+        type1 = chunk1.metadata.get("content_type", "")
+        type2 = chunk2.metadata.get("content_type", "")
+        if type1 in ("code", "table") or type2 in ("code", "table"):
+            merged_chunk.metadata["content_type"] = (
+                self._detect_content_type(merged_content)
+            )
+
+        return merged_chunk
+
+    def _try_merge_with_previous(self, chunk: Chunk, result: List[Chunk]) -> bool:
+        """Try to merge chunk with previous chunk in result."""
+        prev_chunk = result[-1]
+
+        # Check preamble compatibility
+        if not self._can_merge_chunks(prev_chunk, chunk):
+            return False
+
+        combined_size = prev_chunk.size + chunk.size
+        if combined_size > self.config.max_chunk_size:
+            return False
+
+        # Check if same logical section
+        if not self._same_logical_section(prev_chunk, chunk):
+            return False
+
+        # Merge with previous
+        merged_chunk = self._create_merged_chunk(
+            prev_chunk, chunk, prev_chunk.metadata
+        )
+        result[-1] = merged_chunk
+        return True
+
+    def _try_merge_with_next(
+        self, chunk: Chunk, all_chunks: List[Chunk], index: int
+    ) -> bool:
+        """Try to merge chunk with next chunk in all_chunks."""
+        next_chunk = all_chunks[index + 1]
+
+        # Check preamble compatibility
+        if not self._can_merge_chunks(chunk, next_chunk):
+            return False
+
+        combined_size = chunk.size + next_chunk.size
+        if combined_size > self.config.max_chunk_size:
+            return False
+
+        # Check if same logical section
+        if not self._same_logical_section(chunk, next_chunk):
+            return False
+
+        # Merge with next - modify next chunk in place
+        merged_chunk = self._create_merged_chunk(
+            chunk, next_chunk, next_chunk.metadata
+        )
+        all_chunks[index + 1] = merged_chunk
+        return True
 
     def _same_logical_section(self, chunk1: Chunk, chunk2: Chunk) -> bool:
         """

@@ -121,14 +121,14 @@ Final content.
         chunks = chunker.chunk(test_document)
 
         first_chunk = chunks[0]
-        
+
         # First chunk should be preamble
         assert first_chunk.metadata["content_type"] == "preamble"
-        
+
         # Preamble should contain the intro text
         assert "Preamble text" in first_chunk.content
         assert "introducing the document" in first_chunk.content
-        
+
         # First header should NOT be in preamble
         assert "# Main Title" not in first_chunk.content
 
@@ -148,7 +148,9 @@ Final content.
             next_content = first_chunk.metadata["next_content"]
 
             # Should not be empty
-            assert next_content and next_content.strip(), "next_content should not be empty"
+            assert (
+                next_content and next_content.strip()
+            ), "next_content should not be empty"
 
             # Should contain the first header
             assert (
