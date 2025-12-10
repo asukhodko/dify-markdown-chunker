@@ -84,6 +84,12 @@ class FencedBlock:
         fence_char: The fence character used ('`' for backtick, '~' for tilde)
         fence_length: Number of fence characters (3, 4, 5, etc.)
         is_closed: Whether the fence has a matching closing fence
+        context_role: Cached role classification for code-context binding
+            (optional, used by enhanced code-context binding feature)
+        has_explanation_before: Whether preceding explanation exists
+            (optional, used by enhanced code-context binding feature)
+        has_explanation_after: Whether following explanation exists
+            (optional, used by enhanced code-context binding feature)
     """
 
     language: Optional[str]
@@ -95,6 +101,10 @@ class FencedBlock:
     fence_char: str = "`"
     fence_length: int = 3
     is_closed: bool = True
+    # Optional fields for code-context binding (backward compatible)
+    context_role: Optional[str] = None
+    has_explanation_before: bool = False
+    has_explanation_after: bool = False
 
 
 @dataclass

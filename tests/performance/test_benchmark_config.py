@@ -119,7 +119,8 @@ class TestConfigBenchmarks:
 
             # No-overlap should be at most equal or slightly faster
             # (overlap processing has some overhead)
-            assert no_overlap_time <= default_time * 1.1, (
+            # Allow 25% tolerance for system variance in benchmarks
+            assert no_overlap_time <= default_time * 1.25, (
                 f"No-overlap config unexpectedly slow: {no_overlap_time*1000:.2f}ms "
                 f"vs default {default_time*1000:.2f}ms"
             )

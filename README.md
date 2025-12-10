@@ -55,6 +55,9 @@ This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** w
 | No overlap support | Smart overlap for better retrieval |
 | **Destroys list hierarchies** | **Smart list grouping with context binding** |
 | **Breaks nested code examples** | **Handles nested fencing (````, ``````, ~~~~)** |
+| **Code examples lose explanatory context** | **Enhanced code-context binding with pattern recognition** |
+| **Before/After comparisons split apart** | **Intelligent Before/After pairing** |
+| **Code and output separated** | **Automatic Code+Output binding** |
 
 ---
 
@@ -64,6 +67,7 @@ This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** w
 - **4 intelligent strategies** — automatic selection based on content analysis
 - **List-Aware Strategy** — preserves nested list hierarchies and context (unique competitive advantage)
 - **Nested Fencing Support** — correctly handles quadruple/quintuple backticks and tilde fencing for meta-documentation (unique capability)
+- **Enhanced Code-Context Binding** — intelligently binds code blocks to explanations, recognizes Before/After patterns, Code+Output pairs, and sequential examples (unique competitive advantage)
 - **Structure preservation** — headers, lists, tables, and code stay intact
 - **Adaptive overlap** — context window scales with chunk size (up to 35%)
 
@@ -73,7 +77,7 @@ This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** w
 - **Complexity scoring** — optimizes strategy selection
 
 ### 🛡️ Reliability
-- **652 tests** — comprehensive test coverage with property-based testing
+- **99+ tests** — comprehensive test coverage with property-based testing
 - **Property-Based Testing** — formal correctness guarantees with Hypothesis
 - **Automatic fallback** — graceful degradation on errors
 - **Performance benchmarks** — automated performance regression detection
@@ -229,6 +233,10 @@ Python 3.12 or higher is required...
 - `start_line` / `end_line` — source line numbers
 - `code_language` — programming language (for code blocks)
 - `previous_content` / `next_content` — overlap context from adjacent chunks
+- `code_role` — code block role (example, setup, output, before, after, error) *new*
+- `has_related_code` — whether chunk contains related code blocks *new*
+- `code_relationship` — relationship type (before_after, code_output, sequential) *new*
+- `explanation_bound` — whether explanation is bound to code *new*
 
 **When to disable metadata:**
 - Fine-tuning language models (need clean training data)
@@ -495,6 +503,89 @@ Our product includes:
 
 **Competitor Behavior:** Would split nested items, losing context and relationships.
 
+### Code-Context Binding: Competitive Advantage
+
+**Unique capability for code-heavy documentation** that intelligently binds code blocks to their explanations:
+
+**Pattern Recognition:**
+- **Before/After Comparisons** — keeps refactoring examples together
+- **Code + Output Pairs** — binds execution results to code
+- **Setup + Example** — groups installation with usage
+- **Sequential Steps** — maintains tutorial order
+
+**Enhanced Metadata:**
+Each code chunk includes:
+- `code_role` — Classification (example, setup, output, before, after, error)
+- `has_related_code` — Boolean flag for grouped blocks
+- `code_relationship` — Relationship type (before_after, code_output, sequential)
+- `explanation_bound` — Whether explanation context is available
+
+**Example: Before/After Refactoring**
+```markdown
+# Code Improvement
+
+## Refactoring
+
+Before:
+
+```python
+def old_way():
+    x = 1
+    y = 2
+    return x + y
+```
+
+After:
+
+```python
+def new_way():
+    return 1 + 2
+```
+```
+
+**Result:** Single chunk containing both code blocks with metadata:
+```json
+{
+  "code_relationship": "before_after",
+  "code_roles": ["before", "after"],
+  "has_related_code": true,
+  "related_code_count": 2
+}
+```
+
+**Example: Code + Output**
+```markdown
+Run this command:
+
+```bash
+echo "Hello, World!"
+```
+
+Output:
+
+```
+Hello, World!
+```
+```
+
+**Result:** Grouped chunk with code-output relationship preserved.
+
+**Configuration:**
+```python
+config = ChunkConfig(
+    enable_code_context_binding=True,    # Enable feature
+    bind_output_blocks=True,              # Auto-detect output
+    preserve_before_after_pairs=True,     # Keep comparisons together
+    max_context_chars_before=500,         # Explanation search limit
+)
+```
+
+**Perfect for:**
+- API documentation with examples
+- Tutorial-style technical writing
+- Code migration guides
+- Troubleshooting documentation
+
 ---
 
 ## ⚙️ Configuration
@@ -522,6 +613,14 @@ config = ChunkConfig(
     structure_threshold=3,        # Min headers for StructuralStrategy
     list_ratio_threshold=0.40,    # List ratio for ListAwareStrategy
     list_count_threshold=5,       # Min list blocks for ListAwareStrategy
+    
+    # Code-Context Binding (NEW)
+    enable_code_context_binding=True,   # Enable enhanced code-context binding
+    max_context_chars_before=500,       # Max chars for backward explanation search
+    max_context_chars_after=300,        # Max chars for forward explanation search
+    related_block_max_gap=5,            # Max line gap for related block detection
+    bind_output_blocks=True,            # Auto-bind output blocks to code
+    preserve_before_after_pairs=True,   # Keep Before/After pairs together
     
     # Override
     strategy_override=None,   # Force specific strategy (code_aware/list_aware/structural/fallback)

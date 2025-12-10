@@ -37,6 +37,18 @@ class ChunkConfig:
         list_count_threshold: Minimum list block count for ListAwareStrategy
             (default: 5)
         strategy_override: Force specific strategy (default: None)
+        enable_code_context_binding: Enable enhanced code-context binding
+            (default: True)
+        max_context_chars_before: Maximum characters to search backward for
+            explanation in code-context binding (default: 500)
+        max_context_chars_after: Maximum characters to search forward for
+            explanation in code-context binding (default: 300)
+        related_block_max_gap: Maximum line gap to consider blocks related
+            in code-context binding (default: 5)
+        bind_output_blocks: Automatically bind output blocks to code
+            in code-context binding (default: True)
+        preserve_before_after_pairs: Keep Before/After examples in single chunk
+            in code-context binding (default: True)
     """
 
     # Size parameters
@@ -57,11 +69,20 @@ class ChunkConfig:
     # Override
     strategy_override: Optional[str] = None
 
+    # Code-context binding parameters
+    enable_code_context_binding: bool = True
+    max_context_chars_before: int = 500
+    max_context_chars_after: int = 300
+    related_block_max_gap: int = 5
+    bind_output_blocks: bool = True
+    preserve_before_after_pairs: bool = True
+
     def __post_init__(self):
         """Validate configuration."""
         self._validate_size_params()
         self._validate_threshold_params()
         self._validate_strategy_override()
+        self._validate_code_context_params()
 
     def _validate_size_params(self):
         """Validate size-related parameters."""
@@ -122,6 +143,26 @@ class ChunkConfig:
                     f"strategy_override must be one of "
                     f"{valid_strategies}, got {self.strategy_override}"
                 )
+
+    def _validate_code_context_params(self):
+        """Validate code-context binding parameters."""
+        if self.max_context_chars_before < 0:
+            raise ValueError(
+                f"max_context_chars_before must be non-negative, "
+                f"got {self.max_context_chars_before}"
+            )
+
+        if self.max_context_chars_after < 0:
+            raise ValueError(
+                f"max_context_chars_after must be non-negative, "
+                f"got {self.max_context_chars_after}"
+            )
+
+        if self.related_block_max_gap < 1:
+            raise ValueError(
+                f"related_block_max_gap must be >= 1, "
+                f"got {self.related_block_max_gap}"
+            )
 
     @property
     def enable_overlap(self) -> bool:
@@ -247,6 +288,12 @@ class ChunkConfig:
             "list_ratio_threshold": self.list_ratio_threshold,
             "list_count_threshold": self.list_count_threshold,
             "strategy_override": self.strategy_override,
+            "enable_code_context_binding": self.enable_code_context_binding,
+            "max_context_chars_before": self.max_context_chars_before,
+            "max_context_chars_after": self.max_context_chars_after,
+            "related_block_max_gap": self.related_block_max_gap,
+            "bind_output_blocks": self.bind_output_blocks,
+            "preserve_before_after_pairs": self.preserve_before_after_pairs,
             "enable_overlap": self.enable_overlap,  # computed property
         }
 
@@ -285,6 +332,12 @@ class ChunkConfig:
             "list_ratio_threshold",
             "list_count_threshold",
             "strategy_override",
+            "enable_code_context_binding",
+            "max_context_chars_before",
+            "max_context_chars_after",
+            "related_block_max_gap",
+            "bind_output_blocks",
+            "preserve_before_after_pairs",
         }
         config_data = {k: v for k, v in config_data.items() if k in valid_params}
 

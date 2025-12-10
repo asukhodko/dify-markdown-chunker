@@ -578,8 +578,8 @@ class MarkdownChunker:
         type1 = chunk1.metadata.get("content_type", "")
         type2 = chunk2.metadata.get("content_type", "")
         if type1 in ("code", "table") or type2 in ("code", "table"):
-            merged_chunk.metadata["content_type"] = (
-                self._detect_content_type(merged_content)
+            merged_chunk.metadata["content_type"] = self._detect_content_type(
+                merged_content
             )
 
         return merged_chunk
@@ -601,9 +601,7 @@ class MarkdownChunker:
             return False
 
         # Merge with previous
-        merged_chunk = self._create_merged_chunk(
-            prev_chunk, chunk, prev_chunk.metadata
-        )
+        merged_chunk = self._create_merged_chunk(prev_chunk, chunk, prev_chunk.metadata)
         result[-1] = merged_chunk
         return True
 
@@ -626,9 +624,7 @@ class MarkdownChunker:
             return False
 
         # Merge with next - modify next chunk in place
-        merged_chunk = self._create_merged_chunk(
-            chunk, next_chunk, next_chunk.metadata
-        )
+        merged_chunk = self._create_merged_chunk(chunk, next_chunk, next_chunk.metadata)
         all_chunks[index + 1] = merged_chunk
         return True
 

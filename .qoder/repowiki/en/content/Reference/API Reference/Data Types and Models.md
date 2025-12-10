@@ -2,16 +2,9 @@
 
 <cite>
 **Referenced Files in This Document**
-- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py)
 - [markdown_chunker_v2/types.py](file://markdown_chunker_v2/types.py)
-- [markdown_chunker_v2/config.py](file://markdown_chunker_v2/config.py)
-- [markdown_chunker_legacy/chunker/types.py](file://markdown_chunker_legacy/chunker/types.py)
-- [markdown_chunker_legacy/parser/types.py](file://markdown_chunker_legacy/parser/types.py)
-- [tests/chunker/test_types.py](file://tests/chunker/test_types.py)
-- [tests/parser/test_types.py](file://tests/parser/test_types.py)
-- [examples/basic_usage.py](file://examples/basic_usage.py)
-- [examples/rag_integration.py](file://examples/rag_integration.py)
-- [docs/MIGRATION.md](file://docs/MIGRATION.md)
+- [docs/api/types.md](file://docs/api/types.md)
+- [tests/corpus/nested_fencing/mixed_fence_types.md](file://tests/corpus/nested_fencing/mixed_fence_types.md)
 </cite>
 
 ## Table of Contents
@@ -403,7 +396,7 @@ The library uses a comprehensive metadata schema to track information about chun
 
 #### Code Blocks
 - **`language`**: Programming language identifier
-- **`fence_type`**: Fence delimiter type (`"```"` or `"~~~"`)
+- **`fence_char`**: Fence delimiter type (`"` or `"~"`)
 - **`fence_length`**: Length of fence delimiters
 - **`nesting_level`**: Code block nesting level
 - **`is_closed`**: Whether code block is properly closed

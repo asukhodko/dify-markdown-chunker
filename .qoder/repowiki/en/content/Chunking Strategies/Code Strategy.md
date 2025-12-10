@@ -2,15 +2,25 @@
 
 <cite>
 **Referenced Files in This Document**
-- [code_strategy.py](file://markdown_chunker_legacy/chunker/strategies/code_strategy.py)
-- [test_code_strategy.py](file://tests/chunker/test_strategies/test_code_strategy.py)
-- [test_code_strategy_properties.py](file://tests/chunker/test_code_strategy_properties.py)
-- [types.py](file://markdown_chunker_legacy/chunker/types.py)
-- [quickstart.md](file://tests/fixtures/corpus/code_heavy/quickstart.md)
-- [usage.md](file://tests/fixtures/corpus/code_heavy/usage.md)
-- [strategies.md](file://docs/architecture/strategies.md)
-- [algorithms-ru.md](file://docs/reference/algorithms-ru.md)
+- [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py)
+- [test_nested_fencing.py](file://tests/parser/test_nested_fencing.py)
+- [test_nested_fencing_integration.py](file://tests/integration/test_nested_fencing_integration.py)
+- [meta_documentation.md](file://tests/corpus/nested_fencing/meta_documentation.md)
+- [nested_fencing_011.md](file://tests/corpus/nested_fencing/nested_fencing_011.md)
+- [nested_fencing_013.md](file://tests/corpus/nested_fencing/nested_fencing_013.md)
+- [nested_fencing_minimal.md](file://tests/fixtures/nested_fencing_minimal.md)
+- [algorithms.md](file://docs/reference/algorithms.md)
+- [parser.py](file://markdown_chunker_v2/parser.py)
+- [types.py](file://markdown_chunker_v2/types.py)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Updated documentation to reflect enhanced nested code block handling capabilities
+- Added support for quadruple/quintuple backticks and tilde fencing for meta-documentation
+- Updated code block preservation section with new nesting capabilities
+- Enhanced test suite examples with new nested fencing scenarios
+- Added configuration details for nested fencing support
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -60,12 +70,12 @@ end
 ```
 
 **Diagram sources**
-- [code_strategy.py](file://markdown_chunker_legacy/chunker/strategies/code_strategy.py#L187-L218)
+- [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py#L43-L120)
 
 The algorithm begins by analyzing the document's content composition to determine if the Code Strategy is appropriate. If activated, it extracts all code blocks from the Stage 1 results and segments the content around these blocks into alternating text-code-text sequences.
 
 **Section sources**
-- [code_strategy.py](file://markdown_chunker_legacy/chunker/strategies/code_strategy.py#L187-L218)
+- [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py#L43-L120)
 
 ## Activation Criteria
 
@@ -73,7 +83,7 @@ The Code Strategy activates based on two primary criteria defined by configurabl
 
 ### CODE_RATIO_THRESHOLD
 
-The code ratio threshold determines the minimum percentage of content that must be code for the strategy to activate. By default, this threshold is set to 0.3 (30%), but can be customized through the `code_ratio_threshold` parameter in `ChunkConfig`.
+The code ratio threshold determines the minimum percentage of content that must be code for the strategy to activate. By default, this threshold is set to 0.3 (30%), but can be customized through the `code_threshold` parameter in `ChunkConfig`.
 
 ### MIN_CODE_BLOCKS
 
@@ -100,8 +110,7 @@ E --> F
 ```
 
 **Diagram sources**
-- [code_strategy.py](file://markdown_chunker_legacy/chunker/strategies/code_strategy.py#L109-L134)
-- [code_strategy.py](file://markdown_chunker_legacy/chunker/strategies/code_strategy.py#L136-L185)
+- [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py#L33-L41)
 
 The strategy calculates a quality score ranging from 0.0 to 1.0, with higher scores indicating better fit for code-heavy content. The scoring algorithm considers:
 
@@ -110,7 +119,7 @@ The strategy calculates a quality score ranging from 0.0 to 1.0, with higher sco
 - **Multiple Languages Bonus**: +0.1 for documents containing multiple programming languages
 
 **Section sources**
-- [code_strategy.py](file://markdown_chunker_legacy/chunker/strategies/code_strategy.py#L136-L185)
+- [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py#L33-L41)
 
 ## Priority-Based Selection
 
@@ -133,10 +142,10 @@ G --> M["Simple Text<br/>Fallback"]
 ```
 
 **Diagram sources**
-- [strategies.md](file://docs/architecture/strategies.md#L1-L71)
+- [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py#L29-L31)
 
 **Section sources**
-- [code_strategy.py](file://markdown_chunker_legacy/chunker/strategies/code_strategy.py#L104-L107)
+- [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py#L29-L31)
 
 ## Code Block Preservation
 
@@ -148,11 +157,11 @@ Code blocks are never split across chunks. Each code block is treated as an indi
 
 ### Fence Preservation
 
-The strategy ensures that code block fences (` ``` `) are preserved in their entirety. This includes both opening and closing fences, maintaining the visual and structural integrity of the code blocks.
+The strategy ensures that code block fences are preserved in their entirety. This includes both opening and closing fences, maintaining the visual and structural integrity of the code blocks.
 
 ### Nested Code Block Handling
 
-The strategy handles nested code blocks appropriately, ensuring that inner code blocks are properly segmented and that parent-child relationships are maintained. This prevents phantom blocks and ensures accurate representation of nested structures.
+The strategy now supports enhanced nested code block handling, including quadruple/quintuple backticks and tilde fencing for meta-documentation. This allows for proper processing of documentation that demonstrates code block syntax itself.
 
 ```mermaid
 sequenceDiagram
@@ -171,10 +180,12 @@ Processor->>Output : Generate chunks
 ```
 
 **Diagram sources**
-- [code_strategy.py](file://markdown_chunker_legacy/chunker/strategies/code_strategy.py#L234-L324)
+- [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py#L58-L118)
 
 **Section sources**
-- [code_strategy.py](file://markdown_chunker_legacy/chunker/strategies/code_strategy.py#L234-L324)
+- [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py#L58-L118)
+- [test_nested_fencing.py](file://tests/parser/test_nested_fencing.py#L68-L104)
+- [test_nested_fencing_integration.py](file://tests/integration/test_nested_fencing_integration.py#L131-L157)
 
 ## Language Detection and Metadata Extraction
 
@@ -201,12 +212,13 @@ Each code chunk receives comprehensive metadata including:
 - **Language identification**: Automatically detected or inferred from code patterns
 - **Function names**: Extracted using language-specific regular expressions
 - **Class names**: Identified for object-oriented languages
-- **Fencing information**: Preservation of code block delimiters
+- **Fencing information**: Preservation of code block delimiters including fence character and length
 - **Line numbering**: Accurate start and end line positions
+- **Nesting level**: Detection of nested code block depth
 
 **Section sources**
-- [code_strategy.py](file://markdown_chunker_legacy/chunker/strategies/code_strategy.py#L56-L97)
-- [code_strategy.py](file://markdown_chunker_legacy/chunker/strategies/code_strategy.py#L532-L589)
+- [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py#L58-L118)
+- [types.py](file://markdown_chunker_v2/types.py#L1-L100)
 
 ## Text Segmentation Strategy
 
@@ -238,10 +250,10 @@ end
 ```
 
 **Diagram sources**
-- [code_strategy.py](file://markdown_chunker_legacy/chunker/strategies/code_strategy.py#L462-L529)
+- [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py#L75-L77)
 
 **Section sources**
-- [code_strategy.py](file://markdown_chunker_legacy/chunker/strategies/code_strategy.py#L462-L529)
+- [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py#L75-L77)
 
 ## Oversize Handling
 
@@ -256,7 +268,7 @@ When a code block exceeds the maximum chunk size, the strategy marks it as overs
 Oversize chunks receive special metadata indicating their exceptional nature:
 
 - **allow_oversize**: Boolean flag marking the chunk as oversized
-- **oversize_reason**: Explanation ("code_block_atomicity")
+- **oversize_reason**: Explanation ("code_block_integrity")
 - **size validation**: Verification that the chunk exceeds the configured limit
 
 ### Strategy Flexibility
@@ -264,7 +276,7 @@ Oversize chunks receive special metadata indicating their exceptional nature:
 The oversize mechanism allows the strategy to handle documents with varying code block sizes while maintaining the principle of code block atomicity.
 
 **Section sources**
-- [code_strategy.py](file://markdown_chunker_legacy/chunker/strategies/code_strategy.py#L428-L440)
+- [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py#L94-L100)
 
 ## Configuration Options
 
@@ -297,8 +309,7 @@ Users can customize individual parameters:
 | `max_chunk_size` | 4096 | Maximum size for standard chunks |
 | `min_chunk_size` | 512 | Minimum size for chunks |
 | `target_chunk_size` | 2048 | Target chunk size |
-| `code_ratio_threshold` | 0.3 | Minimum code ratio for activation |
-| `min_code_blocks` | 1 | Minimum code blocks for activation |
+| `code_threshold` | 0.3 | Minimum code ratio for activation |
 | `allow_oversize` | True | Enable oversized code block handling |
 | `force_strategy` | None | Force specific strategy usage |
 
@@ -307,8 +318,8 @@ Users can customize individual parameters:
 The Code Strategy honors global configuration while maintaining its own specialized parameters for optimal code-heavy document processing.
 
 **Section sources**
-- [types.py](file://markdown_chunker_legacy/chunker/types.py#L1-L200)
-- [strategies.md](file://docs/architecture/strategies.md#L52-L57)
+- [types.py](file://markdown_chunker_v2/types.py#L1-L200)
+- [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py#L33-L41)
 
 ## Performance Considerations
 
@@ -337,7 +348,7 @@ For documents exceeding typical memory limits, the strategy supports:
 - **Progressive analysis**: Content is analyzed incrementally to maintain responsiveness
 
 **Section sources**
-- [algorithms-ru.md](file://docs/reference/algorithms-ru.md#L508-L3751)
+- [test_nested_fencing_integration.py](file://tests/integration/test_nested_fencing_integration.py#L408-L438)
 
 ## Common Issues and Solutions
 
@@ -351,7 +362,7 @@ For documents exceeding typical memory limits, the strategy supports:
 
 **Problem**: Documents with substantial code content aren't triggering the Code Strategy.
 
-**Solution**: Adjust the `code_ratio_threshold` parameter. For documents with moderate code content, consider lowering the threshold or increasing the `min_code_blocks` requirement.
+**Solution**: Adjust the `code_threshold` parameter. For documents with moderate code content, consider lowering the threshold or increasing the `min_code_blocks` requirement.
 
 ### Issue: Oversized Code Blocks
 
@@ -363,10 +374,11 @@ For documents exceeding typical memory limits, the strategy supports:
 
 **Problem**: Nested code blocks are not being handled correctly, leading to phantom blocks or incorrect segmentation.
 
-**Solution**: Ensure that the parser correctly identifies nested structures. The strategy relies on accurate parsing from Stage 1 to handle nested code blocks properly.
+**Solution**: Ensure that the parser correctly identifies nested structures. The strategy relies on accurate parsing from Stage 1 to handle nested code blocks properly. The enhanced parser now supports quadruple/quintuple backticks and tilde fencing for meta-documentation scenarios.
 
 **Section sources**
-- [test_code_strategy.py](file://tests/chunker/test_strategies/test_code_strategy.py#L548-L549)
+- [test_nested_fencing.py](file://tests/parser/test_nested_fencing.py#L343-L356)
+- [test_nested_fencing_integration.py](file://tests/integration/test_nested_fencing_integration.py#L360-L373)
 
 ## Test Suite Examples
 
@@ -388,13 +400,27 @@ Tests verify that large code blocks are properly identified and processed as ove
 
 The strategy correctly handles documents containing multiple programming languages, extracting appropriate metadata for each language.
 
+### Nested Fencing Support
+
+The updated test suite includes comprehensive examples of nested fencing support:
+
+- **Quadruple backticks**: Documents using ```` to demonstrate triple backtick code blocks
+- **Quintuple backticks**: Documents using ````` to demonstrate quadruple backtick examples
+- **Tilde fencing**: Documents using ~~~~ to demonstrate code block syntax
+- **Mixed fence types**: Documents combining backtick and tilde fences
+
+These examples are validated in the test corpus files:
+- [meta_documentation.md](file://tests/corpus/nested_fencing/meta_documentation.md)
+- [nested_fencing_011.md](file://tests/corpus/nested_fencing/nested_fencing_011.md)
+- [nested_fencing_013.md](file://tests/corpus/nested_fencing/nested_fencing_013.md)
+
 ### Property-Based Testing
 
 Extensive property-based tests ensure that code blocks are never split across chunks, validating the strategy's core guarantee.
 
 **Section sources**
-- [test_code_strategy.py](file://tests/chunker/test_strategies/test_code_strategy.py#L224-L596)
-- [test_code_strategy_properties.py](file://tests/chunker/test_code_strategy_properties.py#L1-L382)
+- [test_nested_fencing.py](file://tests/parser/test_nested_fencing.py#L68-L643)
+- [test_nested_fencing_integration.py](file://tests/integration/test_nested_fencing_integration.py#L131-L439)
 
 ## Integration Patterns
 
@@ -415,5 +441,5 @@ Predefined configuration profiles optimize the strategy for specific use cases, 
 Applications can force the Code Strategy for specific documents or use cases where code block preservation is paramount.
 
 **Section sources**
-- [quickstart.md](file://tests/fixtures/corpus/code_heavy/quickstart.md#L1-L270)
-- [usage.md](file://tests/fixtures/corpus/code_heavy/usage.md#L1-L236)
+- [meta_documentation.md](file://tests/corpus/nested_fencing/meta_documentation.md#L1-L200)
+- [nested_fencing_011.md](file://tests/corpus/nested_fencing/nested_fencing_011.md#L1-L100)
