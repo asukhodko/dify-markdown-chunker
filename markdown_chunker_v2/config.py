@@ -55,6 +55,8 @@ class ChunkConfig:
             complexity (default: False)
         adaptive_config: Configuration for adaptive sizing behavior
             (auto-created with defaults if use_adaptive_sizing=True)
+        include_document_summary: Create root document-level chunk in
+            hierarchical mode (default: True)
     """
 
     # Size parameters
@@ -86,6 +88,9 @@ class ChunkConfig:
     # Adaptive sizing parameters
     use_adaptive_sizing: bool = False
     adaptive_config: Optional[AdaptiveSizeConfig] = None
+
+    # Hierarchical chunking parameters
+    include_document_summary: bool = True
 
     def __post_init__(self):
         """Validate configuration."""

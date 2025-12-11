@@ -11,7 +11,17 @@
 - [output-format.md](file://docs/reference/output-format.md)
 - [test_metadata_unit.py](file://tests/test_metadata_unit.py)
 - [test_metadata_properties.py](file://tests/test_metadata_properties.py)
+- [adaptive_sizing.py](file://markdown_chunker_v2/adaptive_sizing.py)
+- [config.md](file://docs/api/config.md)
+- [adaptive-sizing-migration.md](file://docs/guides/adaptive-sizing-migration.md)
 </cite>
+
+## Update Summary
+**Changes Made**   
+- Added new section for Adaptive Sizing Fields to document three new metadata fields
+- Updated Table of Contents to include new section
+- Added references to adaptive_sizing.py, config.md, and adaptive-sizing-migration.md in referenced files
+- Enhanced documentation with complexity calculation formula, scale factor formula, and practical examples
 
 ## Table of Contents
 1. [Overview](#overview)
@@ -22,7 +32,8 @@
 6. [Oversize Chunk Handling](#oversize-chunk-handling)
 7. [Overlap Context Model](#overlap-context-model)
 8. [Configuration Impact](#configuration-impact)
-9. [Validation and Testing](#validation-and-testing)
+9. [Adaptive Sizing Fields](#adaptive-sizing-fields)
+10. [Validation and Testing](#validation-and-testing)
 
 ## Overview
 
@@ -266,6 +277,95 @@ The system also provides configuration profiles for common use cases:
 - [config.py](file://markdown_chunker_v2/config.py#L21-L45)
 - [chunk_metadata.md](file://docs/api/chunk_metadata.md#configuration-impact)
 - [chunker.py](file://markdown_chunker_v2/chunker.py#L32-L42)
+
+## Adaptive Sizing Fields
+
+When adaptive chunk sizing is enabled (`use_adaptive_sizing=True`), additional metadata fields provide information about content complexity and size adjustments.
+
+When adaptive sizing is enabled:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `adaptive_size` | `int` | Calculated optimal chunk size based on content complexity |
+| `content_complexity` | `float` | Complexity score from 0.0 (simple) to 1.0 (complex) |
+| `size_scale_factor` | `float` | Scaling factor applied to base_size (e.g., 0.5, 1.0, 1.5) |
+
+**Complexity Calculation:**
+
+Complexity is a weighted sum of content factors:
+```
+complexity = (code_ratio × code_weight) + 
+             (table_ratio × table_weight) + 
+             (list_ratio × list_weight) + 
+             (sentence_length_norm × sentence_length_weight)
+```
+
+**Scale Factor Calculation:**
+```
+scale_factor = min_scale + (complexity × (max_scale - min_scale))
+adaptive_size = base_size × scale_factor
+```
+
+**Example:**
+```python
+from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
+from markdown_chunker_v2.config import AdaptiveSizeConfig
+
+config = ChunkConfig(
+    use_adaptive_sizing=True,
+    adaptive_config=AdaptiveSizeConfig(
+        base_size=1500,
+        min_scale=0.5,
+        max_scale=1.5
+    )
+)
+
+chunker = MarkdownChunker(config)
+chunks = chunker.chunk(document)
+
+# Access adaptive sizing metadata
+for chunk in chunks:
+    if 'adaptive_size' in chunk.metadata:
+        print(f"Complexity: {chunk.metadata['content_complexity']:.2f}")
+        print(f"Scale Factor: {chunk.metadata['size_scale_factor']:.2f}")
+        print(f"Adaptive Size: {chunk.metadata['adaptive_size']} chars")
+```
+
+**Typical Values:**
+
+| Content Type | Complexity | Scale Factor | Adaptive Size (base=1500) |
+|--------------|------------|--------------|---------------------------|
+| Simple text, short sentences | 0.0-0.2 | 0.5-0.7 | 750-1050 chars |
+| Mixed content (text + lists) | 0.4-0.6 | 0.9-1.1 | 1350-1650 chars |
+| Code-heavy documentation | 0.8-1.0 | 1.4-1.5 | 2100-2250 chars |
+| Dense tables and data | 0.6-0.8 | 1.1-1.4 | 1650-2100 chars |
+
+**Use Cases:**
+
+1. **Quality Monitoring**: Track complexity distribution across your corpus
+   ```python
+   complexities = [c.metadata.get('content_complexity', 0) for c in chunks]
+   avg_complexity = sum(complexities) / len(complexities)
+   ```
+
+2. **Filtering**: Prioritize complex chunks for review
+   ```python
+   complex_chunks = [
+       c for c in chunks 
+       if c.metadata.get('content_complexity', 0) > 0.7
+   ]
+   ```
+
+3. **Analytics**: Understand chunk size distribution
+   ```python
+   sizes = [c.metadata.get('adaptive_size', 0) for c in chunks]
+   print(f"Avg adaptive size: {sum(sizes) / len(sizes):.0f} chars")
+   ```
+
+**Section sources**
+- [adaptive_sizing.py](file://markdown_chunker_v2/adaptive_sizing.py)
+- [config.md](file://docs/api/config.md#class-adaptivesizeconfig)
+- [adaptive-sizing-migration.md](file://docs/guides/adaptive-sizing-migration.md)
 
 ## Validation and Testing
 

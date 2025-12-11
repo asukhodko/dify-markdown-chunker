@@ -8,7 +8,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Dify Plugin](https://img.shields.io/badge/dify-1.9.0+-green.svg)](https://dify.ai/)
-[![Tests](https://img.shields.io/badge/tests-652-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-812-brightgreen.svg)](#testing)
 
 </div>
 
@@ -70,6 +70,11 @@ This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** w
   - Simple text → smaller chunks (down to 0.5x base size)
   - Configurable complexity weights and scaling bounds
   - Optional feature (disabled by default for backward compatibility)
+- **Hierarchical Chunking** — parent-child relationships between chunks (new)
+  - Multi-level retrieval support (overview vs. detail)
+  - Programmatic navigation (siblings, ancestors, children)
+  - O(1) chunk lookup performance
+  - Backward compatible with flat chunking
 - **List-Aware Strategy** — preserves nested list hierarchies and context (unique competitive advantage)
 - **Nested Fencing Support** — correctly handles quadruple/quintuple backticks and tilde fencing for meta-documentation (unique capability)
 - **Enhanced Code-Context Binding** — intelligently binds code blocks to explanations, recognizes Before/After patterns, Code+Output pairs, and sequential examples (unique competitive advantage)
@@ -82,7 +87,7 @@ This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** w
 - **Complexity scoring** — optimizes strategy selection
 
 ### 🛡️ Reliability
-- **99+ tests** — comprehensive test coverage with property-based testing
+- **812 tests** — comprehensive test coverage with property-based testing
 - **Property-Based Testing** — formal correctness guarantees with Hypothesis
 - **Automatic fallback** — graceful degradation on errors
 - **Performance benchmarks** — automated performance regression detection
@@ -313,6 +318,40 @@ chunks = chunker.chunk("# Hello\n\nWorld")
 result = chunker.chunk("# Hello\n\nWorld", include_analysis=True)
 print(f"Strategy: {result.strategy_used}")
 print(f"Chunks: {len(result.chunks)}")
+```
+
+### Hierarchical Chunking
+
+```python
+from markdown_chunker import MarkdownChunker
+
+# Create hierarchical structure with parent-child relationships
+chunker = MarkdownChunker()
+result = chunker.chunk_hierarchical(markdown_text)
+
+# Access document root
+root = result.get_chunk(result.root_id)
+print(f"Document: {root.content[:100]}...")
+
+# Navigate hierarchy
+sections = result.get_children(result.root_id)
+for section in sections:
+    print(f"Section: {section.metadata['header_path']}")
+    
+    # Get subsections
+    subsections = result.get_children(section.metadata['chunk_id'])
+    for subsection in subsections:
+        print(f"  - {subsection.metadata['header_path']}")
+
+# Multi-level retrieval: Find chunk and get context
+matched_chunk = sections[0]  # Example: search result
+parent_context = result.get_parent(matched_chunk.metadata['chunk_id'])
+breadcrumb = [a.metadata['header_path'] for a in result.get_ancestors(matched_chunk.metadata['chunk_id'])]
+print(f"Breadcrumb: {' > '.join(reversed(breadcrumb))}")
+
+# Backward-compatible flat access
+leaf_chunks = result.get_flat_chunks()
+print(f"Total leaf chunks: {len(leaf_chunks)}")
 ```
 
 ### Strategy Selection
@@ -745,6 +784,11 @@ class MarkdownChunker:
         include_metadata: bool = True
     ) -> Union[List[Chunk], ChunkingResult, dict]
     
+    def chunk_hierarchical(
+        self,
+        md_text: str
+    ) -> HierarchicalChunkingResult
+    
     def get_available_strategies(self) -> List[str]
     def add_strategy(self, strategy: BaseStrategy) -> None
     def remove_strategy(self, strategy_name: str) -> None
@@ -787,6 +831,41 @@ class ChunkingResult:
     content_type: str
     complexity_score: float
 ```
+
+### HierarchicalChunkingResult
+
+```python
+@dataclass
+class HierarchicalChunkingResult:
+    chunks: List[Chunk]         # All chunks including root document chunk
+    root_id: str                # ID of document-level chunk
+    strategy_used: str          # Name of chunking strategy applied
+    
+    # Navigation methods (O(1) performance)
+    def get_chunk(chunk_id: str) -> Optional[Chunk]
+    def get_children(chunk_id: str) -> List[Chunk]
+    def get_parent(chunk_id: str) -> Optional[Chunk]
+    def get_ancestors(chunk_id: str) -> List[Chunk]  # Parent to root
+    def get_siblings(chunk_id: str) -> List[Chunk]   # Includes self
+    def get_flat_chunks() -> List[Chunk]             # Leaf chunks only
+    def get_by_level(level: int) -> List[Chunk]      # 0=doc, 1=section, 2=subsection, 3=paragraph
+    def to_tree_dict() -> Dict                       # Serializable tree structure
+```
+
+**Hierarchy Metadata Fields:**
+
+Each chunk in hierarchical mode includes these additional metadata fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `chunk_id` | str | Unique 8-char hash identifier |
+| `parent_id` | str | Parent chunk ID (None for root) |
+| `children_ids` | List[str] | Child chunk IDs |
+| `prev_sibling_id` | str | Previous sibling ID |
+| `next_sibling_id` | str | Next sibling ID |
+| `hierarchy_level` | int | 0=document, 1=section, 2=subsection, 3=paragraph |
+| `is_leaf` | bool | Has no children |
+| `is_root` | bool | Document-level chunk |
 
 ---
 
@@ -851,7 +930,7 @@ dify-markdown-chunker/
 │       └── fallback.py        # Universal fallback
 ├── provider/                  # Dify plugin provider
 ├── tools/                     # Dify plugin tools
-├── tests/                     # Test suite (498 tests)
+├── tests/                     # Test suite (812 tests)
 │   ├── performance/           # Performance benchmarks
 │   ├── integration/           # Integration tests
 │   └── ...                    # Unit & property tests
@@ -902,7 +981,7 @@ For detailed benchmarks and methodology, see [Performance Guide](docs/guides/per
 ### Testing
 
 ```bash
-# Run all tests (498)
+# Run all tests (812)
 make test
 
 # Verbose output

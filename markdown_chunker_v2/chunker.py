@@ -14,6 +14,7 @@ from typing import List, Optional
 
 from .adaptive_sizing import AdaptiveSizeCalculator
 from .config import ChunkConfig
+from .hierarchy import HierarchicalChunkingResult, HierarchyBuilder
 from .parser import Parser
 from .strategies import StrategySelector
 from .types import Chunk, ChunkingMetrics
@@ -46,6 +47,9 @@ class MarkdownChunker:
         self.config = config or ChunkConfig()
         self._parser = Parser()
         self._selector = StrategySelector()
+        self._hierarchy_builder = HierarchyBuilder(
+            include_document_summary=self.config.include_document_summary
+        )
 
     def chunk(self, md_text: str) -> List[Chunk]:
         """
@@ -168,6 +172,38 @@ class MarkdownChunker:
         self._validate(chunks, normalized_text)
 
         return chunks, strategy.name, analysis
+
+    def chunk_hierarchical(self, md_text: str) -> HierarchicalChunkingResult:
+        """
+        Create hierarchical chunk structure with parent-child relationships.
+
+        This method builds on chunk() to add hierarchy metadata and navigation.
+        The hierarchy is constructed post-hoc using existing header_path metadata.
+
+        Process:
+        1. Perform normal chunking via chunk()
+        2. Build hierarchy relationships via HierarchyBuilder
+        3. Return HierarchicalChunkingResult with navigation methods
+
+        Args:
+            md_text: Raw markdown text
+
+        Returns:
+            HierarchicalChunkingResult with navigation methods and hierarchy
+
+        Example:
+            >>> chunker = MarkdownChunker()
+            >>> result = chunker.chunk_hierarchical(markdown_text)
+            >>> root = result.get_chunk(result.root_id)
+            >>> children = result.get_children(result.root_id)
+            >>> for child in children:
+            ...     print(f"Section: {child.metadata['header_path']}")
+        """
+        # Step 1: Perform normal chunking
+        chunks = self.chunk(md_text)
+
+        # Step 2: Build hierarchy
+        return self._hierarchy_builder.build(chunks, md_text)
 
     def _apply_overlap(self, chunks: List[Chunk]) -> List[Chunk]:
         """

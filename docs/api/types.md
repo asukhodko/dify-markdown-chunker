@@ -438,3 +438,112 @@ def build_toc(headers: List[Header]) -> str:
 # Использование
 toc = build_toc(result.elements.headers)
 ```
+
+## 🏗️ Hierarchical Chunking Types
+
+### HierarchicalChunkingResult
+
+Result object for hierarchical chunking with navigation methods.
+
+```python
+@dataclass
+class HierarchicalChunkingResult:
+    chunks: List[Chunk]         # All chunks including root document chunk
+    root_id: str                # ID of document-level chunk
+    strategy_used: str          # Name of chunking strategy applied
+    _index: Dict[str, Chunk]    # Internal O(1) lookup index
+```
+
+**Navigation Methods:**
+
+```python
+def get_chunk(chunk_id: str) -> Optional[Chunk]
+    """Get chunk by ID with O(1) lookup."""
+
+def get_children(chunk_id: str) -> List[Chunk]
+    """Get all child chunks of given chunk."""
+
+def get_parent(chunk_id: str) -> Optional[Chunk]
+    """Get parent chunk of given chunk."""
+
+def get_ancestors(chunk_id: str) -> List[Chunk]
+    """Get all ancestor chunks from parent to root."""
+
+def get_siblings(chunk_id: str) -> List[Chunk]
+    """Get all sibling chunks (including self)."""
+
+def get_flat_chunks() -> List[Chunk]
+    """Get only leaf chunks for backward-compatible retrieval."""
+
+def get_by_level(level: int) -> List[Chunk]
+    """Get all chunks at specific hierarchy level.
+    Levels: 0=document, 1=section, 2=subsection, 3=paragraph"""
+
+def to_tree_dict() -> Dict
+    """Convert hierarchy to tree dictionary for serialization.
+    Uses IDs to avoid circular references. Safe for JSON."""
+```
+
+**Example Usage:**
+
+```python
+from markdown_chunker_v2 import MarkdownChunker
+
+chunker = MarkdownChunker()
+result = chunker.chunk_hierarchical(markdown_text)
+
+# Access document root
+root = result.get_chunk(result.root_id)
+print(f"Document: {root.content[:100]}...")
+
+# Navigate hierarchy
+sections = result.get_children(result.root_id)
+for section in sections:
+    subsections = result.get_children(section.metadata['chunk_id'])
+    print(f"Section {section.metadata['header_path']}: {len(subsections)} subsections")
+
+# Get breadcrumb for context
+matched_chunk = sections[0]
+breadcrumb = [a.metadata['header_path'] for a in result.get_ancestors(matched_chunk.metadata['chunk_id'])]
+print(f"Path: {' > '.join(reversed(breadcrumb))}")
+
+# Backward-compatible flat access
+leaf_chunks = result.get_flat_chunks()
+print(f"Total leaf chunks: {len(leaf_chunks)}")
+
+# Export as tree
+tree = result.to_tree_dict()
+import json
+print(json.dumps(tree, indent=2))
+```
+
+### Hierarchy Metadata Fields
+
+Each chunk in hierarchical mode includes these additional metadata fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `chunk_id` | str | Unique 8-char hash identifier |
+| `parent_id` | str \| None | Parent chunk ID (None for root) |
+| `children_ids` | List[str] | Child chunk IDs |
+| `prev_sibling_id` | str \| None | Previous sibling ID |
+| `next_sibling_id` | str \| None | Next sibling ID |
+| `hierarchy_level` | int | 0=document, 1=section, 2=subsection, 3=paragraph |
+| `is_leaf` | bool | Has no children |
+| `is_root` | bool | Document-level chunk |
+
+**Example metadata:**
+
+```python
+chunk.metadata = {
+    "chunk_id": "a3f9d21c",
+    "parent_id": "7b2e4f18",
+    "children_ids": ["c4e8f90d", "91d3a7f2"],
+    "prev_sibling_id": None,
+    "next_sibling_id": "e5a2b8d3",
+    "hierarchy_level": 2,
+    "is_leaf": False,
+    "is_root": False,
+    "header_path": "/Installation/Requirements"
+}
+```

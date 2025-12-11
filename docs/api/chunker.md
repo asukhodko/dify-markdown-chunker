@@ -87,6 +87,52 @@ print(f"Chunks: {len(result.chunks)}")
 print(f"Processing time: {result.metrics.processing_time_ms}ms")
 ```
 
+#### chunk_hierarchical()
+
+```python
+chunk_hierarchical(text: str) -> HierarchicalChunkingResult
+```
+
+Chunk markdown text and create hierarchical structure with parent-child relationships.
+
+**Process:**
+1. Performs normal chunking via `chunk()`
+2. Builds hierarchy relationships using header paths
+3. Returns result with navigation methods
+
+**Parameters:**
+- `text` (str): Markdown content to chunk.
+
+**Returns:**
+- `HierarchicalChunkingResult`: Object with chunks and navigation methods
+
+**Example:**
+```python
+result = chunker.chunk_hierarchical(markdown_text)
+
+# Access document root
+root = result.get_chunk(result.root_id)
+print(f"Document: {root.content[:100]}...")
+
+# Navigate hierarchy
+sections = result.get_children(result.root_id)
+for section in sections:
+    print(f"Section: {section.metadata['header_path']}")
+    subsections = result.get_children(section.metadata['chunk_id'])
+    for subsection in subsections:
+        print(f"  - {subsection.metadata['header_path']}")
+
+# Multi-level retrieval
+matched_chunk = sections[0]
+parent_context = result.get_parent(matched_chunk.metadata['chunk_id'])
+breadcrumb = [a.metadata['header_path'] for a in result.get_ancestors(matched_chunk.metadata['chunk_id'])]
+
+# Backward-compatible flat access
+leaf_chunks = result.get_flat_chunks()
+```
+
+**See also:** [HierarchicalChunkingResult](types.md#hierarchicalchunkingresult)
+
 ## Chunk
 
 Individual chunk object.

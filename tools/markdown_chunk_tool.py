@@ -67,7 +67,11 @@ class MarkdownChunkTool(Tool):
             if key in excluded_fields:
                 continue
 
-            # Skip is_*/has_* fields with False values
+            # Skip is_leaf, is_root unless debug
+            if key in {'is_leaf', 'is_root'}:
+                continue
+
+            # Skip other is_*/has_* fields with False values
             if (key.startswith('is_') or key.startswith('has_')) and not value:
                 continue
 
@@ -75,12 +79,13 @@ class MarkdownChunkTool(Tool):
 
         return filtered
 
-    def _format_chunk_output(self, chunk: Any, include_metadata: bool) -> str:
+    def _format_chunk_output(self, chunk: Any, include_metadata: bool, debug: bool = False) -> str:
         """Format single chunk for output.
 
         Args:
             chunk: Chunk object
             include_metadata: Whether to include metadata in output
+            debug: Debug mode - skip metadata filtering when True
 
         Returns:
             Formatted chunk string
@@ -88,6 +93,8 @@ class MarkdownChunkTool(Tool):
         Behavior:
             - include_metadata=True: Returns <metadata> block + content.
               Overlap context stays in metadata fields (previous_content, next_content).
+              - debug=True: Returns raw unfiltered metadata
+              - debug=False: Returns filtered metadata for RAG
             - include_metadata=False: Returns clean content with overlap embedded.
               Formula: previous_content + "\n" + main + "\n" + next_content
               (with edge case handling for first/last chunks and zero overlap)
@@ -99,10 +106,16 @@ class MarkdownChunkTool(Tool):
 
         if include_metadata:
             # Metadata mode: overlap stays in metadata fields
-            filtered_metadata = self._filter_metadata_for_rag(metadata)
-            filtered_metadata['start_line'] = chunk.start_line
-            filtered_metadata['end_line'] = chunk.end_line
-            metadata_json = json.dumps(filtered_metadata, ensure_ascii=False, indent=2)
+            if debug:
+                # Debug mode: return raw metadata without filtering
+                output_metadata = metadata.copy()
+            else:
+                # Normal mode: filter metadata for RAG
+                output_metadata = self._filter_metadata_for_rag(metadata)
+            
+            output_metadata['start_line'] = chunk.start_line
+            output_metadata['end_line'] = chunk.end_line
+            metadata_json = json.dumps(output_metadata, ensure_ascii=False, indent=2)
             return f"<metadata>\n{metadata_json}\n</metadata>\n{content}"
         else:
             # Clean mode: embed overlap into content
@@ -131,6 +144,8 @@ class MarkdownChunkTool(Tool):
                 - chunk_overlap (int, optional): Overlap between chunks (default: 200)
                 - strategy (str, optional): Chunking strategy (default: "auto")
                 - include_metadata (bool, optional): Include metadata (default: True)
+                - enable_hierarchy (bool, optional): Enable hierarchical chunking (default: False)
+                - debug (bool, optional): Debug mode - include all chunks (default: False)
 
         Yields:
             ToolInvokeMessage: Success message with chunked results or error message
@@ -149,10 +164,12 @@ class MarkdownChunkTool(Tool):
             chunk_overlap = tool_parameters.get("chunk_overlap", 200)
             strategy = tool_parameters.get("strategy", "auto")
             include_metadata = tool_parameters.get("include_metadata", True)
+            enable_hierarchy = tool_parameters.get("enable_hierarchy", False)
+            debug = tool_parameters.get("debug", False)
 
             # 3. Create ChunkConfig (v2 simplified API)
             strategy_override = None if strategy == "auto" else strategy
-            
+
             config = ChunkConfig(
                 max_chunk_size=max_chunk_size,
                 overlap_size=chunk_overlap,
@@ -161,7 +178,16 @@ class MarkdownChunkTool(Tool):
 
             # 4. Chunk the document
             chunker = MarkdownChunker(config)
-            chunks = chunker.chunk(input_text)
+            if enable_hierarchy:
+                result = chunker.chunk_hierarchical(input_text)
+                # Debug mode: return ALL chunks (root, intermediate, leaf)
+                # Normal mode: return only leaf chunks (content only)
+                if debug:
+                    chunks = result.chunks  # All chunks including root/intermediate
+                else:
+                    chunks = result.get_flat_chunks()  # Leaf chunks only
+            else:
+                chunks = chunker.chunk(input_text)
 
             # 5. Format results for Dify
             # NOTE: Dify UI expects result to be an array of strings
@@ -169,7 +195,7 @@ class MarkdownChunkTool(Tool):
             # JSON channel (json[0].data) is currently NOT used - all output goes through 'result'.
             # This allows Dify to display chunks as separate items in the Knowledge Base UI.
             formatted_result = [
-                self._format_chunk_output(chunk, include_metadata)
+                self._format_chunk_output(chunk, include_metadata, debug)
                 for chunk in chunks
             ]
 

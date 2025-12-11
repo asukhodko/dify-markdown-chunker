@@ -10,6 +10,7 @@ This is the redesigned version with:
 
 from .chunker import MarkdownChunker
 from .config import ChunkConfig
+from .hierarchy import HierarchicalChunkingResult, HierarchyBuilder
 from .types import Chunk, ChunkingMetrics, ChunkingResult, ContentAnalysis, FencedBlock
 from .validator import ValidationResult, Validator, validate_chunks
 
@@ -23,6 +24,8 @@ __all__ = [
     "FencedBlock",
     "ChunkingResult",
     "ChunkingMetrics",
+    "HierarchicalChunkingResult",
+    "HierarchyBuilder",
     "Validator",
     "ValidationResult",
     "validate_chunks",

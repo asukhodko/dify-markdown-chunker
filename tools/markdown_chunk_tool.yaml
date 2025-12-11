@@ -121,6 +121,36 @@ parameters:
       ru_RU: "Встраивать метаданные в текст (по умолчанию: true). При включении части имеют блок <metadata> с content_type, header_path, номерами строк; перекрытие в метаданных. При отключении перекрытие встраивается в текст: previous_content + main + next_content."
     llm_description: "Embed metadata in chunk text. When true, chunks have <metadata> block; overlap context in metadata fields. When false, no metadata block; overlap embedded directly into chunk text (previous_content + main + next_content)."
 
+  - name: enable_hierarchy
+    type: boolean
+    required: false
+    default: false
+    form: form
+    label:
+      en_US: Enable Hierarchical Chunking
+      zh_Hans: 启用分层分块
+      ru_RU: Включить иерархическое разделение
+    human_description:
+      en_US: "Create parent-child relationships between chunks (default: false). When enabled, returns hierarchical structure with navigation metadata (parent_id, children_ids, level). Useful for multi-level retrieval and context navigation."
+      zh_Hans: "在块之间创建父子关系（默认：false）。启用时，返回带有导航元数据的层次结构（parent_id、children_ids、level）。适用于多级检索和上下文导航。"
+      ru_RU: "Создавать отношения родитель-потомок между частями (по умолчанию: false). При включении возвращает иерархическую структуру с метаданными навигации (parent_id, children_ids, level). Полезно для многоуровневого поиска и навигации по контексту."
+    llm_description: "Enable hierarchical chunking to create parent-child relationships between chunks. When enabled, each chunk includes hierarchy metadata (parent_id, children_ids, sibling_ids, level, header_path) for multi-level retrieval and context navigation."
+
+  - name: debug
+    type: boolean
+    required: false
+    default: false
+    form: form
+    label:
+      en_US: Debug Mode
+      zh_Hans: 调试模式
+      ru_RU: Режим отладки
+    human_description:
+      en_US: "Enable debug mode (default: false). When enabled with enable_hierarchy=true, includes all chunks (root, intermediate, and leaf). By default, only leaf chunks are returned. Future: will also control metadata field filtering."
+      zh_Hans: "启用调试模式（默认：false）。与 enable_hierarchy=true 一起启用时，包括所有块（根、中间和叶）。默认情况下，仅返回叶块。将来：还将控制元数据字段过滤。"
+      ru_RU: "Включить режим отладки (по умолчанию: false). При включении вместе с enable_hierarchy=true возвращает все части (корневые, промежуточные и листовые). По умолчанию возвращаются только листовые части. В будущем: также будет управлять фильтрацией полей метаданных."
+    llm_description: "Enable debug mode to include all chunks (root, intermediate, leaf) when enable_hierarchy=true. Normal mode returns only leaf chunks. Future: will also expose additional debug metadata fields."
+
 output_schema:
   type: object
   properties:
