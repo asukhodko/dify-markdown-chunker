@@ -10,17 +10,30 @@
 - [rag_integration.py](file://examples/rag_integration.py)
 - [test_metadata_filtering.py](file://tests/test_metadata_filtering.py)
 - [fence_handler.py](file://markdown_chunker_legacy/parser/fence_handler.py)
+- [code_context.py](file://markdown_chunker_v2/code_context.py)
+- [test_code_context_binding.py](file://tests/chunker/test_code_context_binding.py)
+- [test_code_context_properties.py](file://tests/chunker/test_code_context_properties.py)
+- [06-enhanced-code-context-binding.md](file://docs/research/features/06-enhanced-code-context-binding.md)
 </cite>
+
+## Update Summary
+**Changes Made**   
+- Added new metadata fields introduced by the code context binding system: code_role, has_related_code, code_relationship, and explanation_bound
+- Updated metadata processing pipeline to include context binding
+- Added new section on code context binding with examples
+- Updated usage examples to reflect new metadata fields
+- Added new diagram showing context binding process
 
 ## Table of Contents
 1. [Introduction](#introduction)
 2. [Language Field](#language-field)
 3. [Has Syntax Highlighting Field](#has-syntax-highlighting-field)
-4. [Metadata Processing Pipeline](#metadata-processing-pipeline)
-5. [Usage Examples](#usage-examples)
-6. [RAG System Integration](#rag-system-integration)
-7. [Code Access and Processing](#code-access-and-processing)
-8. [Conclusion](#conclusion)
+4. [Code Context Binding](#code-context-binding)
+5. [Metadata Processing Pipeline](#metadata-processing-pipeline)
+6. [Usage Examples](#usage-examples)
+7. [RAG System Integration](#rag-system-integration)
+8. [Code Access and Processing](#code-access-and-processing)
+9. [Conclusion](#conclusion)
 
 ## Introduction
 
@@ -44,7 +57,7 @@ E --> F["Store in FencedBlock.language"]
 F --> G["Propagate to Chunk Metadata"]
 ```
 
-**Diagram sources **
+**Diagram sources**
 - [parser.py](file://markdown_chunker_v2/parser.py#L96-L143)
 - [fence_handler.py](file://markdown_chunker_legacy/parser/fence_handler.py#L279-L286)
 
@@ -65,7 +78,7 @@ C --> E["Apply Syntax Highlighting"]
 D --> F["Render as Generic Code"]
 ```
 
-**Diagram sources **
+**Diagram sources**
 - [output-format.md](file://docs/reference/output-format.md#L96)
 - [test_metadata_filtering.py](file://tests/test_metadata_filtering.py#L123-L155)
 
@@ -73,56 +86,91 @@ D --> F["Render as Generic Code"]
 - [output-format.md](file://docs/reference/output-format.md#L96)
 - [test_metadata_filtering.py](file://tests/test_metadata_filtering.py#L123-L155)
 
+## Code Context Binding
+
+The code context binding system introduces new metadata fields that classify code blocks based on their role and relationships within documentation. The `code_role` field classifies code blocks into categories such as example, setup, output, before, after, or error based on language identifiers and surrounding text patterns. The `has_related_code` field indicates whether a code block is grouped with other related blocks, while `code_relationship` specifies the type of relationship (e.g., before_after, code_output). The `explanation_bound` field shows whether explanation context is available before or after the code block. These fields are populated by the CodeContextBinder, which analyzes code blocks and their surrounding context to identify patterns like Before/After comparisons, Code+Output pairs, and setup/example sequences.
+
+```mermaid
+flowchart TD
+A["Code Block"] --> B["Analyze Language Tag"]
+A --> C["Analyze Preceding Text"]
+B --> D{"Language = output/error?"}
+C --> E{"Text matches setup/output patterns?"}
+D --> |Yes| F["Set code_role"]
+E --> |Yes| F
+F --> G["Identify Related Blocks"]
+G --> H["Determine Relationship Type"]
+H --> I["Set has_related_code & code_relationship"]
+I --> J["Extract Explanation Context"]
+J --> K["Set explanation_bound"]
+K --> L["Propagate to Chunk Metadata"]
+```
+
+**Diagram sources**
+- [code_context.py](file://markdown_chunker_v2/code_context.py#L63-L510)
+- [test_code_context_binding.py](file://tests/chunker/test_code_context_binding.py#L49-L83)
+- [06-enhanced-code-context-binding.md](file://docs/research/features/06-enhanced-code-context-binding.md#L51-L244)
+
+**Section sources**
+- [code_context.py](file://markdown_chunker_v2/code_context.py#L16-L30)
+- [types.py](file://markdown_chunker_v2/types.py#L72-L106)
+- [test_code_context_properties.py](file://tests/chunker/test_code_context_properties.py#L77-L124)
+
 ## Metadata Processing Pipeline
 
-The metadata processing pipeline extracts code-specific fields during document analysis and propagates them through the chunking process. The pipeline begins with document parsing, where the markdown content is analyzed to identify all structural elements including code blocks. For each fenced code block, the language identifier is extracted and stored in a `FencedBlock` object. During strategy selection, this information informs the chunking approach, with code-heavy documents using the code-aware strategy. When chunks are created, the language metadata is transferred from the `FencedBlock` to the chunk's metadata dictionary. The pipeline also applies normalization, such as converting language names to lowercase and handling edge cases like nested code blocks. Finally, before output, metadata filtering removes internal processing fields while preserving semantic information like language and syntax highlighting indicators for downstream use.
+The metadata processing pipeline extracts code-specific fields during document analysis and propagates them through the chunking process. The pipeline begins with document parsing, where the markdown content is analyzed to identify all structural elements including code blocks. For each fenced code block, the language identifier is extracted and stored in a `FencedBlock` object. During strategy selection, this information informs the chunking approach, with code-heavy documents using the code-aware strategy. The CodeContextBinder analyzes code blocks to determine their role, relationships, and explanation context. When chunks are created, this context information is transferred from the `CodeContext` to the chunk's metadata dictionary. The pipeline also applies normalization, such as converting language names to lowercase and handling edge cases like nested code blocks. Finally, before output, metadata filtering removes internal processing fields while preserving semantic information like language, syntax highlighting, and context binding indicators for downstream use.
 
 ```mermaid
 graph TB
 A["Document Input"] --> B["Parse & Analyze"]
 B --> C["Extract Fenced Blocks"]
 C --> D["Store Language Metadata"]
-D --> E["Select Chunking Strategy"]
-E --> F["Create Chunks"]
-F --> G["Propagate Metadata"]
-G --> H["Filter for RAG"]
-H --> I["Output Chunks"]
+D --> E["Bind Code Context"]
+E --> F["Select Chunking Strategy"]
+F --> G["Create Chunks"]
+G --> H["Propagate Metadata"]
+H --> I["Filter for RAG"]
+I --> J["Output Chunks"]
 ```
 
-**Diagram sources **
+**Diagram sources**
 - [parser.py](file://markdown_chunker_v2/parser.py#L38-L81)
 - [chunker.py](file://markdown_chunker_v2/chunker.py#L65-L88)
 - [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py#L43-L123)
+- [code_context.py](file://markdown_chunker_v2/code_context.py#L119-L160)
 
 **Section sources**
 - [parser.py](file://markdown_chunker_v2/parser.py#L38-L81)
 - [chunker.py](file://markdown_chunker_v2/chunker.py#L65-L88)
+- [code_context.py](file://markdown_chunker_v2/code_context.py#L119-L160)
 
 ## Usage Examples
 
-The code content fields are populated in various document types, demonstrating their practical application. In API documentation, code examples with language identifiers are processed to include language metadata, enabling developers to filter by implementation language. Technical tutorials use these fields to organize content by programming language, allowing learners to focus on their preferred language. Code-heavy markdown files, such as READMEs with multiple language examples, leverage the metadata to maintain language context during chunking. For instance, a markdown file containing Python, JavaScript, and bash code blocks will have each code chunk tagged with the appropriate language, preserving the semantic context. The has_syntax_highlighting field ensures that only properly annotated code blocks receive syntax highlighting treatment, maintaining visual consistency in rendered output.
+The code content fields are populated in various document types, demonstrating their practical application. In API documentation, code examples with language identifiers are processed to include language metadata, enabling developers to filter by implementation language. Technical tutorials use these fields to organize content by programming language, allowing learners to focus on their preferred language. Code-heavy markdown files, such as READMEs with multiple language examples, leverage the metadata to maintain language context during chunking. For instance, a markdown file containing Python, JavaScript, and bash code blocks will have each code chunk tagged with the appropriate language, preserving the semantic context. The has_syntax_highlighting field ensures that only properly annotated code blocks receive syntax highlighting treatment, maintaining visual consistency in rendered output. The new context binding fields enable more sophisticated processing, such as grouping Before/After code comparisons or associating code with its expected output.
 
 **Section sources**
 - [api_usage.py](file://examples/api_usage.py#L58-L74)
 - [rag_integration.py](file://examples/rag_integration.py#L179-L203)
 - [test_extraction_heuristics.py](file://tests/parser/test_extraction_heuristics.py#L65-L280)
+- [test_code_context_properties.py](file://tests/chunker/test_code_context_properties.py#L80-L124)
 
 ## RAG System Integration
 
-In RAG systems, the code content fields enhance retrieval precision by enabling language-specific filtering and processing. The language field allows query routing to relevant code chunks, so a query about Python syntax can retrieve only Python code examples rather than all code blocks. This targeted retrieval improves response relevance and reduces processing overhead. The has_syntax_highlighting field helps prioritize high-quality code examples with explicit language context over generic code blocks. These metadata fields also support advanced retrieval strategies, such as returning code examples in multiple languages for comparative analysis or filtering by language ecosystem. By leveraging these fields, RAG systems can provide more accurate and contextually appropriate responses to code-related queries, significantly improving the user experience for technical documentation and code assistance applications.
+In RAG systems, the code content fields enhance retrieval precision by enabling language-specific filtering and processing. The language field allows query routing to relevant code chunks, so a query about Python syntax can retrieve only Python code examples rather than all code blocks. This targeted retrieval improves response relevance and reduces processing overhead. The has_syntax_highlighting field helps prioritize high-quality code examples with explicit language context over generic code blocks. The new context binding fields provide additional capabilities: code_role enables filtering by code purpose (e.g., setup vs. example), has_related_code and code_relationship allow retrieval of grouped code blocks as a unit, and explanation_bound helps identify code with sufficient surrounding context. These metadata fields support advanced retrieval strategies, such as returning code examples in multiple languages for comparative analysis or filtering by language ecosystem. By leveraging these fields, RAG systems can provide more accurate and contextually appropriate responses to code-related queries, significantly improving the user experience for technical documentation and code assistance applications.
 
 ```mermaid
 graph TD
 A["User Query"] --> B{"Code-Related?"}
 B --> |Yes| C["Extract Language Intent"]
 C --> D["Filter by language field"]
-D --> E["Retrieve Relevant Code Chunks"]
-E --> F["Generate Response"]
-B --> |No| G["Standard Text Retrieval"]
-G --> F
+D --> E["Apply Context Filters"]
+E --> F["Retrieve Relevant Code Chunks"]
+F --> G["Generate Response"]
+B --> |No| H["Standard Text Retrieval"]
+H --> G
 ```
 
-**Diagram sources **
+**Diagram sources**
 - [rag_integration.py](file://examples/rag_integration.py#L139-L154)
 - [test_metadata_filtering.py](file://tests/test_metadata_filtering.py#L157-L184)
 
@@ -132,13 +180,14 @@ G --> F
 
 ## Code Access and Processing
 
-Accessing the code content fields from chunk metadata enables customized processing based on language and syntax highlighting information. The fields influence chunking strategy selection, with documents containing code blocks automatically routed to the code-aware strategy that preserves code block integrity. When processing chunks, applications can access the language field to apply language-specific analysis, such as syntax validation or code quality checks. The has_syntax_highlighting field can trigger specialized rendering pipelines that apply appropriate syntax highlighting themes. These fields also support dynamic content organization, allowing applications to group or filter chunks by programming language. The metadata influences the entire processing pipeline, from initial chunking strategy selection to final output formatting, ensuring that code context is preserved and leveraged throughout the system.
+Accessing the code content fields from chunk metadata enables customized processing based on language and syntax highlighting information. The fields influence chunking strategy selection, with documents containing code blocks automatically routed to the code-aware strategy that preserves code block integrity. When processing chunks, applications can access the language field to apply language-specific analysis, such as syntax validation or code quality checks. The has_syntax_highlighting field can trigger specialized rendering pipelines that apply appropriate syntax highlighting themes. The new context binding fields enable more sophisticated processing: code_role allows for purpose-based code analysis, has_related_code and code_relationship support processing of code groups as coherent units, and explanation_bound helps determine whether sufficient context is available for understanding the code. These fields also support dynamic content organization, allowing applications to group or filter chunks by programming language, code purpose, or relationship type. The metadata influences the entire processing pipeline, from initial chunking strategy selection to final output formatting, ensuring that code context is preserved and leveraged throughout the system.
 
 **Section sources**
 - [types.py](file://markdown_chunker_v2/types.py#L100-L143)
 - [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py#L33-L41)
 - [chunker.py](file://markdown_chunker_v2/chunker.py#L344-L356)
+- [code_context.py](file://markdown_chunker_v2/code_context.py#L119-L160)
 
 ## Conclusion
 
-The code content fields—language and has_syntax_highlighting—provide essential metadata that enhances the processing and retrieval of code within markdown documents. By extracting language identifiers from code fence indicators and tracking syntax highlighting status, these fields preserve critical context that would otherwise be lost during chunking. This metadata enables sophisticated processing in RAG systems, allowing for language-specific filtering, targeted retrieval, and appropriate rendering. The implementation demonstrates a robust pipeline from document parsing through metadata propagation to final output, ensuring that code context is maintained throughout the processing workflow. These fields significantly improve the utility of markdown chunking for technical documentation, API references, and code-heavy content, making information more accessible and relevant to end users.
+The code content fields—language, has_syntax_highlighting, code_role, has_related_code, code_relationship, and explanation_bound—provide essential metadata that enhances the processing and retrieval of code within markdown documents. By extracting language identifiers from code fence indicators and tracking syntax highlighting status, these fields preserve critical context that would otherwise be lost during chunking. The new context binding fields add significant value by classifying code blocks by purpose and identifying relationships between related code blocks. This metadata enables sophisticated processing in RAG systems, allowing for language-specific filtering, targeted retrieval, appropriate rendering, and context-aware processing. The implementation demonstrates a robust pipeline from document parsing through metadata propagation to final output, ensuring that code context is maintained throughout the processing workflow. These fields significantly improve the utility of markdown chunking for technical documentation, API references, and code-heavy content, making information more accessible and relevant to end users.

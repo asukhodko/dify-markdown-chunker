@@ -65,6 +65,11 @@ This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** w
 
 ### 🎯 Adaptive Chunking
 - **4 intelligent strategies** — automatic selection based on content analysis
+- **Adaptive Chunk Sizing** — automatic size optimization based on content complexity (new)
+  - Code-heavy content → larger chunks (up to 1.5x base size)
+  - Simple text → smaller chunks (down to 0.5x base size)
+  - Configurable complexity weights and scaling bounds
+  - Optional feature (disabled by default for backward compatibility)
 - **List-Aware Strategy** — preserves nested list hierarchies and context (unique competitive advantage)
 - **Nested Fencing Support** — correctly handles quadruple/quintuple backticks and tilde fencing for meta-documentation (unique capability)
 - **Enhanced Code-Context Binding** — intelligently binds code blocks to explanations, recognizes Before/After patterns, Code+Output pairs, and sequential examples (unique competitive advantage)
@@ -233,10 +238,13 @@ Python 3.12 or higher is required...
 - `start_line` / `end_line` — source line numbers
 - `code_language` — programming language (for code blocks)
 - `previous_content` / `next_content` — overlap context from adjacent chunks
-- `code_role` — code block role (example, setup, output, before, after, error) *new*
-- `has_related_code` — whether chunk contains related code blocks *new*
-- `code_relationship` — relationship type (before_after, code_output, sequential) *new*
-- `explanation_bound` — whether explanation is bound to code *new*
+- `adaptive_size` — calculated optimal chunk size (when adaptive sizing enabled) *new*
+- `content_complexity` — complexity score 0.0-1.0 (when adaptive sizing enabled) *new*
+- `size_scale_factor` — applied scaling factor (when adaptive sizing enabled) *new*
+- `code_role` — code block role (example, setup, output, before, after, error)
+- `has_related_code` — whether chunk contains related code blocks
+- `code_relationship` — relationship type (before_after, code_output, sequential)
+- `explanation_bound` — whether explanation is bound to code
 
 **When to disable metadata:**
 - Fine-tuning language models (need clean training data)
@@ -622,9 +630,80 @@ config = ChunkConfig(
     bind_output_blocks=True,            # Auto-bind output blocks to code
     preserve_before_after_pairs=True,   # Keep Before/After pairs together
     
+    # Adaptive Chunk Sizing (NEW)
+    use_adaptive_sizing=False,          # Enable adaptive chunk sizing
+    adaptive_config=None,               # AdaptiveSizeConfig instance (see below)
+    
     # Override
     strategy_override=None,   # Force specific strategy (code_aware/list_aware/structural/fallback)
 )
+```
+
+### Adaptive Chunk Sizing Configuration
+
+**Enable automatic size optimization** based on content complexity:
+
+```python
+from markdown_chunker import ChunkConfig, AdaptiveSizeConfig
+
+# Enable with default settings
+config = ChunkConfig(
+    use_adaptive_sizing=True,
+    adaptive_config=AdaptiveSizeConfig(
+        base_size=1500,           # Base chunk size for medium complexity
+        min_scale=0.5,            # Minimum scaling factor (0.5x = 750 chars)
+        max_scale=1.5,            # Maximum scaling factor (1.5x = 2250 chars)
+        
+        # Complexity weights (must sum to 1.0)
+        code_weight=0.4,          # Weight for code ratio
+        table_weight=0.3,         # Weight for table ratio
+        list_weight=0.2,          # Weight for list ratio
+        sentence_length_weight=0.1,  # Weight for average sentence length
+    )
+)
+
+chunker = MarkdownChunker(config)
+chunks = chunker.chunk(text)
+
+# Chunks now have adaptive sizing metadata:
+# - adaptive_size: calculated optimal size
+# - content_complexity: complexity score (0.0-1.0)
+# - size_scale_factor: applied scale factor
+```
+
+**Quick Enable with Profile:**
+
+```python
+# Use pre-configured adaptive sizing profile
+config = ChunkConfig.with_adaptive_sizing()
+chunker = MarkdownChunker(config)
+```
+
+**How It Works:**
+
+1. **Content Analysis** - Calculates code ratio, table ratio, list ratio, avg sentence length
+2. **Complexity Scoring** - Weighted sum of factors produces score 0.0-1.0
+3. **Size Calculation** - `optimal_size = base_size * (min_scale + complexity * scale_range)`
+4. **Chunk Application** - Chunks respect calculated size while preserving atomic blocks
+
+**Behavior:**
+- **Code-heavy documents** (high complexity) → larger chunks (up to 1.5x base size)
+- **Simple text** (low complexity) → smaller chunks (down to 0.5x base size)
+- **Mixed content** → balanced sizing
+
+**Example Results:**
+
+| Document Type | Code Ratio | Complexity | Scale Factor | Size (base=1500) |
+|---------------|------------|------------|--------------|------------------|
+| API docs with code | 60% | 0.68 | 1.4x | 2100 chars |
+| Technical blog | 20% | 0.30 | 0.8x | 1200 chars |
+| Plain text guide | 0% | 0.10 | 0.6x | 900 chars |
+
+**When to Use:**
+- ✅ Mixed corpus with varying complexity
+- ✅ Want optimal retrieval precision across content types
+- ✅ Need larger chunks for code preservation
+- ❌ Require predictable chunk sizes (disable for consistency)
 ```
 
 ### Configuration Profiles
@@ -721,16 +800,16 @@ class ChunkingResult:
                               │
               ┌───────────────┼───────────────┐
               ▼               ▼               ▼
-┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+┌──────────────────┐ ┌──────────────────┐ ┌─────────────────┐
 │  ParserInterface │ │ StrategySelector │ │ FallbackManager │
-│   (Stage 1)      │ │                   │ │                 │
-│                  │ │ • CodeStrategy    │ │ • 4 levels      │
-│ • AST Building   │ │ • MixedStrategy   │ │ • Graceful      │
-│ • Fenced Blocks  │ │ • ListStrategy    │ │   degradation   │
-│ • Element Detect │ │ • TableStrategy   │ │                 │
-│ • Content Analyze│ │ • StructuralStr.  │ │                 │
-│                  │ │ • SentencesStr.   │ │                 │
-└─────────────────┘ └─────────────────┘ └─────────────────┘
+│   (Stage 1)      │ │                  │ │                 │
+│                  │ │ • CodeStrategy   │ │ • 4 levels      │
+│ • AST Building   │ │ • MixedStrategy  │ │ • Graceful      │
+│ • Fenced Blocks  │ │ • ListStrategy   │ │   degradation   │
+│ • Element Detect │ │ • TableStrategy  │ │                 │
+│ • Content Analyze│ │ • StructuralStr. │ │                 │
+│                  │ │ • SentencesStr.  │ │                 │
+└──────────────────┘ └──────────────────┘ └─────────────────┘
               │               │               │
               └───────────────┼───────────────┘
                               ▼

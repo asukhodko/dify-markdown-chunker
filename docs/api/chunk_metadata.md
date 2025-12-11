@@ -149,6 +149,90 @@ if 'previous_content' in chunks[1].metadata:
     assert context in chunks[0].content
 ```
 
+### Adaptive Sizing Fields
+
+**Overview:** When adaptive chunk sizing is enabled (`use_adaptive_sizing=True`), additional metadata fields provide information about content complexity and size adjustments.
+
+When adaptive sizing is enabled:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `adaptive_size` | `int` | Calculated optimal chunk size based on content complexity |
+| `content_complexity` | `float` | Complexity score from 0.0 (simple) to 1.0 (complex) |
+| `size_scale_factor` | `float` | Scaling factor applied to base_size (e.g., 0.5, 1.0, 1.5) |
+
+**Complexity Calculation:**
+
+Complexity is a weighted sum of content factors:
+```
+complexity = (code_ratio × code_weight) + 
+             (table_ratio × table_weight) + 
+             (list_ratio × list_weight) + 
+             (sentence_length_norm × sentence_length_weight)
+```
+
+**Scale Factor Calculation:**
+```
+scale_factor = min_scale + (complexity × (max_scale - min_scale))
+adaptive_size = base_size × scale_factor
+```
+
+**Example:**
+```python
+from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
+from markdown_chunker_v2.config import AdaptiveSizeConfig
+
+config = ChunkConfig(
+    use_adaptive_sizing=True,
+    adaptive_config=AdaptiveSizeConfig(
+        base_size=1500,
+        min_scale=0.5,
+        max_scale=1.5
+    )
+)
+
+chunker = MarkdownChunker(config)
+chunks = chunker.chunk(document)
+
+# Access adaptive sizing metadata
+for chunk in chunks:
+    if 'adaptive_size' in chunk.metadata:
+        print(f"Complexity: {chunk.metadata['content_complexity']:.2f}")
+        print(f"Scale Factor: {chunk.metadata['size_scale_factor']:.2f}")
+        print(f"Adaptive Size: {chunk.metadata['adaptive_size']} chars")
+```
+
+**Typical Values:**
+
+| Content Type | Complexity | Scale Factor | Adaptive Size (base=1500) |
+|--------------|------------|--------------|---------------------------|
+| Simple text, short sentences | 0.0-0.2 | 0.5-0.7 | 750-1050 chars |
+| Mixed content (text + lists) | 0.4-0.6 | 0.9-1.1 | 1350-1650 chars |
+| Code-heavy documentation | 0.8-1.0 | 1.4-1.5 | 2100-2250 chars |
+| Dense tables and data | 0.6-0.8 | 1.1-1.4 | 1650-2100 chars |
+
+**Use Cases:**
+
+1. **Quality Monitoring**: Track complexity distribution across your corpus
+   ```python
+   complexities = [c.metadata.get('content_complexity', 0) for c in chunks]
+   avg_complexity = sum(complexities) / len(complexities)
+   ```
+
+2. **Filtering**: Prioritize complex chunks for review
+   ```python
+   complex_chunks = [
+       c for c in chunks 
+       if c.metadata.get('content_complexity', 0) > 0.7
+   ]
+   ```
+
+3. **Analytics**: Understand chunk size distribution
+   ```python
+   sizes = [c.metadata.get('adaptive_size', 0) for c in chunks]
+   print(f"Avg adaptive size: {sum(sizes) / len(sizes):.0f} chars")
+   ```
+
 ## Usage Examples
 
 ### Filtering by Section

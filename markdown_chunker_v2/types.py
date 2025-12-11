@@ -180,6 +180,7 @@ class ContentAnalysis:
     list_ratio: float = 0.0
     max_list_depth: int = 0
     has_checkbox_lists: bool = False
+    avg_sentence_length: float = 0.0
 
 
 @dataclass

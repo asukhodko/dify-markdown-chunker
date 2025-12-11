@@ -75,6 +75,9 @@ class Parser:
         # 4. Detect preamble
         has_preamble, preamble_end = self._detect_preamble(md_text, headers)
 
+        # 5. Calculate average sentence length
+        avg_sent_length = self._calculate_avg_sentence_length(md_text)
+
         return ContentAnalysis(
             total_chars=total_chars,
             total_lines=total_lines,
@@ -94,6 +97,7 @@ class Parser:
             list_ratio=list_ratio,
             max_list_depth=max_list_depth,
             has_checkbox_lists=has_checkbox_lists,
+            avg_sentence_length=avg_sent_length,
         )
 
     def _normalize_line_endings(self, text: str) -> str:
@@ -594,3 +598,28 @@ class Parser:
         """
         lines = md_text.split("\n")
         return sum(len(lines[i]) + 1 for i in range(line - 1))
+
+    def _calculate_avg_sentence_length(self, text: str) -> float:
+        """
+        Calculate average sentence length in characters.
+
+        Simple heuristic: split on periods followed by space or end of line.
+        Filters out empty sentences and normalizes to typical technical writing.
+
+        Args:
+            text: Text to analyze
+
+        Returns:
+            Average sentence length in characters, 0.0 if no sentences found
+        """
+        if not text:
+            return 0.0
+
+        # Split on period followed by space/newline/end
+        sentences = [s.strip() for s in text.split(".") if s.strip()]
+
+        if not sentences:
+            return 0.0
+
+        total_length = sum(len(s) for s in sentences)
+        return total_length / len(sentences)

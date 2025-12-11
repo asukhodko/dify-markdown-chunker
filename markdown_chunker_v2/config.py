@@ -8,6 +8,8 @@ import warnings
 from dataclasses import dataclass
 from typing import Optional
 
+from .adaptive_sizing import AdaptiveSizeConfig
+
 
 @dataclass
 class ChunkConfig:
@@ -49,6 +51,10 @@ class ChunkConfig:
             in code-context binding (default: True)
         preserve_before_after_pairs: Keep Before/After examples in single chunk
             in code-context binding (default: True)
+        use_adaptive_sizing: Enable adaptive chunk sizing based on content
+            complexity (default: False)
+        adaptive_config: Configuration for adaptive sizing behavior
+            (auto-created with defaults if use_adaptive_sizing=True)
     """
 
     # Size parameters
@@ -77,12 +83,17 @@ class ChunkConfig:
     bind_output_blocks: bool = True
     preserve_before_after_pairs: bool = True
 
+    # Adaptive sizing parameters
+    use_adaptive_sizing: bool = False
+    adaptive_config: Optional[AdaptiveSizeConfig] = None
+
     def __post_init__(self):
         """Validate configuration."""
         self._validate_size_params()
         self._validate_threshold_params()
         self._validate_strategy_override()
         self._validate_code_context_params()
+        self._validate_adaptive_sizing_params()
 
     def _validate_size_params(self):
         """Validate size-related parameters."""
@@ -163,6 +174,12 @@ class ChunkConfig:
                 f"related_block_max_gap must be >= 1, "
                 f"got {self.related_block_max_gap}"
             )
+
+    def _validate_adaptive_sizing_params(self):
+        """Validate adaptive sizing parameters."""
+        if self.use_adaptive_sizing and self.adaptive_config is None:
+            # Auto-create default config if adaptive sizing enabled
+            self.adaptive_config = AdaptiveSizeConfig()
 
     @property
     def enable_overlap(self) -> bool:
@@ -268,6 +285,60 @@ class ChunkConfig:
             overlap_size=100,
             list_ratio_threshold=0.35,
             list_count_threshold=4,
+        )
+
+    @classmethod
+    def with_adaptive_sizing(cls) -> "ChunkConfig":
+        """Configuration with adaptive sizing enabled (default profile)."""
+        return cls(
+            max_chunk_size=4096,
+            min_chunk_size=512,
+            overlap_size=200,
+            use_adaptive_sizing=True,
+            adaptive_config=AdaptiveSizeConfig(
+                base_size=1500,
+                min_scale=0.5,
+                max_scale=1.5,
+            ),
+        )
+
+    @classmethod
+    def for_code_heavy_adaptive(cls) -> "ChunkConfig":
+        """Configuration for code-heavy documents with adaptive sizing."""
+        return cls(
+            max_chunk_size=8192,
+            min_chunk_size=1024,
+            overlap_size=100,
+            code_threshold=0.2,
+            use_adaptive_sizing=True,
+            adaptive_config=AdaptiveSizeConfig(
+                base_size=2000,
+                min_scale=0.7,
+                max_scale=1.8,
+                code_weight=0.6,
+                table_weight=0.2,
+                list_weight=0.1,
+                sentence_length_weight=0.1,
+            ),
+        )
+
+    @classmethod
+    def for_text_heavy_adaptive(cls) -> "ChunkConfig":
+        """Configuration for text-heavy documents with adaptive sizing."""
+        return cls(
+            max_chunk_size=4096,
+            min_chunk_size=512,
+            overlap_size=200,
+            use_adaptive_sizing=True,
+            adaptive_config=AdaptiveSizeConfig(
+                base_size=1200,
+                min_scale=0.5,
+                max_scale=1.2,
+                code_weight=0.2,
+                table_weight=0.1,
+                list_weight=0.3,
+                sentence_length_weight=0.4,
+            ),
         )
 
     def to_dict(self) -> dict:

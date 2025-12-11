@@ -12,6 +12,7 @@ Simplified pipeline:
 
 from typing import List, Optional
 
+from .adaptive_sizing import AdaptiveSizeCalculator
 from .config import ChunkConfig
 from .parser import Parser
 from .strategies import StrategySelector
@@ -52,12 +53,13 @@ class MarkdownChunker:
 
         Pipeline:
         1. Parse (once)
-        2. Select strategy
-        3. Apply strategy
-        4. Merge small chunks
-        5. Apply overlap
-        6. Add metadata
-        7. Validate
+        2. Calculate adaptive size (if enabled)
+        3. Select strategy
+        4. Apply strategy
+        5. Merge small chunks
+        6. Apply overlap
+        7. Add metadata
+        8. Validate
 
         Args:
             md_text: Raw markdown text
@@ -74,23 +76,59 @@ class MarkdownChunker:
         # Get normalized text (line endings normalized)
         normalized_text = md_text.replace("\r\n", "\n").replace("\r", "\n")
 
-        # 2. Select strategy
-        strategy = self._selector.select(analysis, self.config)
+        # 2. Calculate adaptive size (if enabled)
+        effective_config = self.config
+        adaptive_metadata = {}
+        if self.config.use_adaptive_sizing:
+            calculator = AdaptiveSizeCalculator(self.config.adaptive_config)
+            adaptive_max_size = calculator.calculate_optimal_size(
+                normalized_text, analysis
+            )
+            complexity = calculator.calculate_complexity(analysis)
+            scale_factor = calculator.get_scale_factor(complexity)
 
-        # 3. Apply strategy
-        chunks = strategy.apply(normalized_text, analysis, self.config)
+            # Store metadata for later enrichment
+            adaptive_metadata = {
+                "adaptive_size": adaptive_max_size,
+                "content_complexity": complexity,
+                "size_scale_factor": scale_factor,
+            }
 
-        # 4. Merge small chunks
+            # Create effective config with adaptive size
+            # Respect absolute max_chunk_size limit
+            final_max_size = min(adaptive_max_size, self.config.max_chunk_size)
+            effective_config = ChunkConfig(
+                max_chunk_size=final_max_size,
+                min_chunk_size=self.config.min_chunk_size,
+                overlap_size=self.config.overlap_size,
+                preserve_atomic_blocks=self.config.preserve_atomic_blocks,
+                strategy_override=self.config.strategy_override,
+                enable_code_context_binding=self.config.enable_code_context_binding,
+                use_adaptive_sizing=False,  # Prevent recursion
+            )
+
+        # 3. Select strategy
+        strategy = self._selector.select(analysis, effective_config)
+
+        # 4. Apply strategy
+        chunks = strategy.apply(normalized_text, analysis, effective_config)
+
+        # 5. Merge small chunks
         chunks = self._merge_small_chunks(chunks)
 
-        # 5. Apply overlap (if enabled)
+        # 6. Apply overlap (if enabled)
         if self.config.enable_overlap and len(chunks) > 1:
             chunks = self._apply_overlap(chunks)
 
-        # 6. Add standard metadata
+        # 7. Add standard metadata
         chunks = self._add_metadata(chunks, strategy.name)
 
-        # 7. Validate
+        # 8. Add adaptive sizing metadata (if enabled)
+        if self.config.use_adaptive_sizing:
+            for chunk in chunks:
+                chunk.metadata.update(adaptive_metadata)
+
+        # 9. Validate
         self._validate(chunks, normalized_text)
 
         return chunks
