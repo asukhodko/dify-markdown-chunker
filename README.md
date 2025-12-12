@@ -4,7 +4,7 @@
 
 **Intelligent Markdown document chunking for RAG systems with structural awareness**
 
-[![Version](https://img.shields.io/badge/version-2.1.1-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1.2-orange.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Dify Plugin](https://img.shields.io/badge/dify-1.9.0+-green.svg)](https://dify.ai/)
@@ -1079,18 +1079,21 @@ MIT License — see [LICENSE](LICENSE)
 
 ## 📝 Changelog
 
-**Current Version:** 2.1.1 (December 2025)
+**Current Version:** 2.1.2 (December 2025)
 
-### Latest: v2.1.1
+### Latest: v2.1.2
 
-**Released:** December 10, 2025
+**Released:** December 11, 2025
 
-**Key Features:**
-- ✅ **Nested Fencing Support** — Correctly handles quadruple/quintuple backticks and tilde fencing
-- ✅ **Enhanced Parser** — State machine-based fence detection with proper nesting support  
-- ✅ **652 Tests** — Comprehensive test coverage including nested fencing validation
-- ✅ **List-Aware Strategy** — Intelligent processing for list-heavy documents with hierarchy preservation
-- ✅ **Adaptive Overlap Sizing** — Context window scales with chunk size (up to 35%)
+**New Features:**
+- ✅ **Enhanced Code-Context Binding** — Intelligent binding of code blocks to explanations (Before/After, Code+Output patterns)
+- ✅ **Adaptive Chunk Sizing** — Automatic size optimization based on content complexity (0.5x–1.5x scaling)
+- ✅ **Hierarchical Chunking** — Parent-child relationships with navigation API (`get_parent`, `get_children`, `get_ancestors`)
+- ✅ **812 Tests** — Comprehensive test coverage (+24.5% from v2.1.1)
+
+### Previous: v2.1.1 (December 10, 2025)
+- Nested Fencing Support (quadruple/quintuple backticks, tilde fencing)
+- State machine-based parser with proper nesting support
 
 For full release history, see [CHANGELOG.md](CHANGELOG.md).
 

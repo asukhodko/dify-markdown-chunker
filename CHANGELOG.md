@@ -2,6 +2,58 @@
 
 All notable changes to the Advanced Markdown Chunker plugin will be documented in this file.
 
+## [2.1.2] - 2025-12-11
+
+### Added
+- **Enhanced Code-Context Binding** — Intelligent binding of code blocks to their explanations
+  - Pattern recognition for Before/After comparisons, Code+Output pairs, Setup+Example sequences
+  - New `CodeContextBinder` class with role detection, explanation extraction, and related block grouping
+  - New metadata fields: `code_role`, `has_related_code`, `code_relationship`, `explanation_bound`
+  - Integrated into CodeAwareStrategy chunking pipeline
+  - Perfect for API documentation, tutorials, and code migration guides
+  - **Competitive advantage:** Unique capability not found in competing chunkers
+
+- **Adaptive Chunk Sizing** — Automatic size optimization based on content complexity
+  - Complexity scoring using weighted factors: code (0.4), tables (0.3), lists (0.2), sentence length (0.1)
+  - Dynamic sizing with configurable scale bounds (0.5x–1.5x base size)
+  - New `AdaptiveSizeConfig` class for fine-tuned control
+  - Metadata fields: `adaptive_size`, `content_complexity`, `size_scale_factor`
+  - Opt-in feature via `use_adaptive_sizing=True` (disabled by default for backward compatibility)
+  - Validation script: `scripts/validate_adaptive_sizing.py`
+
+- **Hierarchical Chunking** — Parent-child relationships between chunks
+  - Multi-level retrieval support (document → section → subsection → paragraph)
+  - O(1) chunk lookup with navigation methods (get_parent, get_children, get_ancestors, get_siblings)
+  - New `HierarchicalChunkingResult` class with tree navigation API
+  - New metadata fields: `chunk_id`, `parent_id`, `children_ids`, `hierarchy_level`, `is_leaf`, `is_root`
+  - New tool parameters: `enable_hierarchy`, `debug` mode for including all chunks
+  - Backward-compatible with flat chunking via `get_flat_chunks()`
+
+### Changed
+- **Test Suite** — Expanded from 652 to 812 tests (+24.5%)
+  - Comprehensive tests for code context binding (5 new test files)
+  - Property-based tests for adaptive sizing
+  - Integration tests for hierarchical chunking
+  - Performance benchmarks for new features
+
+- **Documentation** — Comprehensive updates
+  - README updated with code-context binding examples and configuration
+  - New adaptive sizing documentation with tuning guidelines
+  - Hierarchical chunking API reference and usage examples
+  - Enhanced chunk metadata reference
+
+### Configuration
+- New parameters in `ChunkConfig`:
+  - `enable_code_context_binding` — Enable enhanced code-context binding
+  - `max_context_chars_before/after` — Context search limits
+  - `bind_output_blocks`, `preserve_before_after_pairs` — Binding behavior
+  - `use_adaptive_sizing` — Enable adaptive chunk sizing
+  - `adaptive_config` — AdaptiveSizeConfig instance
+
+- New tool parameters:
+  - `enable_hierarchy` — Create parent-child chunk relationships
+  - `debug` — Include all chunks (root, intermediate, leaf) in output
+
 ## [2.1.1] - 2025-12-10
 
 ### Added
