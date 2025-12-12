@@ -1,10 +1,7 @@
-"""
-Tests for Obsidian block ID stripping functionality.
+"""Tests for Obsidian block ID stripping functionality.
 
 Tests the strip_obsidian_block_ids configuration option and preprocessing.
 """
-
-import pytest
 
 from markdown_chunker_v2.chunker import MarkdownChunker
 from markdown_chunker_v2.config import ChunkConfig

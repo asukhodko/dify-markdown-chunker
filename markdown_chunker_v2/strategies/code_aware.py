@@ -9,7 +9,7 @@ from typing import List, Optional, Set, Tuple
 
 from ..code_context import CodeBlockRole, CodeContext, CodeContextBinder
 from ..config import ChunkConfig
-from ..types import Chunk, ContentAnalysis, FencedBlock
+from ..types import Chunk, ContentAnalysis, FencedBlock, LatexType
 from .base import BaseStrategy
 
 
@@ -84,57 +84,101 @@ class CodeAwareStrategy(BaseStrategy):
 
         for block_start, block_end, block_type in atomic_ranges:
             # Handle text before atomic block
-            if current_line < block_start:
-                text_lines = lines[current_line - 1 : block_start - 1]
-                text_content = "\n".join(text_lines)
-
-                if text_content.strip():
-                    text_chunks = self._split_text_to_size(
-                        text_content, current_line, config
-                    )
-                    chunks.extend(text_chunks)
+            chunks.extend(
+                self._process_text_before_block(
+                    lines, current_line, block_start, config
+                )
+            )
 
             # Handle atomic block
-            block_lines = lines[block_start - 1 : block_end]
-            block_content = "\n".join(block_lines)
-
-            if block_content.strip():
-                chunk = self._create_chunk(
-                    block_content,
-                    block_start,
-                    block_end,
-                    content_type=block_type,
-                    is_atomic=True,
-                )
-
-                # Set oversize metadata if needed
-                if chunk.size > config.max_chunk_size:
-                    reason = (
-                        "code_block_integrity"
-                        if block_type == "code"
-                        else "table_integrity"
-                    )
-                    self._set_oversize_metadata(chunk, reason, config)
-
-                chunks.append(chunk)
+            atomic_chunk = self._process_atomic_block(
+                lines, block_start, block_end, block_type, config
+            )
+            if atomic_chunk:
+                chunks.append(atomic_chunk)
 
             current_line = block_end + 1
 
         # Handle text after last atomic block
-        if current_line <= len(lines):
-            text_lines = lines[current_line - 1 :]
-            text_content = "\n".join(text_lines)
-
-            if text_content.strip():
-                text_chunks = self._split_text_to_size(
-                    text_content, current_line, config
-                )
-                chunks.extend(text_chunks)
+        chunks.extend(
+            self._process_text_after_blocks(lines, current_line, config)
+        )
 
         # Ensure fence balance
         chunks = self._ensure_fence_balance(chunks)
 
         return chunks
+
+    def _process_text_before_block(
+        self,
+        lines: List[str],
+        current_line: int,
+        block_start: int,
+        config: ChunkConfig,
+    ) -> List[Chunk]:
+        """Process text content before an atomic block."""
+        if current_line >= block_start:
+            return []
+
+        text_lines = lines[current_line - 1 : block_start - 1]
+        text_content = "\n".join(text_lines)
+
+        if text_content.strip():
+            return self._split_text_to_size(text_content, current_line, config)
+        return []
+
+    def _process_text_after_blocks(
+        self, lines: List[str], current_line: int, config: ChunkConfig
+    ) -> List[Chunk]:
+        """Process text content after all atomic blocks."""
+        if current_line > len(lines):
+            return []
+
+        text_lines = lines[current_line - 1 :]
+        text_content = "\n".join(text_lines)
+
+        if text_content.strip():
+            return self._split_text_to_size(text_content, current_line, config)
+        return []
+
+    def _process_atomic_block(
+        self,
+        lines: List[str],
+        block_start: int,
+        block_end: int,
+        block_type: str,
+        config: ChunkConfig,
+    ) -> Optional[Chunk]:
+        """Process a single atomic block (code, table, or LaTeX)."""
+        block_lines = lines[block_start - 1 : block_end]
+        block_content = "\n".join(block_lines)
+
+        if not block_content.strip():
+            return None
+
+        chunk = self._create_chunk(
+            block_content,
+            block_start,
+            block_end,
+            content_type=block_type,
+            is_atomic=True,
+        )
+
+        # Set oversize metadata if needed
+        if chunk.size > config.max_chunk_size:
+            reason = self._get_oversize_reason(block_type)
+            self._set_oversize_metadata(chunk, reason, config)
+
+        return chunk
+
+    def _get_oversize_reason(self, block_type: str) -> str:
+        """Get oversize reason based on block type."""
+        if block_type == "code":
+            return "code_block_integrity"
+        elif block_type == "table":
+            return "table_integrity"
+        else:  # latex
+            return "latex_integrity"
 
     def _apply_with_context_binding(
         self, md_text: str, analysis: ContentAnalysis, config: ChunkConfig
@@ -360,6 +404,11 @@ class CodeAwareStrategy(BaseStrategy):
         # Add tables
         for table in analysis.tables:
             ranges.append((table.start_line, table.end_line, "table"))
+
+        # Add LaTeX blocks (only display and environment types)
+        for latex in analysis.latex_blocks:
+            if latex.latex_type in (LatexType.DISPLAY, LatexType.ENVIRONMENT):
+                ranges.append((latex.start_line, latex.end_line, "latex"))
 
         # Sort by start line
         ranges.sort(key=lambda x: x[0])

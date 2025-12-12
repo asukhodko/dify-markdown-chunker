@@ -3,10 +3,10 @@ Base strategy class for markdown_chunker v2.
 """
 
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Tuple
 
 from ..config import ChunkConfig
-from ..types import Chunk, ContentAnalysis
+from ..types import Chunk, ContentAnalysis, LatexType
 
 
 class BaseStrategy(ABC):
@@ -101,7 +101,12 @@ class BaseStrategy(ABC):
                 table_integrity, section_integrity)
             config: Configuration for size check
         """
-        VALID_REASONS = {"code_block_integrity", "table_integrity", "section_integrity"}
+        VALID_REASONS = {
+            "code_block_integrity",
+            "table_integrity",
+            "section_integrity",
+            "latex_integrity",
+        }
 
         if reason not in VALID_REASONS:
             raise ValueError(
@@ -161,6 +166,56 @@ class BaseStrategy(ABC):
                 i += 1
 
         return result
+
+    def _get_atomic_blocks_in_range(
+        self, start_line: int, end_line: int, analysis: ContentAnalysis
+    ) -> List[Tuple[int, int, str]]:
+        """
+        Get atomic blocks (code, table, LaTeX) within a line range.
+
+        Shared helper for strategies that need to preserve atomic blocks
+        when splitting sections.
+
+        Args:
+            start_line: Range start (1-indexed, inclusive)
+            end_line: Range end (1-indexed, inclusive)
+            analysis: Document analysis with extracted blocks
+
+        Returns:
+            List of (block_start, block_end, block_type) tuples
+        """
+        atomic_ranges: List[Tuple[int, int, str]] = []
+
+        # Add code blocks in range
+        for code_block in analysis.code_blocks:
+            if start_line <= code_block.start_line <= end_line:
+                atomic_ranges.append(
+                    (code_block.start_line, code_block.end_line, "code")
+                )
+
+        # Add table blocks in range
+        for table_block in analysis.tables:
+            if start_line <= table_block.start_line <= end_line:
+                atomic_ranges.append(
+                    (table_block.start_line, table_block.end_line, "table")
+                )
+
+        # Add LaTeX blocks in range (only if configured)
+        for latex_block in analysis.latex_blocks:
+            if start_line <= latex_block.start_line <= end_line:
+                # Only DISPLAY and ENVIRONMENT types are atomic
+                if latex_block.latex_type in (
+                    LatexType.DISPLAY,
+                    LatexType.ENVIRONMENT,
+                ):
+                    atomic_ranges.append(
+                        (latex_block.start_line, latex_block.end_line, "latex")
+                    )
+
+        # Sort by start line
+        atomic_ranges.sort(key=lambda x: x[0])
+
+        return atomic_ranges
 
     def _split_text_to_size(
         self, text: str, start_line: int, config: ChunkConfig

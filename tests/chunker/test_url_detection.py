@@ -1,11 +1,8 @@
-"""
-Tests for URL detection in hierarchy builder.
+"""Tests for URL detection in hierarchy builder.
 
 Tests the _is_url_line() method used to prevent URL duplication
 in root node summaries.
 """
-
-import pytest
 
 from markdown_chunker_v2.hierarchy import HierarchyBuilder
 

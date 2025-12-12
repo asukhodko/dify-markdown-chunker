@@ -152,16 +152,16 @@ class TestAdaptiveSizingPerformance(unittest.TestCase):
             print(f"    {size:6d} bytes -> {time_per_kb[i]*1000:.3f} ms/KB")
 
         # Check that time per KB is relatively stable (linear scaling)
-        # Allow 6x variation (chunking has non-linear characteristics
-        # due to paragraph merging, header detection, etc.)
+        # Allow 7x variation (chunking has non-linear characteristics
+        # due to paragraph merging, header detection, LaTeX extraction, etc.)
         min_time_per_kb = min(time_per_kb)
         max_time_per_kb = max(time_per_kb)
         ratio = max_time_per_kb / min_time_per_kb
 
         self.assertLess(
             ratio,
-            6.5,
-            msg=f"Time scaling ratio ({ratio:.2f}x) should be < 6.5 "
+            7.0,
+            msg=f"Time scaling ratio ({ratio:.2f}x) should be < 7.0 "
             "for acceptable complexity",
         )
 

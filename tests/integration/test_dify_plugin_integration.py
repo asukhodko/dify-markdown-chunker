@@ -547,7 +547,7 @@ This is the final section of the document. It should not have next_content overl
             metadata_json = chunk_with_meta[metadata_start:metadata_end].strip()
             metadata = json.loads(metadata_json)
             # Extract main content after metadata (not used but calculated for consistency)
-            _ = chunk_with_meta[metadata_end + len("</metadata>") :].strip()
+            _ = chunk_with_meta[metadata_end + len("</metadata>"):].strip()
 
             # Get overlap values from metadata
             prev_content = metadata.get("previous_content", "")
@@ -671,7 +671,7 @@ This is the final section of the document. It should not have next_content overl
 
             # Extract main content
             metadata_end = chunk_with_meta.find("</metadata>")
-            main_content = chunk_with_meta[metadata_end + len("</metadata>") :].strip()
+            main_content = chunk_with_meta[metadata_end + len("</metadata>"):].strip()
 
             # Should be identical (no overlap added)
             assert (

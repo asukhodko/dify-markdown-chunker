@@ -67,8 +67,10 @@ class MarkdownChunker:
         """
         if self.config.strip_obsidian_block_ids:
             # Remove Obsidian block IDs: ^identifier at end of lines
-            # Pattern matches: space(s) + ^ + alphanumeric ID + optional spaces + line end
-            text = re.sub(r"\s+\^[a-zA-Z0-9]+\s*$", "", text, flags=re.MULTILINE)
+            # Pattern: space(s) + ^ + alphanumeric + spaces/end
+            text = re.sub(
+                r"\s+\^[a-zA-Z0-9]+\s*$", "", text, flags=re.MULTILINE
+            )
         return text
 
     def chunk(self, md_text: str) -> List[Chunk]:

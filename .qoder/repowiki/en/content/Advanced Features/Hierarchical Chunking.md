@@ -7,10 +7,17 @@
 - [types.py](file://markdown_chunker_v2/types.py)
 - [config.py](file://markdown_chunker_v2/config.py)
 - [test_hierarchical_chunking.py](file://tests/chunker/test_hierarchical_chunking.py)
-- [test_hierarchical_integration.py](file://tests/integration/test_hierarchical_integration.py)
+- [test_split_section_leaf.py](file://tests/chunker/test_split_section_leaf.py)
 - [11-hierarchical-chunking.md](file://docs/research/features/11-hierarchical-chunking.md)
 - [chunk_metadata.md](file://docs/api/chunk_metadata.md)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Updated leaf chunk detection logic to preserve content-rich parent sections
+- Added content preservation warnings for debugging and monitoring
+- Enhanced documentation of hybrid leaf detection criteria
+- Updated test cases for content preservation guarantees
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -62,6 +69,8 @@ Key behaviors:
 - Sibling order: Ordered by start_line within each parent group.
 - Levels: Computed from tree depth; mapped to 0–3 levels (document, section, subsection, paragraph).
 - Backward compatibility: get_flat_chunks returns only leaf chunks for systems not supporting hierarchy.
+- **Updated leaf detection**: A chunk is a leaf if it has no children OR has significant content (more than 100 characters of non-header text).
+- **Content preservation warnings**: Logs warnings when content would be lost during leaf filtering, helping identify bugs.
 
 **Section sources**
 - [hierarchy.py](file://markdown_chunker_v2/hierarchy.py#L14-L198)
@@ -86,7 +95,7 @@ Builder->>Builder : create root (optional)
 Builder->>Builder : link parent-child by header_path
 Builder->>Builder : link siblings by start_line
 Builder->>Builder : assign hierarchy levels
-Builder->>Builder : mark leaves
+Builder->>Builder : mark leaves (hybrid criteria)
 Builder-->>Chunker : HierarchicalChunkingResult
 Chunker-->>Client : HierarchicalChunkingResult
 ```
@@ -113,6 +122,7 @@ Responsibilities:
 Design notes:
 - Index built in __post_init__ from chunks’ metadata.
 - Tree preview truncation avoids large payloads in serialized nodes.
+- **Content preservation**: get_flat_chunks now includes parent chunks with significant content (more than 100 characters of non-header text) to prevent content loss when sections are split.
 
 **Section sources**
 - [hierarchy.py](file://markdown_chunker_v2/hierarchy.py#L14-L198)
@@ -124,7 +134,7 @@ Responsibilities:
 - Build parent-child links using header_path metadata; preamble chunks become children of root; orphans link to root.
 - Build sibling links by grouping chunks by parent_id and sorting by start_line.
 - Assign hierarchy_level based on tree depth (BFS) with a 0–3 mapping.
-- Mark leaf chunks (no children).
+- Mark leaf chunks using hybrid criteria: chunks with no children OR chunks with children but significant content (more than 100 characters of non-header text).
 - Optional validation:
   - Parent-child counts match actual children.
   - Sibling chains are complete, continuous, and acyclic.
@@ -132,6 +142,7 @@ Responsibilities:
 Implementation highlights:
 - Complexity kept low by method decomposition and early exits.
 - Validation can be disabled for performance-sensitive scenarios.
+- **Content preservation warnings**: The system logs warnings when content would be lost during leaf filtering, helping identify bugs in leaf detection logic.
 
 **Section sources**
 - [hierarchy.py](file://markdown_chunker_v2/hierarchy.py#L199-L738)
@@ -155,7 +166,7 @@ Chunk metadata fields used by hierarchical chunking:
 - children_ids: List of child IDs
 - prev_sibling_id, next_sibling_id: Sibling linkage
 - hierarchy_level: 0–3 mapping
-- is_leaf: Boolean indicating no children
+- is_leaf: Boolean indicating no children OR has significant content
 - is_root: Present on the root document chunk when created
 - header_path: Used to derive parent-child relationships
 - header_level: Used to compute hierarchy_level mapping
@@ -163,6 +174,7 @@ Chunk metadata fields used by hierarchical chunking:
 Notes:
 - header_path is populated by strategies and parsers; hierarchical chunking relies on it.
 - Preamble chunks use a special header_path value and are linked to root.
+- **Updated leaf detection**: The is_leaf field now uses hybrid criteria to preserve content-rich parent sections.
 
 **Section sources**
 - [types.py](file://markdown_chunker_v2/types.py#L186-L321)
@@ -176,10 +188,12 @@ Common usage patterns validated by tests:
 - Retrieve siblings for cross-referencing within the same parent.
 - Filter by hierarchy level for multi-level retrieval.
 - Obtain only leaf chunks for flat retrieval compatibility.
+- **Content preservation**: When sections are split, parent chunks with significant content are included in leaf-only results to prevent content loss.
 
 **Section sources**
 - [test_hierarchical_chunking.py](file://tests/chunker/test_hierarchical_chunking.py#L147-L271)
 - [test_hierarchical_integration.py](file://tests/integration/test_hierarchical_integration.py#L1-L115)
+- [test_split_section_leaf.py](file://tests/chunker/test_split_section_leaf.py#L1-L384)
 
 ### Validation and Invariants
 HierarchyBuilder includes validation routines to ensure:
@@ -188,6 +202,7 @@ HierarchyBuilder includes validation routines to ensure:
 - Children counts match actual children.
 - Root has no parent; exactly one root exists.
 - All IDs resolve to valid chunks.
+- **Content preservation**: The system verifies that no meaningful content is lost during leaf filtering through comprehensive test cases.
 
 These validations run by default and can be disabled for performance.
 
@@ -244,6 +259,7 @@ HierarchicalChunkingResult --> Chunk : "wraps"
 - BFS level assignment: Linear-time traversal from root.
 - Optional validation: Can be disabled to reduce overhead.
 - Memory: Root summary is lightweight; children reuse content references.
+- **Content preservation**: The hybrid leaf detection logic has minimal performance impact while ensuring no content is lost.
 
 Empirical tests demonstrate:
 - Fast processing on large documents with many headers.
@@ -260,6 +276,8 @@ Common issues and resolutions:
 - Broken sibling chains: Validation enforces continuity; disable validation only if you accept risks.
 - Unexpected hierarchy levels: Levels are derived from tree depth; header_level mapping caps at 3.
 - Large documents: Performance remains acceptable; consider disabling validation if needed.
+- **Content loss warnings**: If you see "Content preservation issue" warnings, check if parent chunks with significant content are being incorrectly filtered out. This indicates a bug in leaf detection logic.
+- **Leaf chunk detection**: A chunk is marked as a leaf if it has no children OR has more than 100 characters of non-header content.
 
 Validation and integration tests provide confidence that invariants hold under varied corpus documents.
 
@@ -269,4 +287,4 @@ Validation and integration tests provide confidence that invariants hold under v
 - [hierarchy.py](file://markdown_chunker_v2/hierarchy.py#L565-L738)
 
 ## Conclusion
-Hierarchical chunking augments flat chunks with robust parent-child-sibling relationships and navigation methods. It enables multi-level retrieval, breadcrumb-like navigation, and backward-compatible leaf-only retrieval. The implementation is modular, validated, and configurable, with optional performance tuning via validation control and root summary toggles.
+Hierarchical chunking augments flat chunks with robust parent-child-sibling relationships and navigation methods. It enables multi-level retrieval, breadcrumb-like navigation, and backward-compatible leaf-only retrieval. The implementation is modular, validated, and configurable, with optional performance tuning via validation control and root summary toggles. The updated leaf detection logic preserves content-rich parent sections, and content preservation warnings help identify potential issues, ensuring no meaningful content is lost during processing.

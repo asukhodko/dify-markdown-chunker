@@ -17,6 +17,14 @@ class ListType(Enum):
     CHECKBOX = "checkbox"  # - [ ], - [x]
 
 
+class LatexType(Enum):
+    """Type of LaTeX formula block."""
+
+    DISPLAY = "display"  # $$...$$
+    ENVIRONMENT = "environment"  # \begin{equation}...\end{equation}
+    INLINE = "inline"  # $...$ (optional extraction)
+
+
 @dataclass
 class ListItem:
     """
@@ -146,6 +154,31 @@ class Header:
 
 
 @dataclass
+class LatexBlock:
+    """
+    Represents a LaTeX mathematical formula block.
+
+    Attributes:
+        content: Complete formula including delimiters
+        latex_type: Type of LaTeX block (DISPLAY, ENVIRONMENT, INLINE)
+        start_line: Line number where block starts (1-indexed)
+        end_line: Line number where block ends (1-indexed)
+        start_pos: Character position in document
+        end_pos: Character position in document
+        environment_name: For ENVIRONMENT type, the environment name
+            (e.g., 'equation', 'align', 'gather')
+    """
+
+    content: str
+    latex_type: LatexType
+    start_line: int
+    end_line: int
+    start_pos: int = 0
+    end_pos: int = 0
+    environment_name: Optional[str] = None
+
+
+@dataclass
 class ContentAnalysis:
     """
     Result of analyzing a markdown document.
@@ -173,6 +206,7 @@ class ContentAnalysis:
     headers: List[Header] = field(default_factory=list)
     tables: List[TableBlock] = field(default_factory=list)
     list_blocks: List[ListBlock] = field(default_factory=list)
+    latex_blocks: List["LatexBlock"] = field(default_factory=list)
 
     # Additional metrics
     has_preamble: bool = False
@@ -181,6 +215,8 @@ class ContentAnalysis:
     max_list_depth: int = 0
     has_checkbox_lists: bool = False
     avg_sentence_length: float = 0.0
+    latex_block_count: int = 0
+    latex_ratio: float = 0.0
 
 
 @dataclass

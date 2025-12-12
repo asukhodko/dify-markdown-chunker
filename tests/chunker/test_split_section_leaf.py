@@ -1,5 +1,4 @@
-"""
-Tests for split section leaf detection and content preservation.
+"""Tests for split section leaf detection and content preservation.
 
 These tests verify that when sections exceed max_chunk_size and are split,
 the parent chunks with content are correctly marked as leaves and included
@@ -7,8 +6,6 @@ in leaf-only filtering to prevent content loss.
 """
 
 import re
-
-import pytest
 
 from markdown_chunker_v2.chunker import MarkdownChunker
 from markdown_chunker_v2.config import ChunkConfig
@@ -22,7 +19,7 @@ class TestSplitSectionLeafDetection:
         config = ChunkConfig(
             max_chunk_size=400,  # Smaller to force split
             overlap_size=0,
-            include_document_summary=False  # Simpler hierarchy
+            include_document_summary=False,  # Simpler hierarchy
         )
         chunker = MarkdownChunker(config)
 
@@ -54,23 +51,27 @@ Final sentences to ensure this section is properly sized for testing.
 
         # Find chunks with the Big Section header_path
         big_section_chunks = [
-            c for c in result.chunks
+            c
+            for c in result.chunks
             if "Big Section" in c.metadata.get("header_path", "")
         ]
 
         # Find the parent chunk (has children and contains intro content)
         parent = None
         for chunk in big_section_chunks:
-            if "introductory content" in chunk.content and chunk.metadata.get("children_ids"):
+            if "introductory content" in chunk.content and chunk.metadata.get(
+                "children_ids"
+            ):
                 parent = chunk
                 break
 
         # If a split occurred and we have a parent with content
         if parent is not None:
             # Critical check: parent should be marked as leaf because it has content
-            assert parent.metadata.get("is_leaf") is True, \
-                f"Parent with intro content should be marked as leaf. " \
+            assert parent.metadata.get("is_leaf") is True, (
+                f"Parent with intro content should be marked as leaf. "
                 f"Content length: {len(parent.content)}, has_children: {bool(parent.metadata.get('children_ids'))}"
+            )
 
             # Verify the intro content is in the parent
             assert "introductory content" in parent.content
@@ -81,20 +82,21 @@ Final sentences to ensure this section is properly sized for testing.
                 c.metadata.get("chunk_id") == parent.metadata.get("chunk_id")
                 for c in leaf_chunks
             )
-            assert parent_in_leaves, "Parent with content should appear in leaf-only results"
+            assert (
+                parent_in_leaves
+            ), "Parent with content should appear in leaf-only results"
 
         # Regardless of split, verify intro content appears in leaf chunks
         leaf_chunks = result.get_flat_chunks()
         leaf_content = "\n".join(c.content for c in leaf_chunks)
-        assert "introductory content" in leaf_content, \
-            "Intro content must appear in leaf chunks"
+        assert (
+            "introductory content" in leaf_content
+        ), "Intro content must appear in leaf chunks"
 
     def test_no_content_loss_in_leaf_only_mode(self):
         """Test that no content is lost when filtering to leaf-only chunks."""
         config = ChunkConfig(
-            max_chunk_size=600,
-            overlap_size=0,
-            include_document_summary=True
+            max_chunk_size=600, overlap_size=0, include_document_summary=True
         )
         chunker = MarkdownChunker(config)
 
@@ -131,7 +133,7 @@ and provide a comprehensive test of the split section handling.
         # Helper to extract text content (excluding headers)
         def extract_text_content(content: str) -> str:
             """Extract non-header text from content."""
-            text = re.sub(r'^#{1,6}\s+.*$', '', content, flags=re.MULTILINE)
+            text = re.sub(r"^#{1,6}\s+.*$", "", content, flags=re.MULTILINE)
             return text.strip()
 
         # Get all chunks and leaf-only chunks
@@ -149,9 +151,10 @@ and provide a comprehensive test of the split section handling.
         # Leaf-only content should preserve at least 95% of total content
         # (Small difference allowed for headers and formatting)
         coverage_ratio = leaf_text_size / all_text_size if all_text_size > 0 else 1.0
-        assert coverage_ratio >= 0.95, \
-            f"Content loss detected: {all_text_size} chars vs {leaf_text_size} chars " \
+        assert coverage_ratio >= 0.95, (
+            f"Content loss detected: {all_text_size} chars vs {leaf_text_size} chars "
             f"({coverage_ratio:.1%} coverage)"
+        )
 
         # Verify specific content paragraphs appear in leaf chunks
         critical_phrases = [
@@ -160,19 +163,18 @@ and provide a comprehensive test of the split section handling.
             "More content for subsection 1B",
             "Another section with different content",
             "Content here with enough text",
-            "Final subsection with additional content"
+            "Final subsection with additional content",
         ]
 
         for phrase in critical_phrases:
-            assert phrase in leaf_text, \
-                f"Critical phrase missing from leaf chunks: '{phrase}'"
+            assert (
+                phrase in leaf_text
+            ), f"Critical phrase missing from leaf chunks: '{phrase}'"
 
     def test_pure_header_parent_not_marked_as_leaf(self):
         """Test that parent with only header (no content) is not marked as leaf."""
         config = ChunkConfig(
-            max_chunk_size=300,
-            overlap_size=0,
-            include_document_summary=True
+            max_chunk_size=300, overlap_size=0, include_document_summary=True
         )
         chunker = MarkdownChunker(config)
 
@@ -198,7 +200,9 @@ container section that only organizes its children.
         parent = None
         for chunk in result.chunks:
             header_path = chunk.metadata.get("header_path", "")
-            if header_path == "/Container Section" and chunk.metadata.get("children_ids"):
+            if header_path == "/Container Section" and chunk.metadata.get(
+                "children_ids"
+            ):
                 parent = chunk
                 break
 
@@ -207,8 +211,9 @@ container section that only organizes its children.
             # (since it only has header, no content)
             has_significant_content = len(parent.content.strip()) > 150
             if not has_significant_content:
-                assert parent.metadata.get("is_leaf") is False, \
-                    "Parent with only header should not be marked as leaf"
+                assert (
+                    parent.metadata.get("is_leaf") is False
+                ), "Parent with only header should not be marked as leaf"
 
         # Verify leaf-only chunks contain all the subsection content
         leaf_chunks = result.get_flat_chunks()
@@ -221,9 +226,7 @@ container section that only organizes its children.
     def test_content_significance_threshold(self):
         """Test boundary cases for significant content detection."""
         config = ChunkConfig(
-            max_chunk_size=200,
-            overlap_size=0,
-            include_document_summary=True
+            max_chunk_size=200, overlap_size=0, include_document_summary=True
         )
         chunker = MarkdownChunker(config)
 
@@ -238,11 +241,9 @@ parent's minimal intro is considered significant or not.
 """
 
         result1 = chunker.chunk_hierarchical(text_minimal)
-        parent1 = None
         for chunk in result1.chunks:
             if "/Section One" in chunk.metadata.get("header_path", ""):
                 if chunk.metadata.get("children_ids"):
-                    parent1 = chunk
                     break
 
         # Test case 2: Content well above threshold (should be significant)
@@ -270,15 +271,13 @@ Additional content here to force the split.
         if parent2 and parent2.metadata.get("children_ids"):
             # Extract non-header content
             content_text = re.sub(
-                r'^#{1,6}\s+.*$',
-                '',
-                parent2.content,
-                flags=re.MULTILINE
+                r"^#{1,6}\s+.*$", "", parent2.content, flags=re.MULTILINE
             ).strip()
 
             if len(content_text) > 100:
-                assert parent2.metadata.get("is_leaf") is True, \
-                    "Parent with significant content should be marked as leaf"
+                assert (
+                    parent2.metadata.get("is_leaf") is True
+                ), "Parent with significant content should be marked as leaf"
 
 
 class TestContentPreservationProperties:
@@ -287,9 +286,7 @@ class TestContentPreservationProperties:
     def test_all_input_content_in_leaf_chunks(self):
         """Verify that all meaningful input content appears in leaf chunks."""
         config = ChunkConfig(
-            max_chunk_size=500,
-            overlap_size=0,
-            include_document_summary=True
+            max_chunk_size=500, overlap_size=0, include_document_summary=True
         )
         chunker = MarkdownChunker(config)
 
@@ -324,8 +321,8 @@ comprehensive coverage of the content preservation logic.
         # Extract all unique paragraphs/sentences from input (non-header text)
         input_lines = [
             line.strip()
-            for line in text.split('\n')
-            if line.strip() and not line.strip().startswith('#')
+            for line in text.split("\n")
+            if line.strip() and not line.strip().startswith("#")
         ]
 
         # Extract all text from leaf chunks
@@ -338,16 +335,15 @@ comprehensive coverage of the content preservation logic.
                 if line not in leaf_content:
                     missing_lines.append(line)
 
-        assert len(missing_lines) == 0, \
-            f"Found {len(missing_lines)} lines missing from leaf chunks: " \
-            f"{missing_lines[:3]}"  # Show first 3 missing
+        assert len(missing_lines) == 0, (
+            f"Found {len(missing_lines)} lines missing from leaf chunks: "
+            f"{missing_lines[:3]}"
+        )  # Show first 3 missing
 
     def test_no_content_loss_warnings(self, caplog):
         """Verify that no content loss warnings are emitted."""
         config = ChunkConfig(
-            max_chunk_size=500,
-            overlap_size=0,
-            include_document_summary=True
+            max_chunk_size=500, overlap_size=0, include_document_summary=True
         )
         chunker = MarkdownChunker(config)
 
@@ -371,13 +367,18 @@ and can verify that no warnings are generated.
 
         # Check that no content loss warnings were logged
         warnings = [
-            record for record in caplog.records
+            record
+            for record in caplog.records
             if "content" in record.message.lower()
-            and ("loss" in record.message.lower() or "preservation" in record.message.lower())
+            and (
+                "loss" in record.message.lower()
+                or "preservation" in record.message.lower()
+            )
         ]
 
-        assert len(warnings) == 0, \
-            f"Unexpected content loss warnings: {[w.message for w in warnings]}"
+        assert (
+            len(warnings) == 0
+        ), f"Unexpected content loss warnings: {[w.message for w in warnings]}"
 
         # Verify we got a reasonable number of chunks
         assert len(leaf_chunks) > 0, "Should have at least one leaf chunk"

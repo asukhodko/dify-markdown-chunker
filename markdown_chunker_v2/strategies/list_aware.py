@@ -232,6 +232,9 @@ class ListAwareStrategy(BaseStrategy):
         - Short enough (< 200 chars)
         - Within 2 lines of list start
 
+        Note: LaTeX formulas in introduction paragraphs are naturally
+        preserved as part of the paragraph text (no special handling needed).
+
         Args:
             text_before: Text preceding the list
             list_block: The list block to check

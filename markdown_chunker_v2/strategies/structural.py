@@ -146,33 +146,66 @@ class StructuralStrategy(BaseStrategy):
                 )
             else:
                 # Split large section into sub-chunks
-                section_chunks = self._split_text_to_size(
-                    section_content, start_line, config
+                section_chunks = self._split_large_section(
+                    section_content, start_line, end_line, headers, analysis, config
                 )
-                # Build section's header_path ONCE - all sub-chunks inherit it
-                # This ensures all chunks from DEV-4 have header_path
-                # ending with DEV-4
-                section_header_path, _, section_header_level = (
-                    self._build_header_path_for_chunk(
-                        section_content, headers, start_line
-                    )
-                )
-
-                for chunk in section_chunks:
-                    # Sub-chunks inherit header_path from parent section
-                    chunk.metadata["header_path"] = section_header_path
-                    chunk.metadata["header_level"] = section_header_level
-                    chunk.metadata["content_type"] = "section"  # Consistent type
-                    # section_tags = all H3+ headers inside THIS sub-chunk
-                    chunk_headers = self._find_headers_in_content(chunk.content)
-                    chunk.metadata["section_tags"] = [
-                        text
-                        for level, text in chunk_headers
-                        if level > section_header_level
-                    ]
                 chunks.extend(section_chunks)
 
         return chunks
+
+    def _split_large_section(
+        self,
+        section_content: str,
+        start_line: int,
+        end_line: int,
+        headers: List[Header],
+        analysis: ContentAnalysis,
+        config: ChunkConfig,
+    ) -> List[Chunk]:
+        """Split large section, preserving atomic blocks if present.
+
+        Args:
+            section_content: Content of the section
+            start_line: Starting line of section
+            end_line: Ending line of section
+            headers: All document headers
+            analysis: Document analysis (for atomic blocks)
+            config: Chunking configuration
+
+        Returns:
+            List of chunks with metadata
+        """
+        # Check for atomic blocks (code, tables, LaTeX) in section
+        atomic_blocks = self._get_atomic_blocks_in_range(start_line, end_line, analysis)
+
+        if atomic_blocks:
+            # Split preserving atomic blocks
+            section_chunks = self._split_section_preserving_atomic(
+                section_content, start_line, atomic_blocks, config
+            )
+        else:
+            # No atomic blocks - simple split
+            section_chunks = self._split_text_to_size(
+                section_content, start_line, config
+            )
+
+        # Build section's header_path ONCE - all sub-chunks inherit it
+        section_header_path, _, section_header_level = (
+            self._build_header_path_for_chunk(section_content, headers, start_line)
+        )
+
+        for chunk in section_chunks:
+            # Sub-chunks inherit header_path from parent section
+            chunk.metadata["header_path"] = section_header_path
+            chunk.metadata["header_level"] = section_header_level
+            chunk.metadata["content_type"] = "section"
+            # section_tags = all H3+ headers inside THIS sub-chunk
+            chunk_headers = self._find_headers_in_content(chunk.content)
+            chunk.metadata["section_tags"] = [
+                text for level, text in chunk_headers if level > section_header_level
+            ]
+
+        return section_chunks
 
     def _build_header_path(self, headers: List[Header]) -> str:
         """
@@ -493,3 +526,80 @@ class StructuralStrategy(BaseStrategy):
         header_level = contextual_level if header_stack else 0
 
         return header_path, section_tags, header_level
+
+    def _split_section_preserving_atomic(
+        self,
+        section_content: str,
+        section_start_line: int,
+        atomic_blocks: List[Tuple[int, int, str]],
+        config: ChunkConfig,
+    ) -> List[Chunk]:
+        """Split section while preserving atomic blocks (code, tables, LaTeX).
+
+        Args:
+            section_content: Content of the section
+            section_start_line: Starting line of section
+            atomic_blocks: List of (start, end, type) for atomic blocks
+            config: Chunking configuration
+
+        Returns:
+            List of chunks with atomic blocks preserved
+        """
+        lines = section_content.split("\n")
+        chunks = []
+        current_line = section_start_line
+
+        for block_start, block_end, block_type in atomic_blocks:
+            # Handle text before atomic block
+            if current_line < block_start:
+                text_lines = lines[
+                    current_line - section_start_line : block_start - section_start_line
+                ]
+                text_content = "\n".join(text_lines)
+                if text_content.strip():
+                    text_chunks = self._split_text_to_size(
+                        text_content, current_line, config
+                    )
+                    chunks.extend(text_chunks)
+
+            # Handle atomic block
+            block_lines = lines[
+                block_start - section_start_line : block_end - section_start_line + 1
+            ]
+            block_content = "\n".join(block_lines)
+            if block_content.strip():
+                chunk = self._create_chunk(
+                    block_content,
+                    block_start,
+                    block_end,
+                    content_type=block_type,
+                    is_atomic=True,
+                )
+                # Set oversize metadata if needed
+                if chunk.size > config.max_chunk_size:
+                    reason = (
+                        "code_block_integrity"
+                        if block_type == "code"
+                        else (
+                            "table_integrity"
+                            if block_type == "table"
+                            else "latex_integrity"
+                        )
+                    )
+                    self._set_oversize_metadata(chunk, reason, config)
+                chunks.append(chunk)
+
+            current_line = block_end + 1
+
+        # Handle text after last atomic block
+        section_end_line = section_start_line + len(lines) - 1
+        if current_line <= section_end_line:
+            text_lines = lines[current_line - section_start_line :]
+            text_content = "\n".join(text_lines)
+            if text_content.strip():
+                text_chunks = self._split_text_to_size(
+                    text_content, current_line, config
+                )
+                chunks.extend(text_chunks)
+
+        return chunks

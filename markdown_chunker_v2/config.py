@@ -59,6 +59,12 @@ class ChunkConfig:
             hierarchical mode (default: True)
         strip_obsidian_block_ids: Remove Obsidian-style block reference IDs
             (^block-id) from content (default: False)
+        preserve_latex_blocks: Treat LaTeX formulas as atomic blocks
+            (default: True)
+        latex_display_only: Only extract display math ($$...$$) and environments,
+            skip inline math ($...$) (default: True)
+        latex_max_context_chars: Maximum characters of surrounding text to bind
+            with LaTeX formulas (default: 300)
     """
 
     # Size parameters
@@ -97,6 +103,11 @@ class ChunkConfig:
     # Content preprocessing parameters
     strip_obsidian_block_ids: bool = False
 
+    # LaTeX formula handling parameters
+    preserve_latex_blocks: bool = True
+    latex_display_only: bool = True
+    latex_max_context_chars: int = 300
+
     def __post_init__(self):
         """Validate configuration."""
         self._validate_size_params()
@@ -104,6 +115,7 @@ class ChunkConfig:
         self._validate_strategy_override()
         self._validate_code_context_params()
         self._validate_adaptive_sizing_params()
+        self._validate_latex_params()
 
     def _validate_size_params(self):
         """Validate size-related parameters."""
@@ -190,6 +202,14 @@ class ChunkConfig:
         if self.use_adaptive_sizing and self.adaptive_config is None:
             # Auto-create default config if adaptive sizing enabled
             self.adaptive_config = AdaptiveSizeConfig()
+
+    def _validate_latex_params(self):
+        """Validate LaTeX formula handling parameters."""
+        if self.latex_max_context_chars < 0:
+            raise ValueError(
+                f"latex_max_context_chars must be non-negative, "
+                f"got {self.latex_max_context_chars}"
+            )
 
     @property
     def enable_overlap(self) -> bool:

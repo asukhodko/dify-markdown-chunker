@@ -58,6 +58,7 @@ This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** w
 | **Code examples lose explanatory context** | **Enhanced code-context binding with pattern recognition** |
 | **Before/After comparisons split apart** | **Intelligent Before/After pairing** |
 | **Code and output separated** | **Automatic Code+Output binding** |
+| **Mathematical formulas split** | **LaTeX formula preservation (`$$...$$`, environments)** |
 
 ---
 
@@ -78,6 +79,11 @@ This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** w
 - **List-Aware Strategy** — preserves nested list hierarchies and context (unique competitive advantage)
 - **Nested Fencing Support** — correctly handles quadruple/quintuple backticks and tilde fencing for meta-documentation (unique capability)
 - **Enhanced Code-Context Binding** — intelligently binds code blocks to explanations, recognizes Before/After patterns, Code+Output pairs, and sequential examples (unique competitive advantage)
+- **LaTeX Formula Handling** — preserves mathematical formulas as atomic blocks (new)
+  - Display math (`$$...$$`) never split across chunks
+  - Environment blocks (`\begin{equation}`, `\begin{align}`) preserved complete
+  - Supported in all 4 chunking strategies
+  - Critical for scientific papers and technical documentation
 - **Structure preservation** — headers, lists, tables, and code stay intact
 - **Adaptive overlap** — context window scales with chunk size (up to 35%)
 

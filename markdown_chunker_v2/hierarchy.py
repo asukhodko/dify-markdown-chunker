@@ -165,6 +165,7 @@ class HierarchicalChunkingResult:
                 if content and len(content) > 50:  # Minimal threshold
                     lost_content_count += 1
                     import logging
+
                     logger = logging.getLogger(__name__)
                     logger.warning(
                         f"Content preservation issue: Chunk {chunk_id} "
@@ -174,6 +175,7 @@ class HierarchicalChunkingResult:
 
         if lost_content_count > 0:
             import logging
+
             logger = logging.getLogger(__name__)
             logger.error(
                 f"Content loss detected: {lost_content_count} chunks with content "
@@ -546,14 +548,11 @@ class HierarchyBuilder:
 
         # Remove all ATX-style headers (# to ######)
         content_without_headers = re.sub(
-            r'^#{1,6}\s+.*$',  # Match any level header
-            '',
-            content,
-            flags=re.MULTILINE
+            r"^#{1,6}\s+.*$", "", content, flags=re.MULTILINE  # Match any level header
         )
 
         # Remove excess whitespace and measure remaining text
-        text_only = re.sub(r'\s+', ' ', content_without_headers).strip()
+        text_only = re.sub(r"\s+", " ", content_without_headers).strip()
 
         # Threshold: 100 chars of non-header content
         return len(text_only) > 100

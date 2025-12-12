@@ -5,7 +5,7 @@ Universal strategy that works for any document.
 Splits by paragraphs and groups to max_chunk_size.
 """
 
-from typing import List
+from typing import List, Tuple
 
 from ..config import ChunkConfig
 from ..types import Chunk, ContentAnalysis
@@ -41,10 +41,26 @@ class FallbackStrategy(BaseStrategy):
         Apply fallback strategy.
 
         Splits document by paragraphs and groups them to fit max_chunk_size.
+        Preserves atomic blocks (code, tables, LaTeX) if present.
         """
         if not md_text.strip():
             return []
 
+        # Check for atomic blocks
+        lines = md_text.split("\n")
+        atomic_ranges = self._get_atomic_blocks_in_range(1, len(lines), analysis)
+
+        if atomic_ranges:
+            # Document has atomic blocks - preserve them
+            return self._apply_with_atomic_blocks(md_text, atomic_ranges, config)
+        else:
+            # No atomic blocks - simple paragraph splitting
+            return self._apply_simple_paragraph_split(md_text, config)
+
+    def _apply_simple_paragraph_split(
+        self, md_text: str, config: ChunkConfig
+    ) -> List[Chunk]:
+        """Simple paragraph splitting without atomic blocks."""
         # Split by double newlines (paragraphs)
         paragraphs = md_text.split("\n\n")
 
@@ -95,5 +111,82 @@ class FallbackStrategy(BaseStrategy):
                     max(end_line, current_start_line),
                 )
             )
+
+        return chunks
+
+    def _apply_with_atomic_blocks(
+        self,
+        md_text: str,
+        atomic_ranges: List[Tuple[int, int, str]],
+        config: ChunkConfig,
+    ) -> List[Chunk]:
+        """Apply fallback strategy preserving atomic blocks.
+
+        Args:
+            md_text: Full markdown text
+            atomic_ranges: List of (start, end, type) for atomic blocks
+            config: Chunking configuration
+
+        Returns:
+            List of chunks with atomic blocks preserved
+        """
+        lines = md_text.split("\n")
+        chunks = []
+        current_line = 1
+
+        for block_start, block_end, block_type in atomic_ranges:
+            # Handle text before atomic block
+            if current_line < block_start:
+                text_lines = lines[current_line - 1 : block_start - 1]
+                text_content = "\n".join(text_lines)
+                if text_content.strip():
+                    # Split text by paragraphs
+                    text_chunks = self._apply_simple_paragraph_split(
+                        text_content, config
+                    )
+                    # Adjust line numbers
+                    for chunk in text_chunks:
+                        chunk.start_line += current_line - 1
+                        chunk.end_line += current_line - 1
+                    chunks.extend(text_chunks)
+
+            # Handle atomic block
+            block_lines = lines[block_start - 1 : block_end]
+            block_content = "\n".join(block_lines)
+            if block_content.strip():
+                chunk = self._create_chunk(
+                    block_content,
+                    block_start,
+                    block_end,
+                    content_type=block_type,
+                    is_atomic=True,
+                )
+                # Set oversize metadata if needed
+                if chunk.size > config.max_chunk_size:
+                    reason = (
+                        "code_block_integrity"
+                        if block_type == "code"
+                        else (
+                            "table_integrity"
+                            if block_type == "table"
+                            else "latex_integrity"
+                        )
+                    )
+                    self._set_oversize_metadata(chunk, reason, config)
+                chunks.append(chunk)
+
+            current_line = block_end + 1
+
+        # Handle text after last atomic block
+        if current_line <= len(lines):
+            text_lines = lines[current_line - 1 :]
+            text_content = "\n".join(text_lines)
+            if text_content.strip():
+                text_chunks = self._apply_simple_paragraph_split(text_content, config)
+                # Adjust line numbers
+                for chunk in text_chunks:
+                    chunk.start_line += current_line - 1
+                    chunk.end_line += current_line - 1
+                chunks.extend(text_chunks)
 
         return chunks

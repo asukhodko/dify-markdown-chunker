@@ -5,6 +5,8 @@ from .types import (
     ContentAnalysis,
     FencedBlock,
     Header,
+    LatexBlock,
+    LatexType,
     ListBlock,
     ListItem,
     ListType,
@@ -18,8 +20,10 @@ class Parser:
 
     Extracts:
     - Code blocks (fenced)
+    - LaTeX formulas (display and environments)
     - Headers
     - Tables
+    - Lists
     - Content metrics
 
     All line endings are normalized to Unix-style (\\n) before processing.
@@ -47,6 +51,7 @@ class Parser:
 
         # 2. Extract elements
         code_blocks = self._extract_code_blocks(md_text)
+        latex_blocks = self._extract_latex_blocks(md_text, code_blocks)
         headers = self._extract_headers(md_text)
         tables = self._extract_tables(md_text)
         list_blocks = self._extract_lists(md_text)
@@ -72,6 +77,10 @@ class Parser:
             for block in list_blocks
         )
 
+        # Calculate LaTeX metrics
+        latex_chars = sum(len(block.content) for block in latex_blocks)
+        latex_ratio = latex_chars / total_chars if total_chars > 0 else 0.0
+
         # 4. Detect preamble
         has_preamble, preamble_end = self._detect_preamble(md_text, headers)
 
@@ -92,12 +101,15 @@ class Parser:
             headers=headers,
             tables=tables,
             list_blocks=list_blocks,
+            latex_blocks=latex_blocks,
             has_preamble=has_preamble,
             preamble_end_line=preamble_end,
             list_ratio=list_ratio,
             max_list_depth=max_list_depth,
             has_checkbox_lists=has_checkbox_lists,
             avg_sentence_length=avg_sent_length,
+            latex_block_count=len(latex_blocks),
+            latex_ratio=latex_ratio,
         )
 
     def _normalize_line_endings(self, text: str) -> str:
@@ -232,6 +244,227 @@ class Parser:
                         is_closed=is_closed,
                     )
                 )
+
+            i += 1
+
+        return blocks
+
+    def _is_display_delimiter(self, line: str) -> bool:
+        """
+        Check if line contains display math delimiter ($$).
+
+        Args:
+            line: Line to check
+
+        Returns:
+            True if line contains $$, False otherwise
+        """
+        return "$$" in line.strip()
+
+    def _is_environment_start(self, line: str) -> Optional[str]:
+        """
+        Check if line starts a LaTeX environment.
+
+        Args:
+            line: Line to check
+
+        Returns:
+            Environment name if found, None otherwise
+        """
+        pattern = r"^\\begin\{(equation|align|gather|multline|eqnarray)\*?\}"
+        match = re.match(pattern, line.strip())
+        if match:
+            return match.group(1)
+        return None
+
+    def _is_environment_end(self, line: str, env_name: str) -> bool:
+        """
+        Check if line ends a LaTeX environment.
+
+        Args:
+            line: Line to check
+            env_name: Expected environment name
+
+        Returns:
+            True if line ends the specified environment
+        """
+        pattern = rf"^\\end\{{{re.escape(env_name)}\*?\}}"
+        return bool(re.match(pattern, line.strip()))
+
+    def _create_latex_block(
+        self,
+        content: str,
+        latex_type: LatexType,
+        start_line: int,
+        end_line: int,
+        start_pos: int,
+        end_pos: int,
+        env_name: Optional[str] = None,
+    ) -> LatexBlock:
+        """
+        Create a LatexBlock instance.
+
+        Args:
+            content: Complete LaTeX content including delimiters
+            latex_type: Type of LaTeX block
+            start_line: Starting line (1-indexed)
+            end_line: Ending line (1-indexed)
+            start_pos: Character position in document
+            end_pos: Character position in document
+            env_name: Environment name (for ENVIRONMENT type)
+
+        Returns:
+            LatexBlock instance
+        """
+        return LatexBlock(
+            content=content,
+            latex_type=latex_type,
+            start_line=start_line,
+            end_line=end_line,
+            start_pos=start_pos,
+            end_pos=end_pos,
+            environment_name=env_name,
+        )
+
+    def _extract_latex_blocks(
+        self, md_text: str, code_blocks: List[FencedBlock]
+    ) -> List[LatexBlock]:
+        """
+        Extract LaTeX formula blocks from markdown.
+
+        Handles:
+        - Display math: $$...$$
+        - Equation environments: \\begin{equation}...\\end{equation}
+        - Ignores LaTeX inside code blocks
+
+        Args:
+            md_text: Markdown text to parse
+            code_blocks: Already extracted code blocks (to skip LaTeX inside them)
+
+        Returns:
+            List of LatexBlock objects
+        """
+        blocks = []
+        lines = md_text.split("\n")
+
+        # Build code block line ranges for quick lookup
+        code_ranges = [(b.start_line, b.end_line) for b in code_blocks]
+
+        i = 0
+        while i < len(lines):
+            line_num = i + 1  # 1-indexed
+
+            # Skip if inside code block
+            in_code = any(start <= line_num <= end for start, end in code_ranges)
+            if in_code:
+                i += 1
+                continue
+
+            # Check for display math delimiter
+            if self._is_display_delimiter(lines[i]):
+                start_line = line_num
+                start_pos = sum(len(lines[j]) + 1 for j in range(i))
+                content_lines = [lines[i]]
+
+                # Check if single-line or multi-line
+                if lines[i].strip().count("$$") >= 2:
+                    # Single line display math
+                    end_line = line_num
+                    end_pos = start_pos + len(lines[i])
+                    blocks.append(
+                        self._create_latex_block(
+                            content=lines[i],
+                            latex_type=LatexType.DISPLAY,
+                            start_line=start_line,
+                            end_line=end_line,
+                            start_pos=start_pos,
+                            end_pos=end_pos,
+                        )
+                    )
+                    i += 1
+                    continue
+
+                # Multi-line display math - find closing $$
+                i += 1
+                while i < len(lines):
+                    content_lines.append(lines[i])
+                    if self._is_display_delimiter(lines[i]):
+                        # Found closing delimiter
+                        end_line = i + 1
+                        end_pos = sum(len(lines[j]) + 1 for j in range(i + 1))
+                        blocks.append(
+                            self._create_latex_block(
+                                content="\n".join(content_lines),
+                                latex_type=LatexType.DISPLAY,
+                                start_line=start_line,
+                                end_line=end_line,
+                                start_pos=start_pos,
+                                end_pos=end_pos,
+                            )
+                        )
+                        i += 1
+                        break
+                    i += 1
+                else:
+                    # Unclosed display math - extends to end
+                    end_line = len(lines)
+                    end_pos = len(md_text)
+                    blocks.append(
+                        self._create_latex_block(
+                            content="\n".join(content_lines),
+                            latex_type=LatexType.DISPLAY,
+                            start_line=start_line,
+                            end_line=end_line,
+                            start_pos=start_pos,
+                            end_pos=end_pos,
+                        )
+                    )
+                continue
+
+            # Check for environment start
+            env_name = self._is_environment_start(lines[i])
+            if env_name:
+                start_line = line_num
+                start_pos = sum(len(lines[j]) + 1 for j in range(i))
+                content_lines = [lines[i]]
+
+                # Find matching end
+                i += 1
+                while i < len(lines):
+                    content_lines.append(lines[i])
+                    if self._is_environment_end(lines[i], env_name):
+                        end_line = i + 1
+                        end_pos = sum(len(lines[j]) + 1 for j in range(i + 1))
+                        blocks.append(
+                            self._create_latex_block(
+                                content="\n".join(content_lines),
+                                latex_type=LatexType.ENVIRONMENT,
+                                start_line=start_line,
+                                end_line=end_line,
+                                start_pos=start_pos,
+                                end_pos=end_pos,
+                                env_name=env_name,
+                            )
+                        )
+                        i += 1
+                        break
+                    i += 1
+                else:
+                    # Unclosed environment - extends to end
+                    end_line = len(lines)
+                    end_pos = len(md_text)
+                    blocks.append(
+                        self._create_latex_block(
+                            content="\n".join(content_lines),
+                            latex_type=LatexType.ENVIRONMENT,
+                            start_line=start_line,
+                            end_line=end_line,
+                            start_pos=start_pos,
+                            end_pos=end_pos,
+                            env_name=env_name,
+                        )
+                    )
+                continue
 
             i += 1
 
