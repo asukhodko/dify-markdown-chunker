@@ -10,7 +10,10 @@ Tests cover:
 
 import pytest
 
-from markdown_chunker_v2.adaptive_sizing import AdaptiveSizeCalculator, AdaptiveSizeConfig
+from markdown_chunker_v2.adaptive_sizing import (
+    AdaptiveSizeCalculator,
+    AdaptiveSizeConfig,
+)
 from markdown_chunker_v2.parser import Parser
 
 
@@ -32,7 +35,10 @@ class TestAdaptiveSizeConfig:
         """Weights must sum to 1.0 within tolerance."""
         with pytest.raises(ValueError, match="Weights must sum to 1.0"):
             AdaptiveSizeConfig(
-                code_weight=0.5, table_weight=0.3, list_weight=0.2, sentence_length_weight=0.2
+                code_weight=0.5,
+                table_weight=0.3,
+                list_weight=0.2,
+                sentence_length_weight=0.2,
             )
 
     def test_negative_base_size_rejected(self):
@@ -47,20 +53,28 @@ class TestAdaptiveSizeConfig:
 
     def test_min_scale_greater_than_max_rejected(self):
         """min_scale >= max_scale should be rejected."""
-        with pytest.raises(ValueError, match="min_scale .* must be less than max_scale"):
+        with pytest.raises(
+            ValueError, match="min_scale .* must be less than max_scale"
+        ):
             AdaptiveSizeConfig(min_scale=1.5, max_scale=0.5)
 
     def test_negative_weights_rejected(self):
         """Negative weights should be rejected."""
         with pytest.raises(ValueError, match="code_weight must be non-negative"):
             AdaptiveSizeConfig(
-                code_weight=-0.1, table_weight=0.5, list_weight=0.3, sentence_length_weight=0.3
+                code_weight=-0.1,
+                table_weight=0.5,
+                list_weight=0.3,
+                sentence_length_weight=0.3,
             )
 
     def test_custom_weights_valid(self):
         """Custom weights that sum to 1.0 should be valid."""
         config = AdaptiveSizeConfig(
-            code_weight=0.6, table_weight=0.2, list_weight=0.1, sentence_length_weight=0.1
+            code_weight=0.6,
+            table_weight=0.2,
+            list_weight=0.1,
+            sentence_length_weight=0.1,
         )
         assert config.code_weight == 0.6
 
@@ -282,7 +296,10 @@ Some text.
 
         # High code weight
         config_high_code = AdaptiveSizeConfig(
-            code_weight=0.6, table_weight=0.2, list_weight=0.1, sentence_length_weight=0.1
+            code_weight=0.6,
+            table_weight=0.2,
+            list_weight=0.1,
+            sentence_length_weight=0.1,
         )
         calc_high_code = AdaptiveSizeCalculator(config_high_code)
         complexity_high_code = calc_high_code.calculate_complexity(analysis)

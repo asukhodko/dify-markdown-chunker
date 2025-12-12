@@ -10,6 +10,7 @@ Simplified pipeline:
 6. Return
 """
 
+import re
 from typing import List, Optional
 
 from .adaptive_sizing import AdaptiveSizeCalculator
@@ -51,6 +52,25 @@ class MarkdownChunker:
             include_document_summary=self.config.include_document_summary
         )
 
+    def _preprocess_text(self, text: str) -> str:
+        """
+        Preprocess markdown text before chunking.
+
+        Currently handles:
+        - Obsidian block ID removal (if configured)
+
+        Args:
+            text: Raw markdown text
+
+        Returns:
+            Preprocessed text
+        """
+        if self.config.strip_obsidian_block_ids:
+            # Remove Obsidian block IDs: ^identifier at end of lines
+            # Pattern matches: space(s) + ^ + alphanumeric ID + optional spaces + line end
+            text = re.sub(r"\s+\^[a-zA-Z0-9]+\s*$", "", text, flags=re.MULTILINE)
+        return text
+
     def chunk(self, md_text: str) -> List[Chunk]:
         """
         Chunk a markdown document.
@@ -73,6 +93,9 @@ class MarkdownChunker:
         """
         if not md_text or not md_text.strip():
             return []
+
+        # 0. Preprocess text (e.g., strip Obsidian block IDs if configured)
+        md_text = self._preprocess_text(md_text)
 
         # 1. Parse (once) - includes line ending normalization
         analysis = self._parser.analyze(md_text)
@@ -159,6 +182,9 @@ class MarkdownChunker:
         """
         if not md_text or not md_text.strip():
             return [], "none", None
+
+        # Preprocess text
+        md_text = self._preprocess_text(md_text)
 
         analysis = self._parser.analyze(md_text)
         normalized_text = md_text.replace("\r\n", "\n").replace("\r", "\n")

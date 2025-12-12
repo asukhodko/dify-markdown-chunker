@@ -57,6 +57,8 @@ class ChunkConfig:
             (auto-created with defaults if use_adaptive_sizing=True)
         include_document_summary: Create root document-level chunk in
             hierarchical mode (default: True)
+        strip_obsidian_block_ids: Remove Obsidian-style block reference IDs
+            (^block-id) from content (default: False)
     """
 
     # Size parameters
@@ -91,6 +93,9 @@ class ChunkConfig:
 
     # Hierarchical chunking parameters
     include_document_summary: bool = True
+
+    # Content preprocessing parameters
+    strip_obsidian_block_ids: bool = False
 
     def __post_init__(self):
         """Validate configuration."""

@@ -130,9 +130,7 @@ class AdaptiveSizeCalculator:
 
         return min(complexity, 1.0)
 
-    def calculate_optimal_size(
-        self, text: str, analysis: ContentAnalysis
-    ) -> int:
+    def calculate_optimal_size(self, text: str, analysis: ContentAnalysis) -> int:
         """
         Calculate optimal chunk size based on content.
 

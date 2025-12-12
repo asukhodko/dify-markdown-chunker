@@ -55,7 +55,7 @@ class TestCareerMatrixIntegration:
             for j, line in enumerate(lines[:-1]):  # Exclude last line
                 if line.strip().startswith("#"):
                     # Next non-empty line should not be a header
-                    remaining_lines = [line for line in lines[j + 1:] if line.strip()]
+                    remaining_lines = [line for line in lines[j + 1 :] if line.strip()]
                     if remaining_lines:
                         # There should be content after header
                         pass

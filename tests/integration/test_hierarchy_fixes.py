@@ -11,7 +11,8 @@ Tests validate fixes from manual_testing/manual-test-report.md:
 """
 
 import pytest
-from markdown_chunker_v2 import MarkdownChunker, ChunkConfig
+
+from markdown_chunker_v2 import ChunkConfig, MarkdownChunker
 
 
 class TestHierarchyFixes:
@@ -63,16 +64,11 @@ https://education.t-systems.ru/sde-levels/
         assert root.metadata.get("header_path") == "/"
 
         # First H1 should have different path
-        h1_chunks = [
-            c for c in result.chunks
-            if c.metadata.get("header_level") == 1
-        ]
+        h1_chunks = [c for c in result.chunks if c.metadata.get("header_level") == 1]
         assert len(h1_chunks) > 0
         assert h1_chunks[0].metadata.get("header_path") != "/"
 
-    def test_fix_2_hierarchy_levels_match_tree_depth(
-        self, chunker, test_document
-    ):
+    def test_fix_2_hierarchy_levels_match_tree_depth(self, chunker, test_document):
         """
         Fix #2: hierarchy_level should reflect tree depth not header_level.
 
@@ -87,28 +83,21 @@ https://education.t-systems.ru/sde-levels/
 
         # Preamble should be level 1 (child of root)
         preamble = next(
-            (c for c in result.chunks
-             if c.metadata.get("content_type") == "preamble"),
-            None
+            (c for c in result.chunks if c.metadata.get("content_type") == "preamble"),
+            None,
         )
         if preamble:
             assert preamble.metadata.get("hierarchy_level") == 1
             assert preamble.metadata.get("parent_id") == result.root_id
 
         # H1 sections should be level 1 (children of root)
-        h1_chunks = [
-            c for c in result.chunks
-            if c.metadata.get("header_level") == 1
-        ]
+        h1_chunks = [c for c in result.chunks if c.metadata.get("header_level") == 1]
         for h1 in h1_chunks:
             assert h1.metadata.get("hierarchy_level") == 1
             assert h1.metadata.get("parent_id") == result.root_id
 
         # H2 sections should be level 2 (children of H1)
-        h2_chunks = [
-            c for c in result.chunks
-            if c.metadata.get("header_level") == 2
-        ]
+        h2_chunks = [c for c in result.chunks if c.metadata.get("header_level") == 2]
         for h2 in h2_chunks:
             assert h2.metadata.get("hierarchy_level") == 2
 
@@ -127,8 +116,7 @@ https://education.t-systems.ru/sde-levels/
 
             # Count actual children
             actual_children = [
-                c for c in result.chunks
-                if c.metadata.get("parent_id") == chunk_id
+                c for c in result.chunks if c.metadata.get("parent_id") == chunk_id
             ]
 
             assert declared_count == len(actual_children), (
@@ -136,9 +124,7 @@ https://education.t-systems.ru/sde-levels/
                 f"has {len(actual_children)}"
             )
 
-    def test_fix_5_root_content_not_duplicate_preamble(
-        self, chunker, test_document
-    ):
+    def test_fix_5_root_content_not_duplicate_preamble(self, chunker, test_document):
         """
         Fix #5: Root content should be summary, not preamble duplication.
 
@@ -153,9 +139,8 @@ https://education.t-systems.ru/sde-levels/
 
         # Check that root is not just copying preamble URLs
         preamble = next(
-            (c for c in result.chunks
-             if c.metadata.get("content_type") == "preamble"),
-            None
+            (c for c in result.chunks if c.metadata.get("content_type") == "preamble"),
+            None,
         )
         if preamble:
             # Root should not be identical to preamble
@@ -208,21 +193,19 @@ https://education.t-systems.ru/sde-levels/
 
             # Find first sibling
             first_siblings = [
-                s for s in siblings
-                if s.metadata.get("prev_sibling_id") is None
+                s for s in siblings if s.metadata.get("prev_sibling_id") is None
             ]
-            assert len(first_siblings) == 1, (
-                f"Parent {parent_id}: Expected 1 first sibling"
-            )
+            assert (
+                len(first_siblings) == 1
+            ), f"Parent {parent_id}: Expected 1 first sibling"
 
             # Find last sibling
             last_siblings = [
-                s for s in siblings
-                if s.metadata.get("next_sibling_id") is None
+                s for s in siblings if s.metadata.get("next_sibling_id") is None
             ]
-            assert len(last_siblings) == 1, (
-                f"Parent {parent_id}: Expected 1 last sibling"
-            )
+            assert (
+                len(last_siblings) == 1
+            ), f"Parent {parent_id}: Expected 1 last sibling"
 
             # Traverse chain
             current = first_siblings[0]
@@ -246,9 +229,9 @@ https://education.t-systems.ru/sde-levels/
                 chain_length += 1
 
             # Verify chain length
-            assert chain_length == len(siblings), (
-                f"Chain length {chain_length} != sibling count {len(siblings)}"
-            )
+            assert chain_length == len(
+                siblings
+            ), f"Chain length {chain_length} != sibling count {len(siblings)}"
 
     def test_get_by_level_works_correctly(self, chunker, test_document):
         """
@@ -283,10 +266,7 @@ https://education.t-systems.ru/sde-levels/
         root = result.get_chunk(result.root_id)
 
         # Get first H1
-        h1_chunks = [
-            c for c in result.chunks
-            if c.metadata.get("header_level") == 1
-        ]
+        h1_chunks = [c for c in result.chunks if c.metadata.get("header_level") == 1]
         assert len(h1_chunks) > 0
 
         first_h1 = h1_chunks[0]

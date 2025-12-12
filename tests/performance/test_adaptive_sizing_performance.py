@@ -145,10 +145,7 @@ class TestAdaptiveSizingPerformance(unittest.TestCase):
             times.append(avg_time)
 
         # Calculate time per KB
-        time_per_kb = [
-            (times[i] / (sizes[i] / 1000))
-            for i in range(len(sizes))
-        ]
+        time_per_kb = [(times[i] / (sizes[i] / 1000)) for i in range(len(sizes))]
 
         print("\n  Document size -> Time (ms/KB):")
         for i, size in enumerate(sizes):
@@ -195,20 +192,16 @@ class TestAdaptiveSizingPerformance(unittest.TestCase):
 
         # Estimate metadata size
         standard_metadata_size = sum(
-            sys.getsizeof(str(chunk.metadata))
-            for chunk in chunks_standard
+            sys.getsizeof(str(chunk.metadata)) for chunk in chunks_standard
         )
 
         adaptive_metadata_size = sum(
-            sys.getsizeof(str(chunk.metadata))
-            for chunk in chunks_adaptive
+            sys.getsizeof(str(chunk.metadata)) for chunk in chunks_adaptive
         )
 
         # Calculate overhead
         metadata_overhead = adaptive_metadata_size - standard_metadata_size
-        overhead_pct = (
-            (metadata_overhead / standard_metadata_size) * 100
-        )
+        overhead_pct = (metadata_overhead / standard_metadata_size) * 100
 
         print(
             f"\n  Standard metadata: {standard_metadata_size} bytes, "
@@ -246,11 +239,7 @@ class TestAdaptiveSizingPerformance(unittest.TestCase):
             "    return 'example code'\n"
             "```\n\n"
         )
-        list_block = (
-            "- Item 1\n"
-            "- Item 2\n"
-            "- Item 3\n\n"
-        )
+        list_block = "- Item 1\n" "- Item 2\n" "- Item 3\n\n"
 
         # Build document
         parts = []

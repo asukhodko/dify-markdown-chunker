@@ -81,10 +81,7 @@ More content.
         result = chunker.chunk_hierarchical(text)
 
         # Find sections (level 2)
-        sections = [
-            c for c in result.chunks
-            if c.metadata.get("header_level") == 2
-        ]
+        sections = [c for c in result.chunks if c.metadata.get("header_level") == 2]
         sections.sort(key=lambda c: c.start_line)
 
         for i, section in enumerate(sections):
@@ -180,10 +177,7 @@ class TestHierarchicalChunkingResult:
         result = chunker.chunk_hierarchical(text)
 
         # Find deepest chunk
-        deepest = max(
-            result.chunks,
-            key=lambda c: c.metadata.get("header_level", 0)
-        )
+        deepest = max(result.chunks, key=lambda c: c.metadata.get("header_level", 0))
 
         parent = result.get_parent(deepest.metadata["chunk_id"])
         assert parent is not None
@@ -195,10 +189,7 @@ class TestHierarchicalChunkingResult:
         result = chunker.chunk_hierarchical(text)
 
         # Find deepest chunk
-        deepest = max(
-            result.chunks,
-            key=lambda c: c.metadata.get("header_level", 0)
-        )
+        deepest = max(result.chunks, key=lambda c: c.metadata.get("header_level", 0))
 
         ancestors = result.get_ancestors(deepest.metadata["chunk_id"])
 
@@ -213,10 +204,7 @@ class TestHierarchicalChunkingResult:
         result = chunker.chunk_hierarchical(text)
 
         # Find a section
-        sections = [
-            c for c in result.chunks
-            if c.metadata.get("header_level") == 2
-        ]
+        sections = [c for c in result.chunks if c.metadata.get("header_level") == 2]
 
         if len(sections) > 1:
             sec = sections[1]
@@ -302,8 +290,7 @@ class TestHierarchyEdgeCases:
         result = chunker.chunk_hierarchical(text)
 
         preamble = [
-            c for c in result.chunks
-            if c.metadata.get("content_type") == "preamble"
+            c for c in result.chunks if c.metadata.get("content_type") == "preamble"
         ]
 
         if preamble:
@@ -340,7 +327,8 @@ Deep content.
 
         # Find chunks with same path
         long_section_chunks = [
-            c for c in result.chunks
+            c
+            for c in result.chunks
             if "Long Section" in c.metadata.get("header_path", "")
         ]
 

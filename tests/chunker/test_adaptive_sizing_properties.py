@@ -7,7 +7,8 @@ system, providing stronger guarantees than example-based tests.
 
 import unittest
 
-from hypothesis import given, settings, strategies as st
+from hypothesis import given, settings
+from hypothesis import strategies as st
 
 from markdown_chunker_v2.adaptive_sizing import (
     AdaptiveSizeCalculator,
@@ -243,9 +244,7 @@ class TestAdaptiveSizingProperties(unittest.TestCase):
         code_blocks=st.integers(min_value=0, max_value=10),
     )
     @settings(max_examples=50)
-    def test_no_quality_regression_monotonic_complexity(
-        self, text_length, code_blocks
-    ):
+    def test_no_quality_regression_monotonic_complexity(self, text_length, code_blocks):
         """
         Property: Complexity score is monotonic with code block count.
 

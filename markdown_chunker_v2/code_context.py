@@ -507,5 +507,5 @@ class CodeContextBinder:
         if between_start > between_end or between_end >= len(lines):
             return False
 
-        between_text = "\n".join(lines[between_start:between_end + 1])
+        between_text = "\n".join(lines[between_start : between_end + 1])
         return any(pattern.search(between_text) for pattern in self.OUTPUT_PATTERNS)

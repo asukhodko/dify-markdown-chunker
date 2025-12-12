@@ -59,3 +59,5 @@ Makefile
 # Legacy lib
 markdown_chunker_legacy
 markdown_chunker_v1
+
+manual_testing/

@@ -7,9 +7,9 @@ Tests end-to-end behavior with real corpus files.
 import unittest
 from pathlib import Path
 
+from markdown_chunker_v2.adaptive_sizing import AdaptiveSizeConfig
 from markdown_chunker_v2.chunker import MarkdownChunker
 from markdown_chunker_v2.config import ChunkConfig
-from markdown_chunker_v2.adaptive_sizing import AdaptiveSizeConfig
 
 
 class TestAdaptiveSizingIntegration(unittest.TestCase):

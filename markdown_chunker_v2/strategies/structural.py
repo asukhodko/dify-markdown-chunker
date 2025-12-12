@@ -162,6 +162,7 @@ class StructuralStrategy(BaseStrategy):
                     # Sub-chunks inherit header_path from parent section
                     chunk.metadata["header_path"] = section_header_path
                     chunk.metadata["header_level"] = section_header_level
+                    chunk.metadata["content_type"] = "section"  # Consistent type
                     # section_tags = all H3+ headers inside THIS sub-chunk
                     chunk_headers = self._find_headers_in_content(chunk.content)
                     chunk.metadata["section_tags"] = [

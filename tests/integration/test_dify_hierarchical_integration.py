@@ -31,7 +31,9 @@ class TestDifyHierarchicalIntegration:
 
         try:
             # Clear any cached imports
-            modules_to_clear = [k for k in sys.modules.keys() if "markdown_chunker" in k]
+            modules_to_clear = [
+                k for k in sys.modules.keys() if "markdown_chunker" in k
+            ]
             for mod in modules_to_clear:
                 del sys.modules[mod]
 
@@ -136,7 +138,7 @@ Subsection 2.1 content.
         msg = messages[0]
 
         # Handle both variable and text messages
-        if hasattr(msg.message, 'variable_value'):
+        if hasattr(msg.message, "variable_value"):
             result = msg.message.variable_value
 
             # Should have chunks
@@ -274,8 +276,7 @@ Text after code.
 
         # Count chunks with is_leaf: false (should be 0)
         non_leaf_normal = sum(
-            1 for chunk in result_normal
-            if '"is_leaf": false' in chunk
+            1 for chunk in result_normal if '"is_leaf": false' in chunk
         )
         assert non_leaf_normal == 0, "Normal mode should not include non-leaf chunks"
 
@@ -297,17 +298,11 @@ Text after code.
         )
 
         # Count chunks with is_leaf: false (should be > 0)
-        non_leaf_debug = sum(
-            1 for chunk in result_debug
-            if '"is_leaf": false' in chunk
-        )
+        non_leaf_debug = sum(1 for chunk in result_debug if '"is_leaf": false' in chunk)
         assert non_leaf_debug > 0, "Debug mode should include non-leaf chunks"
 
         # Should have exactly one root chunk
-        root_chunks = sum(
-            1 for chunk in result_debug
-            if '"is_root": true' in chunk
-        )
+        root_chunks = sum(1 for chunk in result_debug if '"is_root": true' in chunk)
         assert root_chunks == 1, f"Should have exactly 1 root chunk, got {root_chunks}"
 
         # Root chunk should have no parent
@@ -357,7 +352,9 @@ class TestDifyHierarchicalEdgeCases:
 
         try:
             # Clear any cached imports
-            modules_to_clear = [k for k in sys.modules.keys() if "markdown_chunker" in k]
+            modules_to_clear = [
+                k for k in sys.modules.keys() if "markdown_chunker" in k
+            ]
             for mod in modules_to_clear:
                 del sys.modules[mod]
 

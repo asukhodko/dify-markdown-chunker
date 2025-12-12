@@ -5,6 +5,7 @@ Provides parent-child relationships and navigation methods for chunks.
 """
 
 import hashlib
+import re
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
@@ -66,9 +67,7 @@ class HierarchicalChunkingResult:
             return []
 
         children_ids = chunk.metadata.get("children_ids", [])
-        return [
-            self.get_chunk(cid) for cid in children_ids if self.get_chunk(cid)
-        ]
+        return [self.get_chunk(cid) for cid in children_ids if self.get_chunk(cid)]
 
     def get_parent(self, chunk_id: str) -> Optional[Chunk]:
         """
@@ -138,13 +137,50 @@ class HierarchicalChunkingResult:
         """
         Get only leaf chunks for backward-compatible retrieval.
 
-        Leaf chunks have no children. This enables systems that don't
-        support hierarchy to work with hierarchical results.
+        Leaf chunks have no children OR have significant content.
+        This enables systems that don't support hierarchy to work
+        with hierarchical results while preserving all content.
+
+        Logs warnings if any content would be lost during filtering.
 
         Returns:
             List of leaf chunks only
         """
-        return [c for c in self.chunks if c.metadata.get("is_leaf", True)]
+        leaf_chunks = []
+        lost_content_count = 0
+
+        for chunk in self.chunks:
+            is_leaf = chunk.metadata.get("is_leaf", True)
+
+            if is_leaf:
+                leaf_chunks.append(chunk)
+            else:
+                # Check if we're filtering out content (should not happen)
+                # This is a safety check to detect bugs in leaf detection
+                chunk_id = chunk.metadata.get("chunk_id", "unknown")
+                header_path = chunk.metadata.get("header_path", "unknown")
+
+                # Simple content check: non-empty after stripping
+                content = chunk.content.strip()
+                if content and len(content) > 50:  # Minimal threshold
+                    lost_content_count += 1
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.warning(
+                        f"Content preservation issue: Chunk {chunk_id} "
+                        f"at '{header_path}' has content but is_leaf=False. "
+                        f"This should not happen with current implementation."
+                    )
+
+        if lost_content_count > 0:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(
+                f"Content loss detected: {lost_content_count} chunks with content "
+                f"were filtered out. This indicates a bug in leaf detection."
+            )
+
+        return leaf_chunks
 
     def get_by_level(self, level: int) -> List[Chunk]:
         """
@@ -158,10 +194,7 @@ class HierarchicalChunkingResult:
         Returns:
             List of chunks at specified level
         """
-        return [
-            c for c in self.chunks
-            if c.metadata.get("hierarchy_level") == level
-        ]
+        return [c for c in self.chunks if c.metadata.get("hierarchy_level") == level]
 
     def to_tree_dict(self) -> Dict:
         """
@@ -173,6 +206,7 @@ class HierarchicalChunkingResult:
         Returns:
             Nested dictionary representing tree structure
         """
+
         def build_node(chunk_id: str) -> Dict:
             chunk = self.get_chunk(chunk_id)
             if not chunk:
@@ -188,9 +222,8 @@ class HierarchicalChunkingResult:
                 "header_path": chunk.metadata.get("header_path", ""),
                 "level": chunk.metadata.get("hierarchy_level", 0),
                 "children": [
-                    build_node(cid)
-                    for cid in chunk.metadata.get("children_ids", [])
-                ]
+                    build_node(cid) for cid in chunk.metadata.get("children_ids", [])
+                ],
             }
 
         return build_node(self.root_id)
@@ -206,9 +239,7 @@ class HierarchyBuilder:
     """
 
     def __init__(
-        self,
-        include_document_summary: bool = True,
-        validate_chains: bool = True
+        self, include_document_summary: bool = True, validate_chains: bool = True
     ):
         """
         Initialize hierarchy builder.
@@ -221,9 +252,7 @@ class HierarchyBuilder:
         self.validate_chains = validate_chains
 
     def build(
-        self,
-        chunks: List[Chunk],
-        original_text: str
+        self, chunks: List[Chunk], original_text: str
     ) -> HierarchicalChunkingResult:
         """
         Build hierarchy from flat chunks. Complexity: < 8 (orchestration only).
@@ -267,7 +296,8 @@ class HierarchyBuilder:
             self._validate_sibling_chains(all_chunks)
 
         root_id = (
-            root_chunk.metadata["chunk_id"] if root_chunk
+            root_chunk.metadata["chunk_id"]
+            if root_chunk
             else chunks[0].metadata["chunk_id"]
         )
         strategy = chunks[0].metadata.get("strategy", "unknown") if chunks else "none"
@@ -335,14 +365,12 @@ class HierarchyBuilder:
                 "hierarchy_level": 0,
                 "is_root": True,
                 "strategy": "hierarchical",  # Fix #7: Add strategy field
-            }
+            },
         )
         return root_chunk
 
     def _build_parent_child_links(
-        self,
-        chunks: List[Chunk],
-        root_chunk: Optional[Chunk]
+        self, chunks: List[Chunk], root_chunk: Optional[Chunk]
     ) -> None:
         """
         Build parent-child links via header_path. Complexity: < 10.
@@ -391,9 +419,7 @@ class HierarchyBuilder:
             # Orphans link to root
             if not parent_found and root_chunk:
                 chunk.metadata["parent_id"] = root_chunk.metadata["chunk_id"]
-                root_chunk.metadata["children_ids"].append(
-                    chunk.metadata["chunk_id"]
-                )
+                root_chunk.metadata["children_ids"].append(chunk.metadata["chunk_id"])
 
     def _build_sibling_links(self, chunks: List[Chunk]) -> None:
         """
@@ -414,18 +440,12 @@ class HierarchyBuilder:
             sibs.sort(key=lambda c: c.start_line)
             for i, chunk in enumerate(sibs):
                 if i > 0:
-                    chunk.metadata["prev_sibling_id"] = (
-                        sibs[i - 1].metadata["chunk_id"]
-                    )
+                    chunk.metadata["prev_sibling_id"] = sibs[i - 1].metadata["chunk_id"]
                 if i < len(sibs) - 1:
-                    chunk.metadata["next_sibling_id"] = (
-                        sibs[i + 1].metadata["chunk_id"]
-                    )
+                    chunk.metadata["next_sibling_id"] = sibs[i + 1].metadata["chunk_id"]
 
     def _assign_hierarchy_levels(
-        self,
-        chunks: List[Chunk],
-        root_chunk: Optional[Chunk] = None
+        self, chunks: List[Chunk], root_chunk: Optional[Chunk] = None
     ) -> None:
         """
         Assign hierarchy_level based on tree depth from root. Complexity: < 7.
@@ -477,14 +497,66 @@ class HierarchyBuilder:
 
     def _mark_leaves(self, chunks: List[Chunk]) -> None:
         """
-        Mark leaf chunks (no children). Complexity: < 4.
+        Mark leaf chunks using hybrid criteria. Complexity: < 5.
+
+        A chunk is a leaf if:
+        - It has no children, OR
+        - It has children but also contains significant content of its own
+
+        This handles split sections where parent has content before the split,
+        ensuring no content is lost in leaf-only filtering.
 
         Args:
             chunks: All chunks
         """
         for chunk in chunks:
             children = chunk.metadata.get("children_ids", [])
-            chunk.metadata["is_leaf"] = len(children) == 0
+            has_children = len(children) > 0
+
+            if not has_children:
+                # No children = definitely a leaf
+                chunk.metadata["is_leaf"] = True
+            else:
+                # Has children - check if parent also has own content
+                has_content = self._has_significant_content(chunk)
+                chunk.metadata["is_leaf"] = has_content
+
+    def _has_significant_content(self, chunk: Chunk) -> bool:
+        """
+        Check if chunk has significant content beyond headers. Complexity: < 5.
+
+        "Significant" means:
+        - More than just section headers
+        - More than 100 characters of actual text
+        - Not just whitespace
+
+        This is used to identify content-bearing parent chunks that should
+        be included in leaf-only results despite having children.
+
+        Args:
+            chunk: Chunk to analyze
+
+        Returns:
+            True if chunk has significant non-header content, False otherwise
+        """
+        content = chunk.content.strip()
+
+        if not content:
+            return False
+
+        # Remove all ATX-style headers (# to ######)
+        content_without_headers = re.sub(
+            r'^#{1,6}\s+.*$',  # Match any level header
+            '',
+            content,
+            flags=re.MULTILINE
+        )
+
+        # Remove excess whitespace and measure remaining text
+        text_only = re.sub(r'\s+', ' ', content_without_headers).strip()
+
+        # Threshold: 100 chars of non-header content
+        return len(text_only) > 100
 
     def _extract_document_title(self, chunks: List[Chunk]) -> str:
         """
@@ -509,6 +581,42 @@ class HierarchyBuilder:
                         return line.strip().lstrip("#").strip()
         return "Document"
 
+    def _is_url_line(self, line: str) -> bool:
+        """
+        Check if line contains primarily URL content. Complexity: < 5.
+
+        Detects:
+        1. Lines starting with http:// or https://
+        2. Label-colon-URL pattern (e.g., "Description: https://...")
+        3. Lines where URL takes up majority of content (>60% ratio)
+
+        Args:
+            line: Text line to check
+
+        Returns:
+            True if line is URL-based, False otherwise
+        """
+        line = line.strip()
+        if not line:
+            return False
+
+        # Direct URL start
+        if line.startswith(("http://", "https://")):
+            return True
+
+        # Label: URL pattern
+        if re.match(r"^[^:]+:\s*https?://", line):
+            return True
+
+        # URL dominance check (>60% of line is URL)
+        url_match = re.search(r"https?://\S+", line)
+        if url_match:
+            url_portion = url_match.group(0)
+            if len(url_portion) / len(line) > 0.6:
+                return True
+
+        return False
+
     def _extract_document_summary(self, chunks: List[Chunk]) -> str:
         """
         Extract document summary for root chunk. Complexity: < 8.
@@ -517,7 +625,7 @@ class HierarchyBuilder:
 
         Priority:
         1. First paragraph from preamble (if exists and not just URLs)
-        2. First paragraph from first H1 section
+        2. First paragraph from first H1 section (skip URLs and headers)
         3. Empty string
 
         Args:
@@ -528,17 +636,13 @@ class HierarchyBuilder:
         """
         # Check preamble
         preamble = next(
-            (c for c in chunks if c.metadata.get("content_type") == "preamble"),
-            None
+            (c for c in chunks if c.metadata.get("content_type") == "preamble"), None
         )
         if preamble:
             content = preamble.content
             # Skip if it's just URLs
             lines = content.strip().split("\n")
-            non_url_lines = [
-                line for line in lines
-                if not line.strip().startswith(("http://", "https://"))
-            ]
+            non_url_lines = [line for line in lines if not self._is_url_line(line)]
             if non_url_lines:
                 # Take first paragraph (up to 200 chars)
                 first_para = non_url_lines[0][:200]
@@ -546,18 +650,21 @@ class HierarchyBuilder:
 
         # Fallback to first H1 section's first paragraph
         first_h1 = next(
-            (c for c in chunks if c.metadata.get("header_level") == 1),
-            None
+            (c for c in chunks if c.metadata.get("header_level") == 1), None
         )
         if first_h1:
             content = first_h1.content
             if content:
-                # Get first paragraph after header line
+                # Get first paragraph after header line, skip URLs
                 paragraphs = content.split("\n\n")
                 for para in paragraphs:
-                    # Skip header line itself
-                    if not para.strip().startswith("#"):
-                        return para[:200]
+                    # Skip header line and URL lines
+                    if para.strip().startswith("#"):
+                        continue
+                    if self._is_url_line(para):
+                        continue
+                    # Found non-URL paragraph
+                    return para[:200]
 
         # Empty content as last resort
         return ""
@@ -580,8 +687,7 @@ class HierarchyBuilder:
 
             # Count actual children
             actual_children = [
-                c for c in chunks
-                if c.metadata.get("parent_id") == chunk_id
+                c for c in chunks if c.metadata.get("parent_id") == chunk_id
             ]
 
             if declared_count != len(actual_children):
@@ -613,9 +719,7 @@ class HierarchyBuilder:
             if len(siblings) <= 1:
                 continue
 
-            group_errors = self._validate_sibling_group(
-                parent_id, siblings, chunk_map
-            )
+            group_errors = self._validate_sibling_group(parent_id, siblings, chunk_map)
             errors.extend(group_errors)
 
         if errors:
@@ -640,10 +744,7 @@ class HierarchyBuilder:
         return parent_groups
 
     def _validate_sibling_group(
-        self,
-        parent_id: str,
-        siblings: List[Chunk],
-        chunk_map: Dict[str, Chunk]
+        self, parent_id: str, siblings: List[Chunk], chunk_map: Dict[str, Chunk]
     ) -> List[str]:
         """
         Validate single sibling group. Complexity: < 8.
@@ -660,8 +761,7 @@ class HierarchyBuilder:
 
         # Find first sibling
         first_siblings = [
-            s for s in siblings
-            if s.metadata.get("prev_sibling_id") is None
+            s for s in siblings if s.metadata.get("prev_sibling_id") is None
         ]
         if len(first_siblings) != 1:
             errors.append(
@@ -686,9 +786,7 @@ class HierarchyBuilder:
         return errors
 
     def _traverse_sibling_chain(
-        self,
-        start_chunk: Chunk,
-        chunk_map: Dict[str, Chunk]
+        self, start_chunk: Chunk, chunk_map: Dict[str, Chunk]
     ) -> tuple:
         """
         Traverse sibling chain and validate links. Complexity: < 7.

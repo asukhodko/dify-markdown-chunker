@@ -171,8 +171,13 @@ class CodeAwareStrategy(BaseStrategy):
 
         # Process atomic blocks and create chunks
         return self._process_atomic_blocks_with_context(
-            lines, md_text, analysis, atomic_ranges, code_contexts,
-            context_to_group, config
+            lines,
+            md_text,
+            analysis,
+            atomic_ranges,
+            code_contexts,
+            context_to_group,
+            config,
         )
 
     def _build_context_to_group_map(
@@ -214,8 +219,15 @@ class CodeAwareStrategy(BaseStrategy):
             # Handle atomic block
             if block_type == "code":
                 new_chunks, new_line = self._process_code_block_with_context(
-                    lines, md_text, analysis, block_start, block_end,
-                    code_contexts, context_to_group, processed_blocks, config
+                    lines,
+                    md_text,
+                    analysis,
+                    block_start,
+                    block_end,
+                    code_contexts,
+                    context_to_group,
+                    processed_blocks,
+                    config,
                 )
                 chunks.extend(new_chunks)
                 current_line = new_line
@@ -227,9 +239,7 @@ class CodeAwareStrategy(BaseStrategy):
                 current_line = new_line
 
         # Handle text after last atomic block
-        chunks.extend(
-            self._create_text_chunks_after(lines, current_line, config)
-        )
+        chunks.extend(self._create_text_chunks_after(lines, current_line, config))
 
         return self._ensure_fence_balance(chunks)
 
@@ -244,7 +254,7 @@ class CodeAwareStrategy(BaseStrategy):
         if current_line >= block_start:
             return []
 
-        text_lines = lines[current_line - 1:block_start - 1]
+        text_lines = lines[current_line - 1 : block_start - 1]
         text_content = "\n".join(text_lines)
 
         if text_content.strip():
@@ -258,7 +268,7 @@ class CodeAwareStrategy(BaseStrategy):
         if current_line > len(lines):
             return []
 
-        text_lines = lines[current_line - 1:]
+        text_lines = lines[current_line - 1 :]
         text_content = "\n".join(text_lines)
 
         if text_content.strip():
@@ -301,9 +311,7 @@ class CodeAwareStrategy(BaseStrategy):
         else:
             # Create single block chunk
             context = code_contexts[code_block_idx]
-            chunk = self._create_context_enhanced_chunk(
-                context, lines, md_text, config
-            )
+            chunk = self._create_context_enhanced_chunk(context, lines, md_text, config)
             processed_blocks.add(code_block_idx)
             return [chunk], block_end + 1
 
@@ -315,7 +323,7 @@ class CodeAwareStrategy(BaseStrategy):
         config: ChunkConfig,
     ) -> Tuple[List[Chunk], int]:
         """Process table block without context binding."""
-        block_lines = lines[block_start - 1:block_end]
+        block_lines = lines[block_start - 1 : block_end]
         block_content = "\n".join(block_lines)
 
         if not block_content.strip():
