@@ -16,7 +16,7 @@ from typing import List, Optional
 from .adaptive_sizing import AdaptiveSizeCalculator
 from .config import ChunkConfig
 from .hierarchy import HierarchicalChunkingResult, HierarchyBuilder
-from .parser import Parser
+from .parser import get_parser
 from .strategies import StrategySelector
 from .types import Chunk, ChunkingMetrics
 
@@ -46,7 +46,7 @@ class MarkdownChunker:
             config: Chunking configuration (uses defaults if None)
         """
         self.config = config or ChunkConfig()
-        self._parser = Parser()
+        self._parser = get_parser()  # Use singleton parser instance
         self._selector = StrategySelector()
         self._hierarchy_builder = HierarchyBuilder(
             include_document_summary=self.config.include_document_summary

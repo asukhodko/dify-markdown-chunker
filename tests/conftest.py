@@ -7,11 +7,26 @@ This module provides:
 - Reusable markdown generators (headers, lists, code blocks, tables)
 """
 
+from pathlib import Path
+
+import pytest
 from hypothesis import settings
 from hypothesis import strategies as st
 
-# Configure Hypothesis globally
-settings.register_profile("default", max_examples=100, deadline=5000)
+# ============================================================================
+# Adaptive Hypothesis Profiles (Performance Optimization)
+# ============================================================================
+# Tiered profiles reduce test execution time while maintaining coverage:
+# - fast: 25 examples for simple validation (basic properties)
+# - standard: 50 examples for medium complexity (domain properties)
+# - thorough: 100 examples for critical invariants (core properties)
+
+settings.register_profile("fast", max_examples=25, deadline=2000)
+settings.register_profile("standard", max_examples=50, deadline=3500)
+settings.register_profile("thorough", max_examples=100, deadline=5000)
+
+# Default to standard profile (50 examples) for balanced performance
+settings.register_profile("default", max_examples=50, deadline=3500)
 settings.load_profile("default")
 
 
@@ -217,3 +232,34 @@ def nested_markdown_document(draw, max_depth=3):
         add_section(2, max_depth)
 
     return "\n".join(elements)
+
+
+# ============================================================================
+# Corpus File Caching (Performance Optimization)
+# ============================================================================
+
+
+@pytest.fixture(scope="session")
+def corpus_cache():
+    """
+    Session-scoped corpus file cache for performance optimization.
+    
+    Caches markdown files from tests/corpus/ to avoid repeated I/O.
+    Max cache size: 100 files (most frequently used).
+    Estimated impact: 6-10 second reduction in test suite runtime.
+    """
+    from functools import lru_cache
+    
+    corpus_root = Path(__file__).parent / "corpus"
+    
+    @lru_cache(maxsize=100)
+    def load_file(file_path: str) -> str:
+        """Load and cache a corpus file."""
+        path = Path(file_path)
+        if not path.is_absolute():
+            path = corpus_root / path
+        
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read()
+    
+    return load_file

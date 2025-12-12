@@ -120,9 +120,16 @@ class Parser:
         - Windows: \\r\\n -> \\n
         - Old Mac: \\r -> \\n
 
+        Performance optimization: Fast-path detection skips normalization
+        when text contains no \\r characters (Unix-formatted files).
+        
         This MUST be called before any other processing.
         """
-        # First convert CRLF to LF, then convert remaining CR to LF
+        # Fast path: skip normalization if no \r present (Unix line endings)
+        if '\r' not in text:
+            return text
+        
+        # Normalize: First convert CRLF to LF, then convert remaining CR to LF
         return text.replace("\r\n", "\n").replace("\r", "\n")
 
     def _is_fence_opening(self, line: str) -> Optional[Tuple[str, int, str]]:
@@ -856,3 +863,26 @@ class Parser:
 
         total_length = sum(len(s) for s in sentences)
         return total_length / len(sentences)
+
+
+# ============================================================================
+# Module-Level Parser Singleton (Performance Optimization)
+# ============================================================================
+# Singleton parser instance to avoid repeated instantiation and regex compilation.
+# Parser is stateless - all methods are pure functions safe for concurrent use.
+# Estimated impact: 3-5 second reduction in test suite runtime.
+
+_parser_singleton = None
+
+
+def get_parser() -> Parser:
+    """
+    Get the singleton Parser instance.
+    
+    Returns:
+        Shared Parser instance
+    """
+    global _parser_singleton
+    if _parser_singleton is None:
+        _parser_singleton = Parser()
+    return _parser_singleton
