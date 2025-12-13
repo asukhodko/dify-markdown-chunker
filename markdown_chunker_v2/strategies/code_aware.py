@@ -70,7 +70,10 @@ class CodeAwareStrategy(BaseStrategy):
 
         Preserves backward compatibility when feature is disabled.
         """
-        lines = md_text.split("\n")
+        # O1: Use cached lines from analysis (fallback for backward compatibility)
+        lines = analysis.get_lines()
+        if lines is None:
+            lines = md_text.split("\n")
 
         # Get atomic block ranges
         atomic_ranges = self._get_atomic_ranges(analysis)
@@ -188,13 +191,18 @@ class CodeAwareStrategy(BaseStrategy):
 
         Binds code blocks to explanations and groups related blocks.
         """
-        lines = md_text.split("\n")
+        # O1: Use cached lines from analysis (fallback for backward compatibility)
+        lines = analysis.get_lines()
+        if lines is None:
+            lines = md_text.split("\n")
 
         # Initialize context binder and bind all code blocks
+        # O1: Pass lines to CodeContextBinder for optimization
         binder = CodeContextBinder(
             max_context_chars_before=config.max_context_chars_before,
             max_context_chars_after=config.max_context_chars_after,
             related_block_max_gap=config.related_block_max_gap,
+            lines=lines,  # O1: Share line array
         )
 
         code_contexts = [

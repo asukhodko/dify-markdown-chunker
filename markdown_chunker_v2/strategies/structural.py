@@ -39,6 +39,8 @@ class StructuralStrategy(BaseStrategy):
                 Default: 2 (H1, H2 structural; H3, H4, H5, H6 local)
         """
         self.max_structural_level = max_structural_level
+        # O4: Header stack cache for performance optimization
+        self._header_stack_cache: dict[int, List[Header]] = {}
 
     @property
     def name(self) -> str:
@@ -68,7 +70,11 @@ class StructuralStrategy(BaseStrategy):
         if not md_text.strip():
             return []
 
-        lines = md_text.split("\n")
+        # O1: Use cached lines from analysis (fallback for backward compatibility)
+        lines = analysis.get_lines()
+        if lines is None:
+            lines = md_text.split("\n")
+        
         headers = analysis.headers
 
         if not headers:
@@ -256,6 +262,9 @@ class StructuralStrategy(BaseStrategy):
         max_structural_level only affects CHUNK BOUNDARIES (where to split),
         NOT which headers appear in header_path.
 
+        O4 Optimization: Results are cached to avoid redundant computation
+        when consecutive chunks share the same header context.
+
         Args:
             chunk_start_line: First line of the chunk (1-indexed)
             all_headers: All headers in the document
@@ -263,6 +272,10 @@ class StructuralStrategy(BaseStrategy):
         Returns:
             List of headers forming the contextual stack (ancestors)
         """
+        # O4: Check cache first
+        if chunk_start_line in self._header_stack_cache:
+            return self._header_stack_cache[chunk_start_line]
+
         stack: List[Header] = []
 
         for header in all_headers:
@@ -276,6 +289,8 @@ class StructuralStrategy(BaseStrategy):
                 stack.pop()
             stack.append(header)
 
+        # O4: Cache the result before returning
+        self._header_stack_cache[chunk_start_line] = stack
         return stack
 
     def _get_contextual_level(self, header_stack: List[Header]) -> int:

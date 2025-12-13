@@ -218,6 +218,24 @@ class ContentAnalysis:
     latex_block_count: int = 0
     latex_ratio: float = 0.0
 
+    # O1: Line array optimization (optional, backward compatible)
+    # Private field excluded from repr to avoid clutter in debug output
+    _lines: Optional[List[str]] = field(default=None, repr=False)
+
+    def get_lines(self) -> Optional[List[str]]:
+        """
+        Get cached line array if available.
+
+        Returns:
+            Cached line array from parser analysis, or None if not available.
+            When present, enables strategies to avoid redundant split operations.
+
+        Note:
+            This is an internal optimization field. Strategies should fall back
+            to splitting md_text if this returns None (backward compatibility).
+        """
+        return self._lines
+
 
 @dataclass
 class Chunk:

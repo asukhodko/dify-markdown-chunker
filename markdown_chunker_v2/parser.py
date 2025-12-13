@@ -35,6 +35,14 @@ class Parser:
     )
 
     HEADER_PATTERN = re.compile(r"^(#{1,6})\s+(.+)$", re.MULTILINE)
+    
+    # O1b: Pre-compiled fence detection pattern for performance
+    FENCE_PATTERN = re.compile(r"^(\s*)(`{3,}|~{3,})(\w*)\s*$")
+    
+    # O3: Pre-compiled list item patterns for performance (early termination on first match)
+    CHECKBOX_PATTERN = re.compile(r"^(\s*)([-*+])\s+\[([ xX])\]\s+(.+)$")
+    NUMBERED_PATTERN = re.compile(r"^(\s*)(\d+\.)\s+(.+)$")
+    BULLET_PATTERN = re.compile(r"^(\s*)([-*+])\s+(.+)$")
 
     def analyze(self, md_text: str) -> ContentAnalysis:
         """
@@ -49,16 +57,20 @@ class Parser:
         # 1. Normalize line endings (CRITICAL - must be first)
         md_text = self._normalize_line_endings(md_text)
 
-        # 2. Extract elements
-        code_blocks = self._extract_code_blocks(md_text)
-        latex_blocks = self._extract_latex_blocks(md_text, code_blocks)
-        headers = self._extract_headers(md_text)
-        tables = self._extract_tables(md_text)
-        list_blocks = self._extract_lists(md_text)
+        # O1: Single split operation for entire pipeline
+        lines = md_text.split("\n") if md_text else []
+        positions = self._build_position_index(lines)
+
+        # 2. Extract elements using shared line array and position index
+        code_blocks = self._extract_code_blocks(lines, positions)
+        latex_blocks = self._extract_latex_blocks(lines, positions, code_blocks)
+        headers = self._extract_headers(lines, positions)
+        tables = self._extract_tables(lines, positions)
+        list_blocks = self._extract_lists(lines, positions)
 
         # 3. Calculate metrics
         total_chars = len(md_text)
-        total_lines = md_text.count("\n") + 1 if md_text else 0
+        total_lines = len(lines) if md_text else 0
 
         code_chars = sum(len(b.content) for b in code_blocks)
         code_ratio = code_chars / total_chars if total_chars > 0 else 0.0
@@ -81,11 +93,11 @@ class Parser:
         latex_chars = sum(len(block.content) for block in latex_blocks)
         latex_ratio = latex_chars / total_chars if total_chars > 0 else 0.0
 
-        # 4. Detect preamble
-        has_preamble, preamble_end = self._detect_preamble(md_text, headers)
+        # 4. Detect preamble using shared line array
+        has_preamble, preamble_end = self._detect_preamble(lines, positions, headers)
 
-        # 5. Calculate average sentence length
-        avg_sent_length = self._calculate_avg_sentence_length(md_text)
+        # 5. Calculate average sentence length using shared line array
+        avg_sent_length = self._calculate_avg_sentence_length(lines)
 
         return ContentAnalysis(
             total_chars=total_chars,
@@ -110,6 +122,7 @@ class Parser:
             avg_sentence_length=avg_sent_length,
             latex_block_count=len(latex_blocks),
             latex_ratio=latex_ratio,
+            _lines=lines,  # O1: Store line array for strategy optimization
         )
 
     def _normalize_line_endings(self, text: str) -> str:
@@ -131,6 +144,31 @@ class Parser:
         
         # Normalize: First convert CRLF to LF, then convert remaining CR to LF
         return text.replace("\r\n", "\n").replace("\r", "\n")
+    
+    def _build_position_index(self, lines: List[str]) -> List[int]:
+        """
+        Build cumulative position index for O(1) position lookups.
+        
+        O0 Optimization: Replaces O(n×m) position calculations with O(1) array lookups.
+        
+        Args:
+            lines: Array of text lines from document
+        
+        Returns:
+            Array where index i gives character position of line i in document.
+            Position includes all preceding lines plus newline characters.
+        
+        Example:
+            For document "hello\nworld\n":
+            lines = ["hello", "world"]
+            positions = [0, 6]  # "hello" starts at 0, "world" starts at 6
+        """
+        positions = [0]
+        cumulative = 0
+        for line in lines:
+            cumulative += len(line) + 1  # +1 for newline character
+            positions.append(cumulative)
+        return positions
 
     def _is_fence_opening(self, line: str) -> Optional[Tuple[str, int, str]]:
         """
@@ -151,9 +189,8 @@ class Parser:
             >>> parser._is_fence_opening("regular text")
             None
         """
-        # Match fence opening: optional whitespace, 3+ backticks or tildes,
-        # optional language
-        match = re.match(r"^(\s*)(`{3,}|~{3,})(\w*)\s*$", line)
+        # O1b: Use pre-compiled pattern for performance
+        match = self.FENCE_PATTERN.match(line)
         if not match:
             return None
 
@@ -193,7 +230,9 @@ class Parser:
         pattern = rf"^(\s*)({re.escape(fence_char)}{{{fence_length},}})\s*$"
         return bool(re.match(pattern, line))
 
-    def _extract_code_blocks(self, md_text: str) -> List[FencedBlock]:
+    def _extract_code_blocks(
+        self, lines: List[str], positions: List[int]
+    ) -> List[FencedBlock]:
         """
         Extract fenced code blocks with nested fencing support.
 
@@ -205,11 +244,14 @@ class Parser:
         - Unclosed fences (extend to end of document)
         - Indented fences
 
+        Args:
+            lines: Pre-split document lines (O1 optimization)
+            positions: Pre-computed position index (O0 optimization)
+
         Returns:
             List of FencedBlock objects with complete metadata.
         """
         blocks = []
-        lines = md_text.split("\n")
 
         i = 0
         while i < len(lines):
@@ -220,7 +262,7 @@ class Parser:
             if fence_info:
                 fence_char, fence_length, language = fence_info
                 start_line = i + 1  # 1-indexed
-                start_pos = sum(len(lines[j]) + 1 for j in range(i))
+                start_pos = positions[i]  # O0: O(1) lookup instead of O(i) sum
 
                 # Collect fence content
                 content_lines = []
@@ -236,7 +278,7 @@ class Parser:
 
                 # Calculate end position
                 end_line = min(i + 1, len(lines))  # 1-indexed
-                end_pos = sum(len(lines[j]) + 1 for j in range(min(i + 1, len(lines))))
+                end_pos = positions[min(i + 1, len(lines))]  # O0: O(1) lookup
 
                 blocks.append(
                     FencedBlock(
@@ -334,7 +376,7 @@ class Parser:
         )
 
     def _extract_latex_blocks(
-        self, md_text: str, code_blocks: List[FencedBlock]
+        self, lines: List[str], positions: List[int], code_blocks: List[FencedBlock]
     ) -> List[LatexBlock]:
         """
         Extract LaTeX formula blocks from markdown.
@@ -345,14 +387,14 @@ class Parser:
         - Ignores LaTeX inside code blocks
 
         Args:
-            md_text: Markdown text to parse
+            lines: Pre-split document lines (O1 optimization)
+            positions: Pre-computed position index (O0 optimization)
             code_blocks: Already extracted code blocks (to skip LaTeX inside them)
 
         Returns:
             List of LatexBlock objects
         """
         blocks = []
-        lines = md_text.split("\n")
 
         # Build code block line ranges for quick lookup
         code_ranges = [(b.start_line, b.end_line) for b in code_blocks]
@@ -370,7 +412,7 @@ class Parser:
             # Check for display math delimiter
             if self._is_display_delimiter(lines[i]):
                 start_line = line_num
-                start_pos = sum(len(lines[j]) + 1 for j in range(i))
+                start_pos = positions[i]  # O0: O(1) lookup
                 content_lines = [lines[i]]
 
                 # Check if single-line or multi-line
@@ -398,7 +440,7 @@ class Parser:
                     if self._is_display_delimiter(lines[i]):
                         # Found closing delimiter
                         end_line = i + 1
-                        end_pos = sum(len(lines[j]) + 1 for j in range(i + 1))
+                        end_pos = positions[i + 1]  # O0: O(1) lookup
                         blocks.append(
                             self._create_latex_block(
                                 content="\n".join(content_lines),
@@ -415,7 +457,7 @@ class Parser:
                 else:
                     # Unclosed display math - extends to end
                     end_line = len(lines)
-                    end_pos = len(md_text)
+                    end_pos = positions[-1] if positions else 0
                     blocks.append(
                         self._create_latex_block(
                             content="\n".join(content_lines),
@@ -432,7 +474,7 @@ class Parser:
             env_name = self._is_environment_start(lines[i])
             if env_name:
                 start_line = line_num
-                start_pos = sum(len(lines[j]) + 1 for j in range(i))
+                start_pos = positions[i]  # O0: O(1) lookup
                 content_lines = [lines[i]]
 
                 # Find matching end
@@ -441,7 +483,7 @@ class Parser:
                     content_lines.append(lines[i])
                     if self._is_environment_end(lines[i], env_name):
                         end_line = i + 1
-                        end_pos = sum(len(lines[j]) + 1 for j in range(i + 1))
+                        end_pos = positions[i + 1]  # O0: O(1) lookup
                         blocks.append(
                             self._create_latex_block(
                                 content="\n".join(content_lines),
@@ -459,7 +501,7 @@ class Parser:
                 else:
                     # Unclosed environment - extends to end
                     end_line = len(lines)
-                    end_pos = len(md_text)
+                    end_pos = positions[-1] if positions else 0
                     blocks.append(
                         self._create_latex_block(
                             content="\n".join(content_lines),
@@ -477,7 +519,9 @@ class Parser:
 
         return blocks
 
-    def _extract_headers(self, md_text: str) -> List[Header]:
+    def _extract_headers(
+        self, lines: List[str], positions: List[int]
+    ) -> List[Header]:
         """
         Extract markdown headers.
 
@@ -485,9 +529,15 @@ class Parser:
         - ATX headers (# through ######)
         - Ignores headers inside code blocks
         - Supports nested fences and tilde fencing
+
+        Args:
+            lines: Pre-split document lines (O1 optimization)
+            positions: Pre-computed position index (O0 optimization)
+
+        Returns:
+            List of extracted Header objects
         """
         headers = []
-        lines = md_text.split("\n")
 
         # Track fence state with stack for nested fences
         fence_stack: list[tuple[str, int]] = []  # (char, length) tuples
@@ -518,7 +568,7 @@ class Parser:
             if header_match:
                 level = len(header_match.group(1))
                 text = header_match.group(2).strip()
-                pos = sum(len(lines[j]) + 1 for j in range(i))
+                pos = positions[i]  # O0: O(1) lookup
 
                 headers.append(
                     Header(
@@ -531,7 +581,9 @@ class Parser:
 
         return headers
 
-    def _extract_tables(self, md_text: str) -> List[TableBlock]:
+    def _extract_tables(
+        self, lines: List[str], positions: List[int]
+    ) -> List[TableBlock]:
         """
         Extract markdown tables.
 
@@ -540,9 +592,15 @@ class Parser:
         - Followed by separator row with |---|
         - Ignores tables inside code blocks
         - Supports nested fences and tilde fencing
+
+        Args:
+            lines: Pre-split document lines (O1 optimization)
+            positions: Pre-computed position index (O0 optimization)
+
+        Returns:
+            List of extracted table blocks
         """
         tables = []
-        lines = md_text.split("\n")
 
         # Track fence state with stack for nested fences
         fence_stack: list[tuple[str, int]] = []  # (char, length) tuples
@@ -611,9 +669,16 @@ class Parser:
 
         return tables
 
-    def _detect_preamble(self, md_text: str, headers: List[Header]) -> Tuple[bool, int]:
+    def _detect_preamble(
+        self, lines: List[str], positions: List[int], headers: List[Header]
+    ) -> Tuple[bool, int]:
         """
         Detect if document has preamble (content before first header).
+
+        Args:
+            lines: Pre-split document lines (O1 optimization)
+            positions: Pre-computed position index (O0 optimization)
+            headers: Extracted headers from document
 
         Returns:
             Tuple of (has_preamble, preamble_end_line)
@@ -625,14 +690,15 @@ class Parser:
         first_header_line = headers[0].line
 
         # Check if there's non-whitespace content before first header
-        lines = md_text.split("\n")
         for i in range(first_header_line - 1):
             if lines[i].strip():
                 return True, first_header_line - 1
 
         return False, 0
 
-    def _extract_lists(self, md_text: str) -> List[ListBlock]:
+    def _extract_lists(
+        self, lines: List[str], positions: List[int]
+    ) -> List[ListBlock]:
         """
         Extract list blocks from markdown.
 
@@ -644,9 +710,15 @@ class Parser:
         - Continuation lines
         - Ignores lists inside code blocks
         - Supports nested fences and tilde fencing
+
+        Args:
+            lines: Pre-split document lines (O1 optimization)
+            positions: Pre-computed position index (O0 optimization)
+
+        Returns:
+            List of extracted list blocks
         """
         blocks = []
-        lines = md_text.split("\n")
 
         # Track fence state with stack for nested fences
         fence_stack: list[tuple[str, int]] = []  # (char, length) tuples
@@ -701,8 +773,9 @@ class Parser:
         Returns:
             ListItem if successful, None otherwise
         """
+        # O3: Use pre-compiled patterns with early termination
         # Checkbox pattern (must check first as it's a subset of bullet)
-        checkbox_match = re.match(r"^(\s*)([-*+])\s+\[([ xX])\]\s+(.+)$", line)
+        checkbox_match = self.CHECKBOX_PATTERN.match(line)
         if checkbox_match:
             indent, marker, checked, content = checkbox_match.groups()
             return ListItem(
@@ -715,7 +788,7 @@ class Parser:
             )
 
         # Numbered list pattern
-        numbered_match = re.match(r"^(\s*)(\d+\.)\s+(.+)$", line)
+        numbered_match = self.NUMBERED_PATTERN.match(line)
         if numbered_match:
             indent, marker, content = numbered_match.groups()
             return ListItem(
@@ -728,7 +801,7 @@ class Parser:
             )
 
         # Bullet list pattern
-        bullet_match = re.match(r"^(\s*)([-*+])\s+(.+)$", line)
+        bullet_match = self.BULLET_PATTERN.match(line)
         if bullet_match:
             indent, marker, content = bullet_match.groups()
             return ListItem(
@@ -839,7 +912,7 @@ class Parser:
         lines = md_text.split("\n")
         return sum(len(lines[i]) + 1 for i in range(line - 1))
 
-    def _calculate_avg_sentence_length(self, text: str) -> float:
+    def _calculate_avg_sentence_length(self, lines: List[str]) -> float:
         """
         Calculate average sentence length in characters.
 
@@ -847,11 +920,13 @@ class Parser:
         Filters out empty sentences and normalizes to typical technical writing.
 
         Args:
-            text: Text to analyze
+            lines: Pre-split document lines (O1 optimization)
 
         Returns:
             Average sentence length in characters, 0.0 if no sentences found
         """
+        # Reconstruct text from lines for sentence analysis
+        text = "\n".join(lines)
         if not text:
             return 0.0
 
@@ -878,7 +953,7 @@ _parser_singleton = None
 def get_parser() -> Parser:
     """
     Get the singleton Parser instance.
-    
+
     Returns:
         Shared Parser instance
     """

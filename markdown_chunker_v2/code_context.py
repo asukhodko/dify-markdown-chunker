@@ -103,6 +103,7 @@ class CodeContextBinder:
         max_context_chars_before: int = 500,
         max_context_chars_after: int = 300,
         related_block_max_gap: int = 5,
+        lines: Optional[List[str]] = None,
     ):
         """
         Initialize code context binder.
@@ -111,10 +112,12 @@ class CodeContextBinder:
             max_context_chars_before: Max chars to search backward for explanation
             max_context_chars_after: Max chars to search forward for explanation
             related_block_max_gap: Max line gap to consider blocks related
+            lines: Pre-split document lines (O1 optimization, optional)
         """
         self.max_context_chars_before = max_context_chars_before
         self.max_context_chars_after = max_context_chars_after
         self.related_block_max_gap = related_block_max_gap
+        self._cached_lines = lines  # O1: Store for reuse
 
     def bind_context(
         self,
@@ -252,7 +255,9 @@ class CodeContextBinder:
         Returns:
             Preceding text (trimmed to chars)
         """
-        lines = md_text.split("\n")
+        # O1: Use cached lines if available
+        lines = self._cached_lines if self._cached_lines is not None else md_text.split("\n")
+        
         if block.start_line < 1 or block.start_line > len(lines):
             return ""
 
@@ -286,7 +291,8 @@ class CodeContextBinder:
         Returns:
             Extracted explanation or None
         """
-        lines = md_text.split("\n")
+        # O1: Use cached lines if available
+        lines = self._cached_lines if self._cached_lines is not None else md_text.split("\n")
 
         # Start from line before code block fence
         end_line_idx = code_block.start_line - 2  # 0-indexed, exclude fence
@@ -324,7 +330,8 @@ class CodeContextBinder:
         Returns:
             Extracted explanation or None
         """
-        lines = md_text.split("\n")
+        # O1: Use cached lines if available
+        lines = self._cached_lines if self._cached_lines is not None else md_text.split("\n")
 
         # Start from line after code block closing fence
         start_line_idx = code_block.end_line  # 0-indexed (end_line is 1-indexed)

@@ -96,7 +96,11 @@ class ListAwareStrategy(BaseStrategy):
         if not md_text.strip():
             return []
 
-        lines = md_text.split("\n")
+        # O1: Use cached lines from analysis (fallback for backward compatibility)
+        lines = analysis.get_lines()
+        if lines is None:
+            lines = md_text.split("\n")
+        
         list_blocks = analysis.list_blocks
         headers = analysis.headers
 

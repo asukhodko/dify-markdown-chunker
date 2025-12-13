@@ -46,8 +46,12 @@ class FallbackStrategy(BaseStrategy):
         if not md_text.strip():
             return []
 
+        # O1: Use cached lines from analysis (fallback for backward compatibility)
+        lines = analysis.get_lines()
+        if lines is None:
+            lines = md_text.split("\n")
+        
         # Check for atomic blocks
-        lines = md_text.split("\n")
         atomic_ranges = self._get_atomic_blocks_in_range(1, len(lines), analysis)
 
         if atomic_ranges:
@@ -90,6 +94,7 @@ class FallbackStrategy(BaseStrategy):
                             current_content.rstrip(),
                             current_start_line,
                             end_line,
+                            content_type="text",  # O2: Explicit content type
                         )
                     )
 
@@ -109,6 +114,7 @@ class FallbackStrategy(BaseStrategy):
                     current_content.rstrip(),
                     current_start_line,
                     max(end_line, current_start_line),
+                    content_type="text",  # O2: Explicit content type
                 )
             )
 
