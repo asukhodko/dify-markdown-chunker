@@ -35,11 +35,11 @@ class Parser:
     )
 
     HEADER_PATTERN = re.compile(r"^(#{1,6})\s+(.+)$", re.MULTILINE)
-    
+
     # O1b: Pre-compiled fence detection pattern for performance
     FENCE_PATTERN = re.compile(r"^(\s*)(`{3,}|~{3,})(\w*)\s*$")
-    
-    # O3: Pre-compiled list item patterns for performance (early termination on first match)
+
+    # O3: Pre-compiled list item patterns (early termination)
     CHECKBOX_PATTERN = re.compile(r"^(\s*)([-*+])\s+\[([ xX])\]\s+(.+)$")
     NUMBERED_PATTERN = re.compile(r"^(\s*)(\d+\.)\s+(.+)$")
     BULLET_PATTERN = re.compile(r"^(\s*)([-*+])\s+(.+)$")
@@ -135,29 +135,29 @@ class Parser:
 
         Performance optimization: Fast-path detection skips normalization
         when text contains no \\r characters (Unix-formatted files).
-        
+
         This MUST be called before any other processing.
         """
         # Fast path: skip normalization if no \r present (Unix line endings)
-        if '\r' not in text:
+        if "\r" not in text:
             return text
-        
+
         # Normalize: First convert CRLF to LF, then convert remaining CR to LF
         return text.replace("\r\n", "\n").replace("\r", "\n")
-    
+
     def _build_position_index(self, lines: List[str]) -> List[int]:
         """
         Build cumulative position index for O(1) position lookups.
-        
+
         O0 Optimization: Replaces O(n×m) position calculations with O(1) array lookups.
-        
+
         Args:
             lines: Array of text lines from document
-        
+
         Returns:
             Array where index i gives character position of line i in document.
             Position includes all preceding lines plus newline characters.
-        
+
         Example:
             For document "hello\nworld\n":
             lines = ["hello", "world"]
@@ -519,9 +519,7 @@ class Parser:
 
         return blocks
 
-    def _extract_headers(
-        self, lines: List[str], positions: List[int]
-    ) -> List[Header]:
+    def _extract_headers(self, lines: List[str], positions: List[int]) -> List[Header]:
         """
         Extract markdown headers.
 
@@ -696,9 +694,7 @@ class Parser:
 
         return False, 0
 
-    def _extract_lists(
-        self, lines: List[str], positions: List[int]
-    ) -> List[ListBlock]:
+    def _extract_lists(self, lines: List[str], positions: List[int]) -> List[ListBlock]:
         """
         Extract list blocks from markdown.
 

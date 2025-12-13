@@ -243,23 +243,23 @@ def nested_markdown_document(draw, max_depth=3):
 def corpus_cache():
     """
     Session-scoped corpus file cache for performance optimization.
-    
+
     Caches markdown files from tests/corpus/ to avoid repeated I/O.
     Max cache size: 100 files (most frequently used).
     Estimated impact: 6-10 second reduction in test suite runtime.
     """
     from functools import lru_cache
-    
+
     corpus_root = Path(__file__).parent / "corpus"
-    
+
     @lru_cache(maxsize=100)
     def load_file(file_path: str) -> str:
         """Load and cache a corpus file."""
         path = Path(file_path)
         if not path.is_absolute():
             path = corpus_root / path
-        
+
         with open(path, "r", encoding="utf-8") as f:
             return f.read()
-    
+
     return load_file

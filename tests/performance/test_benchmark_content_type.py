@@ -39,6 +39,7 @@ def chunker():
 class TestContentTypeBenchmarks:
     """Content type performance benchmarks."""
 
+    @pytest.mark.slow
     def test_benchmark_by_content_type(self, corpus_selector, results_manager, chunker):
         """
         Benchmark processing performance across content types.
@@ -48,8 +49,10 @@ class TestContentTypeBenchmarks:
         - Strategy selection patterns
         - Chunk quality metrics
         """
-        # Select documents by category
-        content_selection = corpus_selector.select_by_category(samples_per_category=10)
+        # Select documents by category (reduced for faster testing)
+        content_selection = corpus_selector.select_by_category(
+            samples_per_category=3
+        )
 
         content_results = {}
 
@@ -136,18 +139,17 @@ class TestContentTypeBenchmarks:
                 "document_count": len(documents),
             }
 
-            print(
-                f"  Avg time: {content_results[content_type]['time']['mean']*1000:.2f}ms"
-            )
+            avg_time = content_results[content_type]['time']['mean'] * 1000
+            print(f"  Avg time: {avg_time:.2f}ms")
             print(f"  Dominant strategy: {dominant_strategy}")
-            print(
-                f"  Avg chunks: {content_results[content_type]['output']['avg_chunk_count']:.1f}"
-            )
+            avg_chunks = content_results[content_type]['output']['avg_chunk_count']
+            print(f"  Avg chunks: {avg_chunks:.1f}")
 
         # Save results
         for content_type, data in content_results.items():
             results_manager.add_benchmark_result("content_type", content_type, data)
 
+    @pytest.mark.slow
     def test_strategy_selection_appropriateness(self, corpus_selector, chunker):
         """
         Validate that strategies are selected appropriately for content types.

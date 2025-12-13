@@ -103,9 +103,7 @@ class CodeAwareStrategy(BaseStrategy):
             current_line = block_end + 1
 
         # Handle text after last atomic block
-        chunks.extend(
-            self._process_text_after_blocks(lines, current_line, config)
-        )
+        chunks.extend(self._process_text_after_blocks(lines, current_line, config))
 
         # Ensure fence balance
         chunks = self._ensure_fence_balance(chunks)

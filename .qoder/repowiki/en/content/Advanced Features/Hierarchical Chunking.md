@@ -1,7 +1,7 @@
 # Hierarchical Chunking
 
 <cite>
-**Referenced Files in This Document**
+**Referenced Files in This Document**   
 - [hierarchy.py](file://markdown_chunker_v2/hierarchy.py)
 - [chunker.py](file://markdown_chunker_v2/chunker.py)
 - [types.py](file://markdown_chunker_v2/types.py)
@@ -13,11 +13,12 @@
 </cite>
 
 ## Update Summary
-**Changes Made**
-- Updated leaf chunk detection logic to preserve content-rich parent sections
-- Added content preservation warnings for debugging and monitoring
-- Enhanced documentation of hybrid leaf detection criteria
-- Updated test cases for content preservation guarantees
+**Changes Made**   
+- Enhanced leaf chunk detection logic to preserve content-rich parent sections
+- Added warning logging for potential content loss during leaf filtering
+- Updated get_flat_chunks to include parent chunks with significant content
+- Updated documentation to reflect hybrid leaf detection criteria
+- Added content preservation warnings in troubleshooting section
 
 ## Table of Contents
 1. [Introduction](#introduction)

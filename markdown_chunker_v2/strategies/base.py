@@ -106,6 +106,7 @@ class BaseStrategy(ABC):
             "table_integrity",
             "section_integrity",
             "latex_integrity",
+            "related_code_group",
         }
 
         if reason not in VALID_REASONS:
@@ -244,40 +245,39 @@ class BaseStrategy(ABC):
 
         current_content = ""
         current_start = start_line
-        current_line = (
-            start_line - 1
-        )  # Track the last line NUMBER (0-indexed relative offset)
 
         for para in paragraphs:
             para_with_sep = para + "\n\n" if para != paragraphs[-1] else para
-            para_line_count = para_with_sep.count("\n")
 
             if len(current_content) + len(para_with_sep) <= config.max_chunk_size:
                 current_content += para_with_sep
-                current_line += para_line_count
             else:
                 # Save current chunk
                 if current_content.strip():
+                    # Calculate end_line from actual content
+                    end_line = current_start + current_content.rstrip().count("\n")
                     chunks.append(
                         self._create_chunk(
                             current_content.rstrip(),
                             current_start,
-                            current_line,
+                            end_line,
                         )
                     )
+                    # Next chunk starts after the current chunk's last line
+                    current_start = end_line + 1
 
                 # Start new chunk
                 current_content = para_with_sep
-                current_start = current_line + 1
-                current_line = current_start - 1 + para_line_count
 
         # Save last chunk
         if current_content.strip():
+            # Calculate end_line from actual content
+            end_line = current_start + current_content.rstrip().count("\n")
             chunks.append(
                 self._create_chunk(
                     current_content.rstrip(),
                     current_start,
-                    current_line,
+                    end_line,
                 )
             )
 

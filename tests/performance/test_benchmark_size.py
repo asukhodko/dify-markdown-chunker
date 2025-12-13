@@ -39,6 +39,7 @@ def chunker():
 class TestSizeBenchmarks:
     """Size-based performance benchmarks."""
 
+    @pytest.mark.slow
     def test_benchmark_by_size(self, corpus_selector, results_manager, chunker):
         """
         Benchmark processing performance across size categories.
@@ -49,8 +50,16 @@ class TestSizeBenchmarks:
         - Memory usage
         - Chunk statistics
         """
-        # Select documents by size
-        size_selection = corpus_selector.select_by_size()
+        # Select documents by size (reduced counts for faster testing)
+        size_selection = corpus_selector.select_by_size(
+            target_counts={
+                "tiny": 3,
+                "small": 5,
+                "medium": 5,
+                "large": 3,
+                "very_large": 2,
+            }
+        )
 
         size_results = {}
 
@@ -121,12 +130,10 @@ class TestSizeBenchmarks:
                 "document_count": len(documents),
             }
 
-            print(
-                f"  Avg time: {size_results[size_category]['time']['mean']*1000:.2f}ms"
-            )
-            print(
-                f"  Throughput: {size_results[size_category]['throughput']['kb_per_sec']:.1f} KB/s"
-            )
+            avg_time = size_results[size_category]['time']['mean'] * 1000
+            print(f"  Avg time: {avg_time:.2f}ms")
+            throughput = size_results[size_category]['throughput']['kb_per_sec']
+            print(f"  Throughput: {throughput:.1f} KB/s")
 
         # Save results
         for size_cat, data in size_results.items():

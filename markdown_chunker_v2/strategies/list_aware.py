@@ -100,13 +100,27 @@ class ListAwareStrategy(BaseStrategy):
         lines = analysis.get_lines()
         if lines is None:
             lines = md_text.split("\n")
-        
+
         list_blocks = analysis.list_blocks
         headers = analysis.headers
 
         if not list_blocks:
             return self._split_text_to_size(md_text, 1, config)
 
+        chunks = self._process_all_list_blocks(lines, list_blocks, headers, config)
+        chunks = self._process_remaining_text(
+            chunks, lines, list_blocks, headers, config
+        )
+        return chunks
+
+    def _process_all_list_blocks(
+        self,
+        lines: List[str],
+        list_blocks: List,
+        headers: List,
+        config: ChunkConfig,
+    ) -> List[Chunk]:
+        """Process all list blocks and text between them."""
         chunks: List[Chunk] = []
         current_line = 1
         processed_blocks = set()  # Track processed blocks to prevent duplication
@@ -131,9 +145,26 @@ class ListAwareStrategy(BaseStrategy):
             )
             processed_blocks.add(id(block))
 
+        return chunks
+
+    def _process_remaining_text(
+        self,
+        chunks: List[Chunk],
+        lines: List[str],
+        list_blocks: List,
+        headers: List,
+        config: ChunkConfig,
+    ) -> List[Chunk]:
+        """Process any remaining text after the last list block."""
+        if not list_blocks:
+            return chunks
+
+        last_block = list_blocks[-1]
+        current_line = last_block.end_line + 1
+
         # Handle content after last list
         if current_line <= len(lines):
-            text_after = "\n".join(lines[current_line - 1 :])
+            text_after = "\n".join(lines[current_line - 1:])
             if text_after.strip():
                 text_chunks = self._split_text_to_size(text_after, current_line, config)
                 # Add header_path to text chunks after lists

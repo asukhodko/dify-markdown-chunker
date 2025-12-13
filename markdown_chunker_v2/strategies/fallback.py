@@ -50,7 +50,7 @@ class FallbackStrategy(BaseStrategy):
         lines = analysis.get_lines()
         if lines is None:
             lines = md_text.split("\n")
-        
+
         # Check for atomic blocks
         atomic_ranges = self._get_atomic_blocks_in_range(1, len(lines), analysis)
 

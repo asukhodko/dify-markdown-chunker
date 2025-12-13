@@ -74,7 +74,7 @@ class StructuralStrategy(BaseStrategy):
         lines = analysis.get_lines()
         if lines is None:
             lines = md_text.split("\n")
-        
+
         headers = analysis.headers
 
         if not headers:

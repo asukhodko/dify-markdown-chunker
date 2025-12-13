@@ -256,8 +256,12 @@ class CodeContextBinder:
             Preceding text (trimmed to chars)
         """
         # O1: Use cached lines if available
-        lines = self._cached_lines if self._cached_lines is not None else md_text.split("\n")
-        
+        lines = (
+            self._cached_lines
+            if self._cached_lines is not None
+            else md_text.split("\n")
+        )
+
         if block.start_line < 1 or block.start_line > len(lines):
             return ""
 
@@ -292,7 +296,11 @@ class CodeContextBinder:
             Extracted explanation or None
         """
         # O1: Use cached lines if available
-        lines = self._cached_lines if self._cached_lines is not None else md_text.split("\n")
+        lines = (
+            self._cached_lines
+            if self._cached_lines is not None
+            else md_text.split("\n")
+        )
 
         # Start from line before code block fence
         end_line_idx = code_block.start_line - 2  # 0-indexed, exclude fence
@@ -331,7 +339,11 @@ class CodeContextBinder:
             Extracted explanation or None
         """
         # O1: Use cached lines if available
-        lines = self._cached_lines if self._cached_lines is not None else md_text.split("\n")
+        lines = (
+            self._cached_lines
+            if self._cached_lines is not None
+            else md_text.split("\n")
+        )
 
         # Start from line after code block closing fence
         start_line_idx = code_block.end_line  # 0-indexed (end_line is 1-indexed)

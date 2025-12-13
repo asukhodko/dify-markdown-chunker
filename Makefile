@@ -1,4 +1,4 @@
-.PHONY: test lint clean install test-quick validate package validate-package release help test-verbose test-coverage format benchmark demo quality-check
+.PHONY: test test-all lint clean install test-quick validate package validate-package release help test-verbose test-coverage format benchmark demo quality-check
 
 # Python from venv
 PYTHON = venv/bin/python3.12
@@ -12,7 +12,8 @@ help:
 	@echo "  make install-dev     - Install with dev tools (linters, formatters)"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test            - Run all tests in repository"
+	@echo "  make test            - Run tests (excluding slow tests)"
+	@echo "  make test-all        - Run ALL tests (including slow tests)"
 	@echo "  make test-verbose    - Run tests with verbose output"
 	@echo "  make test-coverage   - Run tests with coverage report"
 	@echo "  make test-quick      - Run quick tests"
@@ -36,7 +37,11 @@ help:
 	@echo "  make clean           - Clean temporary files"
 
 test:
-	@echo "Running all tests..."
+	@echo "Running all tests (excluding slow tests)..."
+	@$(PYTHON) -m pytest tests/ -m "not slow"
+
+test-all:
+	@echo "Running ALL tests (including slow tests)..."
 	@$(PYTHON) -m pytest tests/
 
 test-verbose:

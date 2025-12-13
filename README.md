@@ -76,6 +76,11 @@ This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** w
   - Programmatic navigation (siblings, ancestors, children)
   - O(1) chunk lookup performance
   - Backward compatible with flat chunking
+- **Streaming Processing** — memory-efficient processing for large files (new)
+  - Process files >10MB with <50MB RAM usage
+  - Configurable buffer management (100KB default window)
+  - Progress tracking support for long-running operations
+  - Maintains quality through smart window boundary detection
 - **List-Aware Strategy** — preserves nested list hierarchies and context (unique competitive advantage)
 - **Nested Fencing Support** — correctly handles quadruple/quintuple backticks and tilde fencing for meta-documentation (unique capability)
 - **Enhanced Code-Context Binding** — intelligently binds code blocks to explanations, recognizes Before/After patterns, Code+Output pairs, and sequential examples (unique competitive advantage)
@@ -448,6 +453,49 @@ for chunk in chunks:
         print("Nested fencing preserved!")
         print(f"Has code blocks: {chunk.metadata.get('has_code', False)}")
 ~~~
+
+### Streaming Processing Example
+
+```python
+from markdown_chunker import MarkdownChunker, StreamingConfig
+import os
+
+# Process large files with minimal memory usage
+chunker = MarkdownChunker()
+
+# Configure streaming for memory-constrained environments
+streaming_config = StreamingConfig(
+    buffer_size=100_000,  # 100KB buffer windows
+    max_memory_mb=50      # Strict 50MB memory limit
+)
+
+# Stream process large file (e.g., 50MB documentation)
+file_path = "large_documentation.md"
+chunk_count = 0
+
+for chunk in chunker.chunk_file_streaming(file_path, streaming_config):
+    # Process each chunk immediately (e.g., insert to vector DB)
+    chunk_count += 1
+    print(f"Processed chunk {chunk_count}: {len(chunk.content)} chars")
+    
+    # Access streaming-specific metadata
+    window_idx = chunk.metadata.get('stream_window_index', 0)
+    print(f"  From window: {window_idx}")
+
+print(f"Total chunks processed: {chunk_count}")
+print(f"Memory usage stayed below {streaming_config.max_memory_mb}MB")
+
+# Progress tracking example
+file_size = os.path.getsize(file_path)
+processed_bytes = 0
+
+for chunk in chunker.chunk_file_streaming(file_path):
+    processed_bytes += len(chunk.content)
+    progress = (processed_bytes / file_size) * 100
+    print(f"\rProgress: {progress:.1f}%", end="")
+
+print("\nDone!")
+```
 
 ### Configuration Profiles
 

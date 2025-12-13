@@ -10,8 +10,11 @@ Simplified pipeline:
 6. Return
 """
 
+from __future__ import annotations
+
+import io
 import re
-from typing import List, Optional
+from typing import TYPE_CHECKING, Iterator, List, Optional
 
 from .adaptive_sizing import AdaptiveSizeCalculator
 from .config import ChunkConfig
@@ -19,6 +22,9 @@ from .hierarchy import HierarchicalChunkingResult, HierarchyBuilder
 from .parser import get_parser
 from .strategies import StrategySelector
 from .types import Chunk, ChunkingMetrics
+
+if TYPE_CHECKING:
+    from .streaming import StreamingConfig
 
 # Maximum overlap context as a fraction of chunk size
 # This prevents metadata bloat while allowing larger context for larger chunks
@@ -68,9 +74,7 @@ class MarkdownChunker:
         if self.config.strip_obsidian_block_ids:
             # Remove Obsidian block IDs: ^identifier at end of lines
             # Pattern: space(s) + ^ + alphanumeric + spaces/end
-            text = re.sub(
-                r"\s+\^[a-zA-Z0-9]+\s*$", "", text, flags=re.MULTILINE
-            )
+            text = re.sub(r"\s+\^[a-zA-Z0-9]+\s*$", "", text, flags=re.MULTILINE)
         return text
 
     def chunk(self, md_text: str) -> List[Chunk]:
@@ -232,6 +236,58 @@ class MarkdownChunker:
 
         # Step 2: Build hierarchy
         return self._hierarchy_builder.build(chunks, md_text)
+
+    def chunk_file_streaming(
+        self, file_path: str, streaming_config: Optional[StreamingConfig] = None
+    ) -> Iterator[Chunk]:
+        """
+        Chunk file in streaming mode for memory efficiency.
+
+        Use this for files >10MB to limit memory usage.
+
+        Args:
+            file_path: Path to markdown file
+            streaming_config: Streaming configuration (uses defaults if None)
+
+        Yields:
+            Chunk objects with streaming metadata
+
+        Example:
+            >>> chunker = MarkdownChunker()
+            >>> for chunk in chunker.chunk_file_streaming("large.md"):
+            ...     process(chunk)
+        """
+        from .streaming import StreamingChunker, StreamingConfig
+
+        config = streaming_config or StreamingConfig()
+        streamer = StreamingChunker(self.config, config)
+        yield from streamer.chunk_file(file_path)
+
+    def chunk_stream(
+        self, stream: io.TextIOBase, streaming_config: Optional[StreamingConfig] = None
+    ) -> Iterator[Chunk]:
+        """
+        Chunk stream in streaming mode for memory efficiency.
+
+        Args:
+            stream: Text stream to process
+            streaming_config: Streaming configuration (uses defaults if None)
+
+        Yields:
+            Chunk objects with streaming metadata
+
+        Example:
+            >>> import io
+            >>> chunker = MarkdownChunker()
+            >>> stream = io.StringIO(large_text)
+            >>> for chunk in chunker.chunk_stream(stream):
+            ...     process(chunk)
+        """
+        from .streaming import StreamingChunker, StreamingConfig
+
+        config = streaming_config or StreamingConfig()
+        streamer = StreamingChunker(self.config, config)
+        yield from streamer.chunk_stream(stream)
 
     def _apply_overlap(self, chunks: List[Chunk]) -> List[Chunk]:
         """
