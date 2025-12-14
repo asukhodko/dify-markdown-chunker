@@ -10,7 +10,21 @@
 - [large_tables.md](file://tests/fixtures/corpus/edge_cases/large_tables.md)
 - [table_without_headers.md](file://tests/parser/fixtures/edge_cases/table_without_headers.md)
 - [table_alignments.md](file://tests/parser/fixtures/edge_cases/table_alignments.md)
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py)
+- [config.py](file://markdown_chunker_v2/config.py)
+- [test_table_grouping_unit.py](file://tests/test_table_grouping_unit.py)
+- [test_table_grouping_properties.py](file://tests/test_table_grouping_properties.py)
+- [types.py](file://markdown_chunker_v2/types.py)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added new section on Table Grouping Capability to reflect the new feature
+- Updated Configuration Options section to include table grouping parameters
+- Enhanced Core Architecture section with new class relationships
+- Added new diagram for table grouping logic
+- Updated metadata section to include table group metadata
+- Added references to new test files and implementation files
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -26,6 +40,7 @@
 11. [Performance Considerations](#performance-considerations)
 12. [Common Issues and Solutions](#common-issues-and-solutions)
 13. [Best Practices](#best-practices)
+14. [Table Grouping Capability](#table-grouping-capability)
 
 ## Introduction
 
@@ -136,18 +151,42 @@ class BaseStrategy {
 -_create_chunk(content, start_line, end_line, content_type, **metadata) Chunk
 -_validate_chunks(chunks, config) Chunk[]
 }
+class TableGrouper {
++config : TableGroupingConfig
++group_tables(tables, lines, headers) List[TableGroup]
++_should_group(prev_table, table, headers, current_size, current_count) bool
+}
+class TableGroupingConfig {
++max_distance_lines : int
++max_grouped_tables : int
++max_group_size : int
++require_same_section : bool
+}
+class TableGroup {
++tables : List[TableBlock]
++start_line : int
++end_line : int
++content : str
++table_count : int
++size : int
+}
 TableStrategy --|> BaseStrategy
 TableStrategy --> TableInfo : creates
 TableStrategy --> TableRowGroup : creates
 TableInfo --> TableRowGroup : splits_into
+TableStrategy --> TableGrouper : uses
+TableGrouper --> TableGroupingConfig : uses
+TableGrouper --> TableGroup : creates
 ```
 
 **Diagram sources**
-- [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L22-L53)
-- [base.py](file://markdown_chunker_legacy/chunker/strategies/base.py#L16-L426)
+- [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L56-L100)
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py#L82-L147)
+- [config.py](file://markdown_chunker_v2/config.py#L118-L120)
 
 **Section sources**
 - [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L56-L100)
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py#L82-L147)
 
 ## Table Detection Algorithm
 
@@ -321,6 +360,8 @@ Each table chunk includes the following metadata:
 | `is_split` | Whether the table was split across chunks | false |
 | `split_part` | Current part number (for split tables) | 1 |
 | `total_parts` | Total number of parts (for split tables) | 3 |
+| `is_table_group` | Whether the chunk contains multiple related tables | true |
+| `table_group_count` | Number of tables in the group | 3 |
 
 ### Table Statistics
 
@@ -343,6 +384,7 @@ B --> I["Max Columns"]
 
 **Section sources**
 - [table_strategy.py](file://markdown_chunker_legacy/chunker/strategies/table_strategy.py#L358-L411)
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py#L54-L79)
 
 ## Configuration Options
 
@@ -356,6 +398,18 @@ The Table Strategy integrates with the broader chunking configuration system:
 | `table_ratio_threshold` | 0.4 | Minimum table ratio for activation |
 | `preserve_tables` | true | Whether to preserve table structure |
 
+### Table Grouping Configuration
+
+The enhanced table grouping capability introduces new configuration options:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `group_related_tables` | false | Enable grouping of related tables into single chunks |
+| `max_distance_lines` | 10 | Maximum lines between tables to consider them related |
+| `max_grouped_tables` | 5 | Maximum number of tables in a single group |
+| `max_group_size` | 5000 | Maximum combined size (chars) for grouped tables |
+| `require_same_section` | true | Only group tables within the same header section |
+
 ### Size Management
 
 The strategy respects global size constraints while allowing controlled oversizing:
@@ -366,6 +420,8 @@ The strategy respects global size constraints while allowing controlled oversizi
 
 **Section sources**
 - [types.py](file://markdown_chunker_legacy/chunker/types.py#L593-L594)
+- [config.py](file://markdown_chunker_v2/config.py#L118-L120)
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py#L14-L33)
 
 ## Edge Cases and Examples
 
@@ -491,3 +547,114 @@ For documents with numerous large tables:
 
 **Section sources**
 - [test_table_strategy_properties.py](file://tests/chunker/test_table_strategy_properties.py#L1-L534)
+
+## Table Grouping Capability
+
+The Table Strategy has been enhanced with a new table grouping capability that allows related tables to be grouped together based on proximity and section boundaries when the feature is enabled. This enhancement improves retrieval quality for table-heavy documents such as API references and data reports.
+
+### Grouping Logic
+
+The table grouping mechanism follows these rules to determine if tables should be grouped:
+
+1. **Proximity Check**: Tables must be within `max_distance_lines` of each other
+2. **Section Boundary**: If `require_same_section` is true, tables must be within the same header section
+3. **Size Limit**: Combined size of tables must not exceed `max_group_size`
+4. **Count Limit**: Number of tables in a group must not exceed `max_grouped_tables`
+
+```mermaid
+flowchart TD
+A["Start Table Grouping"] --> B{"Grouping Enabled?"}
+B --> |No| C["Process Tables Individually"]
+B --> |Yes| D["Initialize First Group"]
+D --> E["Check Next Table"]
+E --> F{"Within max_distance_lines?"}
+F --> |No| G["Start New Group"]
+F --> |Yes| H{"Same Section?"}
+H --> |No| G
+H --> |Yes| I{"Within Size Limit?"}
+I --> |No| G
+I --> |Yes| J{"Within Count Limit?"}
+J --> |No| G
+J --> |Yes| K["Add to Current Group"]
+K --> E
+G --> L{"More Tables?"}
+L --> |Yes| E
+L --> |No| M["Complete All Groups"]
+```
+
+**Diagram sources**
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py#L133-L198)
+
+### Configuration Parameters
+
+The table grouping behavior is controlled by the following parameters in the `TableGroupingConfig` class:
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `max_distance_lines` | 10 | Maximum number of lines between tables to consider them related |
+| `max_grouped_tables` | 5 | Maximum number of tables that can be grouped together |
+| `max_group_size` | 5000 | Maximum combined size in characters for a table group |
+| `require_same_section` | true | Whether tables must be in the same header section to be grouped |
+
+**Section sources**
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py#L14-L33)
+- [config.py](file://markdown_chunker_v2/config.py#L118-L120)
+
+### Implementation Details
+
+The table grouping is implemented through the `TableGrouper` class which processes tables in document order and applies the grouping rules:
+
+```python
+class TableGrouper:
+    def group_tables(
+        self,
+        tables: List[TableBlock],
+        lines: List[str],
+        headers: List[Header],
+    ) -> List[TableGroup]:
+        """
+        Group related tables based on proximity and section boundaries.
+        
+        Args:
+            tables: List of tables from parser (sorted by start_line)
+            lines: Document lines array
+            headers: List of headers from parser
+            
+        Returns:
+            List of TableGroup objects containing related tables
+        """
+```
+
+The grouping algorithm iterates through tables in order, maintaining a current group and adding tables to it if they meet all grouping criteria. When a table fails any criterion, the current group is finalized and a new group is started.
+
+**Section sources**
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py#L102-L147)
+
+### Content Preservation
+
+When tables are grouped, the content between them is preserved and normalized:
+
+- Text between tables is included in the group content
+- Whitespace between tables is normalized to a single blank line
+- Original table formatting and structure is maintained
+- Header sections are respected as grouping boundaries
+
+This ensures that contextual information between related tables is preserved while eliminating excessive whitespace.
+
+**Section sources**
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py#L250-L291)
+
+### Testing and Validation
+
+The table grouping capability has been validated through comprehensive testing:
+
+- **Unit Tests**: Verify individual grouping criteria and edge cases
+- **Property Tests**: Ensure correctness properties are maintained
+- **Integration Tests**: Confirm compatibility with various chunking strategies
+- **Fixture Tests**: Validate behavior with real-world document examples
+
+The tests cover scenarios such as tables with varying distances, tables across section boundaries, large table groups, and mixed content types.
+
+**Section sources**
+- [test_table_grouping_unit.py](file://tests/test_table_grouping_unit.py)
+- [test_table_grouping_properties.py](file://tests/test_table_grouping_properties.py)

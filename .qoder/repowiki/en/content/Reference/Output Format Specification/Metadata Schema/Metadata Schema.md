@@ -2,14 +2,12 @@
 
 <cite>
 **Referenced Files in This Document**   
-- [types.py](file://markdown_chunker_legacy/chunker/types.py)
-- [metadata_enricher.py](file://markdown_chunker_legacy/chunker/components/metadata_enricher.py)
-- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py)
-- [test_metadata_filtering.py](file://tests/test_metadata_filtering.py)
-- [markdown_chunk_tool.py](file://tools/markdown_chunk_tool.py)
+- [types.py](file://markdown_chunker_v2/types.py)
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py)
+- [test_table_grouping_properties.py](file://tests/test_table_grouping_properties.py)
+- [test_table_grouping_unit.py](file://tests/test_table_grouping_unit.py)
 - [output-format.md](file://docs/reference/output-format.md)
-- [basic_usage.py](file://examples/basic_usage.py)
-- [rag_integration.py](file://examples/rag_integration.py)
+- [chunk_metadata.md](file://docs/api/chunk_metadata.md)
 </cite>
 
 ## Table of Contents
@@ -26,7 +24,7 @@
 The metadata schema used in chunking results is designed to provide rich contextual information about each chunk while optimizing for Retrieval-Augmented Generation (RAG) systems. This schema includes various fields that describe the content, structure, and relationships between chunks. The metadata is filtered to include only fields that are useful for RAG retrieval, excluding statistical and internal fields that do not contribute to retrieval quality. The schema supports different content types including lists, code blocks, and tables, with specific fields for each type.
 
 **Section sources**
-- [types.py](file://markdown_chunker_legacy/chunker/types.py#L1-L1080)
+- [types.py](file://markdown_chunker_v2/types.py#L1-L1080)
 - [output-format.md](file://docs/reference/output-format.md#L1-L107)
 
 ## Filtering Strategy
@@ -48,12 +46,12 @@ FilterPreamble --> End([Filtered Metadata])
 ```
 
 **Diagram sources**
-- [test_metadata_filtering.py](file://tests/test_metadata_filtering.py#L42-L74)
-- [markdown_chunk_tool.py](file://tools/markdown_chunk_tool.py#L43-L59)
+- [test_table_grouping_properties.py](file://tests/test_table_grouping_properties.py#L42-L74)
+- [chunk_metadata.md](file://docs/api/chunk_metadata.md#L43-L59)
 
 **Section sources**
-- [test_metadata_filtering.py](file://tests/test_metadata_filtering.py#L42-L121)
-- [markdown_chunk_tool.py](file://tools/markdown_chunk_tool.py#L43-L71)
+- [test_table_grouping_properties.py](file://tests/test_table_grouping_properties.py#L42-L121)
+- [chunk_metadata.md](file://docs/api/chunk_metadata.md#L43-L71)
 
 ## Core Fields
 The core fields are always included in the metadata and provide fundamental information about each chunk. These fields are essential for understanding the chunk's position and role within the overall document structure.
@@ -74,12 +72,12 @@ class ChunkMetadata {
 ```
 
 **Diagram sources**
-- [types.py](file://markdown_chunker_legacy/chunker/types.py#L36-L300)
-- [test_metadata_filtering.py](file://tests/test_metadata_filtering.py#L123-L155)
+- [types.py](file://markdown_chunker_v2/types.py#L36-L300)
+- [test_table_grouping_properties.py](file://tests/test_table_grouping_properties.py#L123-L155)
 
 **Section sources**
-- [types.py](file://markdown_chunker_legacy/chunker/types.py#L36-L300)
-- [test_metadata_filtering.py](file://tests/test_metadata_filtering.py#L123-L155)
+- [types.py](file://markdown_chunker_v2/types.py#L36-L300)
+- [test_table_grouping_properties.py](file://tests/test_table_grouping_properties.py#L123-L155)
 
 ## Structural Fields
 Structural fields indicate semantic features of the content and help identify formatting and structural elements within the chunk. These fields are prefixed with "has_" and are included only when the corresponding feature is present.
@@ -102,11 +100,11 @@ class StructuralMetadata {
 ```
 
 **Diagram sources**
-- [metadata_enricher.py](file://markdown_chunker_legacy/chunker/components/metadata_enricher.py#L301-L339)
+- [types.py](file://markdown_chunker_v2/types.py#L240-L372)
 - [output-format.md](file://docs/reference/output-format.md#L77-L81)
 
 **Section sources**
-- [metadata_enricher.py](file://markdown_chunker_legacy/chunker/components/metadata_enricher.py#L301-L339)
+- [types.py](file://markdown_chunker_v2/types.py#L240-L372)
 - [output-format.md](file://docs/reference/output-format.md#L77-L81)
 
 ## Overlap Fields
@@ -129,12 +127,12 @@ class OverlapMetadata {
 ```
 
 **Diagram sources**
-- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py#L343-L391)
-- [test_metadata_filtering.py](file://tests/test_metadata_filtering.py#L83-L94)
+- [types.py](file://markdown_chunker_v2/types.py#L240-L372)
+- [test_table_grouping_properties.py](file://tests/test_table_grouping_properties.py#L83-L94)
 
 **Section sources**
-- [overlap_manager.py](file://markdown_chunker_legacy/chunker/components/overlap_manager.py#L343-L391)
-- [test_metadata_filtering.py](file://tests/test_metadata_filtering.py#L83-L94)
+- [types.py](file://markdown_chunker_v2/types.py#L240-L372)
+- [test_table_grouping_properties.py](file://tests/test_table_grouping_properties.py#L83-L94)
 
 ## Content-Specific Fields
 Content-specific fields provide detailed information about particular content types such as lists, code blocks, and tables. These fields are included only when the corresponding content type is present in the chunk.
@@ -144,6 +142,12 @@ For lists, the list_type field indicates whether the list is ordered, unordered,
 For code blocks, the language field specifies the programming language, such as "python", "javascript", or "rust". The has_syntax_highlighting field indicates whether syntax highlighting is applied, which is typically determined by the presence of a language specification in the code fence.
 
 For tables, the row_count and column_count fields specify the dimensions of the table. The has_header field indicates whether the table has a header row, which helps distinguish between data tables and other table-like structures.
+
+The table grouping feature introduces two new metadata fields:
+- **is_table_group**: Boolean indicating if the chunk contains multiple grouped tables
+- **table_group_count**: Number of tables in the group
+
+These fields are added when table grouping is enabled via configuration and multiple related tables are detected within proximity thresholds. Tables are grouped when they are within a configurable line distance, in the same section (if configured), and do not exceed size or count limits.
 
 ```mermaid
 classDiagram
@@ -164,17 +168,19 @@ class TableMetadata {
 +int column_count
 +bool has_header
 +bool has_column_alignment
++bool is_table_group
++int table_group_count
 }
 ```
 
 **Diagram sources**
-- [metadata_enricher.py](file://markdown_chunker_legacy/chunker/components/metadata_enricher.py#L212-L239)
-- [metadata_enricher.py](file://markdown_chunker_legacy/chunker/components/metadata_enricher.py#L177-L210)
-- [metadata_enricher.py](file://markdown_chunker_legacy/chunker/components/metadata_enricher.py#L241-L265)
+- [types.py](file://markdown_chunker_v2/types.py#L240-L372)
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py#L14-L50)
 - [output-format.md](file://docs/reference/output-format.md#L88-L101)
 
 **Section sources**
-- [metadata_enricher.py](file://markdown_chunker_legacy/chunker/components/metadata_enricher.py#L212-L265)
+- [types.py](file://markdown_chunker_v2/types.py#L240-L372)
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py#L14-L50)
 - [output-format.md](file://docs/reference/output-format.md#L88-L101)
 
 ## Examples
@@ -184,7 +190,7 @@ For a list-heavy document, the metadata includes list_type (e.g., "ordered"), ha
 
 For code-heavy documents, the metadata includes language (e.g., "python"), has_syntax_highlighting (True when language is specified), and potentially has_imports or has_comments. The content_type is set to "code", and the chunk may have a larger size due to code block preservation.
 
-For table-heavy documents, the metadata includes row_count, column_count, and has_header. Additional fields like has_column_alignment may indicate whether the table has alignment specifications. The content_type is set to "table", and the chunk preserves the complete table structure.
+For table-heavy documents, the metadata includes row_count, column_count, and has_header. Additional fields like has_column_alignment may indicate whether the table has alignment specifications. The content_type is set to "table", and the chunk preserves the complete table structure. When multiple related tables are detected, the metadata will include is_table_group=True and table_group_count indicating the number of tables in the group.
 
 ```mermaid
 flowchart TD
@@ -193,16 +199,16 @@ Document --> CodeDoc["Code-heavy Document"]
 Document --> TableDoc["Table-heavy Document"]
 ListDoc --> ListFields["list_type: ordered/unordered<br>has_nested_lists: bool<br>start_number: int"]
 CodeDoc --> CodeFields["language: string<br>has_syntax_highlighting: bool<br>has_imports: bool"]
-TableDoc --> TableFields["row_count: int<br>column_count: int<br>has_header: bool"]
+TableDoc --> TableFields["row_count: int<br>column_count: int<br>has_header: bool<br>is_table_group: bool<br>table_group_count: int"]
 ```
 
 **Diagram sources**
-- [basic_usage.py](file://examples/basic_usage.py#L220-L251)
-- [rag_integration.py](file://examples/rag_integration.py#L309-L327)
+- [test_table_grouping_properties.py](file://tests/test_table_grouping_properties.py#L264-L300)
+- [chunk_metadata.md](file://docs/api/chunk_metadata.md#L220-L251)
 
 **Section sources**
-- [basic_usage.py](file://examples/basic_usage.py#L220-L364)
-- [rag_integration.py](file://examples/rag_integration.py#L309-L432)
+- [test_table_grouping_properties.py](file://tests/test_table_grouping_properties.py#L264-L364)
+- [chunk_metadata.md](file://docs/api/chunk_metadata.md#L220-L364)
 
 ## RAG Retrieval Enhancement
 The metadata schema enhances retrieval in RAG systems by providing semantic context that improves search accuracy and relevance. The filtered metadata focuses on fields that contribute directly to retrieval quality while eliminating noise from statistical and internal fields.
@@ -212,6 +218,8 @@ The core fields enable reconstruction of document structure and identification o
 Structural fields act as semantic indicators that help identify important content features. Formatting indicators like has_bold and has_italic can signal emphasis, while has_urls and has_emails identify link-rich content. These fields enable content-based filtering and ranking in retrieval systems.
 
 Content-specific fields allow for targeted retrieval based on content type. Systems can filter for code chunks using the language field, find tables using row_count and column_count, or identify list structures with list_type. This enables specialized processing and presentation of different content types.
+
+The new table grouping fields (is_table_group and table_group_count) significantly enhance retrieval for documents with related tables by keeping contextually connected tables together. This prevents fragmentation of related information across multiple chunks, improving the quality of retrieved results for table-heavy content.
 
 Overlap fields provide contextual continuity between chunks, reducing the risk of missing important information at chunk boundaries. The previous_content and next_content fields in metadata mode offer explicit context without modifying the core content, allowing retrieval systems to consider surrounding context when ranking results.
 
@@ -232,9 +240,9 @@ RAG --> Ranking["Improved Result Ranking"]
 ```
 
 **Diagram sources**
-- [rag_integration.py](file://examples/rag_integration.py#L139-L154)
-- [rag_integration.py](file://examples/rag_integration.py#L353-L408)
+- [test_table_grouping_properties.py](file://tests/test_table_grouping_properties.py#L139-L154)
+- [chunk_metadata.md](file://docs/api/chunk_metadata.md#L353-L408)
 
 **Section sources**
-- [rag_integration.py](file://examples/rag_integration.py#L13-L51)
-- [rag_integration.py](file://examples/rag_integration.py#L139-L408)
+- [test_table_grouping_properties.py](file://tests/test_table_grouping_properties.py#L139-L408)
+- [chunk_metadata.md](file://docs/api/chunk_metadata.md#L13-L51)

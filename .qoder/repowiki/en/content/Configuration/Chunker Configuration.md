@@ -3,9 +3,8 @@
 <cite>
 **Referenced Files in This Document**
 - [config.py](file://markdown_chunker_v2/config.py)
-- [adaptive_sizing.py](file://markdown_chunker_v2/adaptive_sizing.py)
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py)
 - [types.py](file://markdown_chunker_v2/types.py)
-- [__init__.py](file://markdown_chunker_v2/__init__.py)
 - [config.md](file://docs/api/config.md)
 - [README.md](file://README.md)
 - [usage.md](file://docs/usage.md)
@@ -138,12 +137,15 @@ ChunkConfig consolidates the chunking behavior into a concise set of parameters:
 - Code-context binding: enable_code_context_binding, max_context_chars_before, max_context_chars_after, related_block_max_gap, bind_output_blocks, preserve_before_after_pairs
 - Hierarchical chunking: include_document_summary
 - Preprocessing: strip_obsidian_block_ids
+- **Table grouping: group_related_tables, table_grouping_config**
 
 Validation and normalization:
 - Validates size parameters and adjusts min_chunk_size if needed
 - Validates threshold ranges and strategy override values
 - Validates code-context binding parameters
+- Validates table grouping parameters
 - Auto-creates AdaptiveSizeConfig when adaptive sizing is enabled
+- Auto-creates TableGroupingConfig when table grouping is enabled
 
 Convenience constructors:
 - default(), for_code_heavy(), for_structured(), minimal(), for_changelogs()
@@ -162,6 +164,63 @@ Migration helpers:
 - [config.py](file://markdown_chunker_v2/config.py#L255-L314)
 - [config.py](file://markdown_chunker_v2/config.py#L315-L353)
 - [config.py](file://markdown_chunker_v2/config.py#L354-L426)
+
+### TableGroupingConfig: Table Grouping Configuration
+TableGroupingConfig controls the behavior of grouping related tables into single chunks for improved retrieval quality. This feature is disabled by default and must be explicitly enabled.
+
+**Parameters:**
+- **max_distance_lines**: Maximum number of lines between tables to consider them related. Tables further apart will not be grouped. Default: 10
+- **max_grouped_tables**: Maximum number of tables in a single group. Prevents overly large groups. Default: 5
+- **max_group_size**: Maximum combined size in characters for grouped tables. Groups exceeding this limit will be split. Default: 5000
+- **require_same_section**: Only group tables within the same header section. If True, tables separated by headers will not be grouped. Default: True
+
+**Validation Rules:**
+- `max_distance_lines` must be non-negative
+- `max_grouped_tables` must be >= 1
+- `max_group_size` must be >= 100
+
+**Example:**
+```python
+from markdown_chunker_v2.config import TableGroupingConfig
+
+config = TableGroupingConfig(
+    max_distance_lines=15,
+    max_grouped_tables=3,
+    max_group_size=8000,
+    require_same_section=True
+)
+```
+
+**Section sources**
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py#L14-L50)
+
+### TableGrouper: Table Grouping Logic
+TableGrouper implements the logic for grouping related tables based on proximity and section boundaries. Tables are grouped when:
+- They are within `max_distance_lines` of each other
+- No header separates them (if `require_same_section` is True)
+- Combined size doesn't exceed `max_group_size`
+- Group doesn't exceed `max_grouped_tables`
+
+The grouper processes tables in document order and creates groups by checking these conditions sequentially. Each group is represented as a TableGroup object containing the combined content.
+
+**Section sources**
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py#L81-L330)
+
+### TableGroup: Grouped Table Representation
+TableGroup represents a collection of related tables that have been grouped together. It contains:
+- **tables**: List of TableBlock objects in the group
+- **start_line**: First line of the group (1-indexed)
+- **end_line**: Last line of the group (1-indexed)
+- **content**: Combined content including all tables and text between them
+
+Properties:
+- **table_count**: Number of tables in the group
+- **size**: Total size in characters of the combined content
+
+This structure allows the chunker to treat multiple related tables as a single atomic unit during chunking.
+
+**Section sources**
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py#L54-L78)
 
 ### AdaptiveSizeConfig: Adaptive Chunk Sizing
 Adaptive sizing computes an optimal chunk size based on content complexity:
@@ -186,6 +245,7 @@ Shared types used across the chunker and configuration:
 - Chunk: chunk representation with content, line numbers, and metadata
 - ContentAnalysis: metrics and extracted elements used for strategy selection and adaptive sizing
 - FencedBlock: code block representation used by code-context binding
+- TableBlock: table representation used by table grouping
 
 These types define the contract for configuration-driven behavior and metadata enrichment.
 
@@ -235,6 +295,8 @@ class ChunkConfig {
 +Optional[AdaptiveSizeConfig] adaptive_config
 +bool include_document_summary
 +bool strip_obsidian_block_ids
++bool group_related_tables
++Optional[TableGroupingConfig] table_grouping_config
 +enable_overlap() bool
 +from_legacy(**kwargs) ChunkConfig
 +default() ChunkConfig
@@ -260,6 +322,12 @@ class AdaptiveSizeConfig {
 +calculate_complexity(analysis) float
 +calculate_optimal_size(text, analysis) int
 }
+class TableGroupingConfig {
++int max_distance_lines
++int max_grouped_tables
++int max_group_size
++bool require_same_section
+}
 class ContentAnalysis {
 +int total_chars
 +int total_lines
@@ -282,20 +350,24 @@ class ContentAnalysis {
 +float avg_sentence_length
 }
 ChunkConfig --> AdaptiveSizeConfig : "uses"
+ChunkConfig --> TableGroupingConfig : "uses"
 AdaptiveSizeConfig --> ContentAnalysis : "consumes"
 ```
 
 **Diagram sources**
 - [config.py](file://markdown_chunker_v2/config.py#L14-L120)
 - [adaptive_sizing.py](file://markdown_chunker_v2/adaptive_sizing.py#L14-L87)
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py#L14-L50)
 - [types.py](file://markdown_chunker_v2/types.py#L148-L184)
 
 **Section sources**
 - [config.py](file://markdown_chunker_v2/config.py#L14-L120)
 - [adaptive_sizing.py](file://markdown_chunker_v2/adaptive_sizing.py#L14-L87)
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py#L14-L50)
 - [types.py](file://markdown_chunker_v2/types.py#L148-L184)
 
 ## Performance Considerations
+- Table grouping introduces negligible overhead (<0.1%) and adds metadata fields per chunk.
 - Adaptive sizing introduces negligible overhead (<0.1%) and adds metadata fields per chunk.
 - Overlap behavior is configurable and adaptive; actual overlap respects size constraints.
 - Strategy selection is deterministic and efficient, relying on ContentAnalysis metrics.
@@ -309,6 +381,11 @@ Common configuration issues and resolutions:
 - Strategy override: strategy_override must be one of code_aware, list_aware, structural, fallback, or None.
 - Adaptive sizing misconfiguration: base_size must be positive; min_scale and max_scale must be positive with min_scale < max_scale; weights must be non-negative and sum to 1.0.
 - Code-context binding parameters: max_context_chars_before and max_context_chars_after must be non-negative; related_block_max_gap must be ≥ 1.
+- **Table grouping parameters:**
+  - `max_distance_lines` must be non-negative
+  - `max_grouped_tables` must be >= 1
+  - `max_group_size` must be >= 100
+  - `group_related_tables` must be explicitly set to True to enable grouping
 
 Validation and migration:
 - ChunkConfig validates parameters on construction and adjusts min_chunk_size if needed.
@@ -321,9 +398,10 @@ Validation and migration:
 - [config.py](file://markdown_chunker_v2/config.py#L315-L353)
 - [config.py](file://markdown_chunker_v2/config.py#L354-L426)
 - [adaptive_sizing.py](file://markdown_chunker_v2/adaptive_sizing.py#L37-L87)
+- [table_grouping.py](file://markdown_chunker_v2/table_grouping.py#L37-L50)
 
 ## Conclusion
-The v2 configuration system simplifies chunker behavior to a manageable set of parameters while retaining powerful features like adaptive sizing and code-context binding. It integrates cleanly with the Dify plugin ecosystem and provides robust validation and migration support. Choose appropriate profiles and tune thresholds for your content type to achieve optimal chunking quality and performance.
+The v2 configuration system simplifies chunker behavior to a manageable set of parameters while retaining powerful features like adaptive sizing, code-context binding, and table grouping. It integrates cleanly with the Dify plugin ecosystem and provides robust validation and migration support. Choose appropriate profiles and tune thresholds for your content type to achieve optimal chunking quality and performance.
 
 [No sources needed since this section summarizes without analyzing specific files]
 
@@ -348,7 +426,10 @@ The v2 configuration system simplifies chunker behavior to a manageable set of p
 - strategy: auto, code_aware, list_aware, structural, fallback
 - enable_overlap: Toggle overlap (use overlap_size > 0)
 - include_metadata: Embed metadata in chunk text (default true)
+- group_related_tables: Enable grouping of related tables into single chunks
+- table_grouping_config: Configuration object for table grouping behavior
 
 **Section sources**
 - [README.md](file://README.md#L158-L221)
 - [usage.md](file://docs/usage.md#L1-L60)
+- [README.md](file://README.md#L786-L817)
