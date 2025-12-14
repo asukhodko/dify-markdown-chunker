@@ -13,7 +13,20 @@
 - [examples/api_usage.py](file://examples/api_usage.py)
 - [tests/api/test_backward_compatibility.py](file://tests/api/test_backward_compatibility.py)
 - [tests/api/test_error_handler.py](file://tests/api/test_error_handler.py)
+- [markdown_chunker_v2/streaming/streaming_chunker.py](file://markdown_chunker_v2/streaming/streaming_chunker.py)
+- [markdown_chunker_v2/streaming/config.py](file://markdown_chunker_v2/streaming/config.py)
+- [docs/api/streaming.md](file://docs/api/streaming.md)
+- [tests/integration/test_streaming_integration.py](file://tests/integration/test_streaming_integration.py)
 </cite>
+
+## Update Summary
+**Changes Made**
+- Added new section "Streaming Methods" to document the new `chunk_file_streaming()` and `chunk_stream()` methods
+- Updated "Chunking Methods" section to include streaming methods in the overview
+- Added "Streaming Configuration" subsection to "Configuration System" section
+- Updated "Usage Examples" section with streaming examples
+- Added "Streaming Performance" subsection to "Performance Considerations"
+- Added "Streaming Error Handling" subsection to "Error Handling"
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -38,6 +51,7 @@ The v2 implementation offers significant improvements over the legacy version, f
 - Enhanced error handling and validation
 - Improved performance and reliability
 - Better metadata enrichment
+- Streaming processing support for large files
 
 ## Core Architecture
 
@@ -81,6 +95,8 @@ class MarkdownChunker {
 +chunk(md_text : str) List[Chunk]
 +chunk_with_metrics(md_text : str) tuple
 +chunk_with_analysis(md_text : str) tuple
++chunk_file_streaming(file_path : str, streaming_config : Optional[StreamingConfig]) Iterator[Chunk]
++chunk_stream(stream : io.TextIOBase, streaming_config : Optional[StreamingConfig]) Iterator[Chunk]
 -_apply_overlap(chunks : List[Chunk]) List[Chunk]
 -_merge_small_chunks(chunks : List[Chunk]) List[Chunk]
 -_add_metadata(chunks : List[Chunk], strategy_name : str) List[Chunk]
@@ -185,8 +201,32 @@ config = ChunkConfig.minimal()
 # Small chunks for fine-grained processing
 ```
 
+### Streaming Configuration
+
+The `StreamingConfig` class controls the behavior of streaming methods for processing large files:
+
+```python
+@dataclass
+class StreamingConfig:
+    """
+    Configuration for streaming chunker.
+    
+    Attributes:
+        buffer_size: Maximum bytes per buffer window (default: 100KB)
+        overlap_lines: Lines to keep as context between buffers (default: 20)
+        max_memory_mb: Memory usage ceiling in megabytes (default: 100)
+        safe_split_threshold: Where to start looking for split point (default: 0.8)
+    """
+    
+    buffer_size: int = 100_000
+    overlap_lines: int = 20
+    max_memory_mb: int = 100
+    safe_split_threshold: float = 0.8
+```
+
 **Section sources**
 - [markdown_chunker_v2/config.py](file://markdown_chunker_v2/config.py#L12-L170)
+- [markdown_chunker_v2/streaming/config.py](file://markdown_chunker_v2/streaming/config.py#L8-L22)
 
 ## Chunking Methods
 
@@ -244,8 +284,76 @@ def chunk_with_analysis(self, md_text: str) -> tuple:
     """
 ```
 
+### Streaming Methods
+
+The MarkdownChunker now provides two streaming methods for processing large files with limited memory usage:
+
+#### `chunk_file_streaming()`
+Processes a markdown file in streaming mode, yielding chunks one at a time:
+
+```python
+def chunk_file_streaming(
+    self, 
+    file_path: str, 
+    streaming_config: Optional[StreamingConfig] = None
+) -> Iterator[Chunk]:
+    """
+    Chunk file in streaming mode for memory efficiency.
+    
+    Use this for files >10MB to limit memory usage.
+    
+    Args:
+        file_path: Path to markdown file
+        streaming_config: Streaming configuration (uses defaults if None)
+        
+    Yields:
+        Chunk objects with streaming metadata
+        
+    Example:
+        >>> chunker = MarkdownChunker()
+        >>> for chunk in chunker.chunk_file_streaming("large.md"):
+        ...     process(chunk)
+    """
+```
+
+#### `chunk_stream()`
+Processes a text stream in streaming mode, yielding chunks one at a time:
+
+```python
+def chunk_stream(
+    self, 
+    stream: io.TextIOBase, 
+    streaming_config: Optional[StreamingConfig] = None
+) -> Iterator[Chunk]:
+    """
+    Chunk stream in streaming mode for memory efficiency.
+    
+    Args:
+        stream: Text stream to process
+        streaming_config: Streaming configuration (uses defaults if None)
+        
+    Yields:
+        Chunk objects with streaming metadata
+        
+    Example:
+        >>> import io
+        >>> chunker = MarkdownChunker()
+        >>> stream = io.StringIO(large_text)
+        >>> for chunk in chunker.chunk_stream(stream):
+        ...     process(chunk)
+    """
+```
+
+**Streaming method characteristics:**
+- **Memory efficiency**: Processes files in buffer windows to limit memory usage
+- **Progress tracking**: Includes metadata for monitoring processing progress
+- **Configurable**: Uses `StreamingConfig` for buffer size, overlap, and memory limits
+- **Boundary preservation**: Ensures code blocks, tables, and other atomic blocks are not split
+- **Consistent output**: Produces the same quality chunks as batch processing
+
 **Section sources**
 - [markdown_chunker_v2/chunker.py](file://markdown_chunker_v2/chunker.py#L43-L128)
+- [markdown_chunker_v2/chunker.py](file://markdown_chunker_v2/chunker.py#L240-L290)
 
 ## Strategy Selection
 
@@ -350,8 +458,28 @@ The system implements multiple layers of error recovery:
 3. **Metadata enrichment**: Include error context in chunk metadata
 4. **Validation**: Comprehensive checks prevent malformed chunks
 
+### Streaming Error Handling
+
+When using streaming methods, additional error conditions may occur:
+
+```python
+try:
+    # Process large file with streaming
+    for chunk in chunker.chunk_file_streaming("large_document.md"):
+        process_chunk(chunk)
+except FileNotFoundError:
+    print("File not found. Check the file path.")
+except PermissionError:
+    print("Permission denied. Check file permissions.")
+except MemoryError:
+    print("Memory limit exceeded. Reduce buffer size in StreamingConfig.")
+except UnicodeDecodeError as e:
+    print(f"Encoding error: {e}. Try specifying encoding explicitly.")
+```
+
 **Section sources**
 - [tests/api/test_error_handler.py](file://tests/api/test_error_handler.py#L1-L262)
+- [tests/integration/test_streaming_integration.py](file://tests/integration/test_streaming_integration.py#L1-L213)
 
 ## Backward Compatibility
 
@@ -445,6 +573,42 @@ chunks = chunk_text("# Quick Example\nContent here")
 chunks = chunk_file("/path/to/document.md")
 ```
 
+### Streaming Usage
+
+```python
+from markdown_chunker import MarkdownChunker, StreamingConfig
+
+chunker = MarkdownChunker()
+
+# Process large file with default streaming configuration
+for chunk in chunker.chunk_file_streaming("large_documentation.md"):
+    process_chunk(chunk)
+
+# Process with custom streaming configuration
+streaming_config = StreamingConfig(
+    buffer_size=50_000,  # 50KB buffer windows
+    max_memory_mb=50     # 50MB memory limit
+)
+for chunk in chunker.chunk_file_streaming("large_doc.md", streaming_config):
+    vector_db.insert(chunk.content, chunk.metadata)
+```
+
+### Stream Processing
+
+```python
+from markdown_chunker import MarkdownChunker
+from io import StringIO
+
+chunker = MarkdownChunker()
+
+# Process text from StringIO
+large_text = "# Large Document\n\n" * 10000
+stream = StringIO(large_text)
+
+for chunk in chunker.chunk_stream(stream):
+    print(f"Chunk {chunk.metadata['stream_chunk_index']}: {len(chunk.content)} chars")
+```
+
 ### Error Handling
 
 ```python
@@ -475,16 +639,22 @@ The v2 implementation includes several performance optimizations:
 3. **Efficient Algorithms**: Optimized parsing and chunking algorithms
 4. **Memory Management**: Minimal memory footprint for large documents
 
-### Performance Metrics
+### Streaming Performance
 
-Key performance indicators tracked automatically:
+The streaming methods provide predictable memory usage regardless of file size:
 
-| Metric | Description | Typical Range |
-|--------|-------------|---------------|
-| Processing Time | Time to chunk document | < 100ms for typical documents |
-| Memory Usage | Peak memory consumption | < 50MB for 1MB input |
-| Chunk Count | Number of resulting chunks | 1-10x input size |
-| Overhead | Additional processing overhead | 5-15% of input size |
+| File Size | Memory Usage | Processing Time | Throughput |
+|-----------|-------------|----------------|------------|
+| 1MB | ~15MB | ~50ms | ~20MB/sec |
+| 10MB | ~15MB | ~500ms | ~20MB/sec |
+| 100MB | ~15MB | ~5s | ~20MB/sec |
+| 1GB | ~15MB | ~50s | ~20MB/sec |
+
+**Key characteristics:**
+- **Constant memory**: Memory usage remains stable regardless of file size
+- **Linear processing**: Processing time scales linearly with file size
+- **Configurable limits**: Memory usage can be controlled via `StreamingConfig`
+- **~10-15% overhead**: Slight performance cost for memory efficiency
 
 ### Best Practices
 
@@ -492,6 +662,12 @@ Key performance indicators tracked automatically:
 2. **Configuration Tuning**: Optimize parameters for your specific content type
 3. **Memory Monitoring**: Monitor memory usage for very large documents
 4. **Parallel Processing**: Use multiple chunker instances for concurrent processing
+5. **Streaming for Large Files**: Use `chunk_file_streaming()` for files >10MB
+6. **Progress Tracking**: Use streaming metadata to monitor processing progress
+
+**Section sources**
+- [docs/api/streaming.md](file://docs/api/streaming.md#L1-L334)
+- [tests/integration/test_streaming_integration.py](file://tests/integration/test_streaming_integration.py#L1-L213)
 
 ## Troubleshooting Guide
 
@@ -553,6 +729,28 @@ print(f"Processing time: {processing_time:.3f}s")
 print(f"Average chunk size: {metrics.avg_chunk_size:.1f}")
 ```
 
+#### Issue: High Memory Usage with Large Files
+**Causes:**
+- Using `chunk()` method for very large files
+- Insufficient system memory
+- Large buffer sizes in streaming
+
+**Solutions:**
+```python
+# Use streaming methods for large files
+chunker = MarkdownChunker()
+
+# Configure streaming for memory-constrained environments
+streaming_config = StreamingConfig(
+    buffer_size=50_000,   # Smaller buffer
+    max_memory_mb=50      # Strict memory limit
+)
+
+# Process file in streaming mode
+for chunk in chunker.chunk_file_streaming("large_file.md", streaming_config):
+    process_chunk(chunk)
+```
+
 ### Debugging Tools
 
 #### Content Analysis
@@ -574,7 +772,14 @@ for chunk in chunks:
     print(f"Content type: {chunk.metadata.get('content_type')}")
     print(f"Has code: {chunk.metadata.get('has_code')}")
     print(f"Strategy: {chunk.metadata.get('strategy')}")
+    
+    # Streaming metadata (if applicable)
+    if 'stream_chunk_index' in chunk.metadata:
+        print(f"Stream chunk index: {chunk.metadata['stream_chunk_index']}")
+        print(f"Stream window index: {chunk.metadata['stream_window_index']}")
+        print(f"Bytes processed: {chunk.metadata['bytes_processed']}")
 ```
 
 **Section sources**
 - [tests/chunker/test_error_types.py](file://tests/chunker/test_error_types.py#L1-L47)
+- [docs/api/streaming.md](file://docs/api/streaming.md#L1-L334)

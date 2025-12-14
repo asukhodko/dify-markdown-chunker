@@ -14,7 +14,21 @@
 - [structural.py](file://markdown_chunker_v2/strategies/structural.py)
 - [fallback.py](file://markdown_chunker_v2/strategies/fallback.py)
 - [orchestrator.py](file://markdown_chunker_legacy/chunker/orchestrator.py)
+- [streaming_chunker.py](file://markdown_chunker_v2/streaming/streaming_chunker.py)
+- [buffer_manager.py](file://markdown_chunker_v2/streaming/buffer_manager.py)
+- [split_detector.py](file://markdown_chunker_v2/streaming/split_detector.py)
+- [fence_tracker.py](file://markdown_chunker_v2/streaming/fence_tracker.py)
+- [config.py](file://markdown_chunker_v2/streaming/config.py)
 </cite>
+
+## Update Summary
+**Changes Made**   
+- Added new section on Parallel Processing Paths (Batch and Streaming)
+- Introduced dedicated Streaming Module architecture
+- Updated architecture overview diagram to include streaming path
+- Added detailed component analysis for streaming components
+- Enhanced performance considerations with streaming benchmarks
+- Updated troubleshooting guide with streaming-specific issues
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -49,22 +63,28 @@ B --> H[parser.py]
 B --> I[strategies/]
 B --> J[config.py]
 B --> K[types.py]
-C --> L[chunker/]
-C --> M[parser/]
-C --> N[api/]
-D --> O[architecture/]
-D --> P[architecture-audit/]
-D --> Q[guides/]
-I --> R[base.py]
-I --> S[code_aware.py]
-I --> T[structural.py]
-I --> U[fallback.py]
-L --> V[orchestrator.py]
-L --> W[strategies/]
-L --> X[components/]
-O --> Y[README.md]
-O --> Z[strategies.md]
-O --> AA[dify-integration.md]
+B --> L[streaming/]
+C --> M[chunker/]
+C --> N[parser/]
+C --> O[api/]
+D --> P[architecture/]
+D --> Q[architecture-audit/]
+D --> R[guides/]
+I --> S[base.py]
+I --> T[code_aware.py]
+I --> U[structural.py]
+I --> V[fallback.py]
+L --> W[streaming_chunker.py]
+L --> X[buffer_manager.py]
+L --> Y[split_detector.py]
+L --> Z[fence_tracker.py]
+L --> AA[config.py]
+M --> AB[orchestrator.py]
+M --> AC[strategies/]
+M --> AD[components/]
+P --> AE[README.md]
+P --> AF[strategies.md]
+P --> AG[dify-integration.md]
 ```
 
 **Diagram sources**
@@ -91,6 +111,8 @@ The Markdown Chunker system follows a modular, layered architecture that process
 
 The core architectural pattern is a simplified pipeline that processes documents in four main phases: parsing, strategy selection, chunking, and post-processing. This linear flow replaces the more complex orchestration model of the legacy system while preserving all essential functionality. The v2 architecture consolidates 15 legacy files into just 5 core files, reducing the codebase from over 10,000 lines to approximately 2,000 lines while maintaining or improving functionality.
 
+A significant architectural enhancement is the introduction of parallel processing paths: batch and streaming. This dual-path approach allows the system to handle both small-to-medium documents efficiently through the traditional batch processing path, while providing memory-efficient processing for large documents (>10MB) through the streaming path. The streaming complexity is isolated in a dedicated module, ensuring that the core batch processing pipeline remains simple and performant.
+
 ```mermaid
 graph TD
 A[Raw Markdown Input] --> B[Parser]
@@ -103,13 +125,21 @@ G --> H[Chunk Output]
 I[Dify Platform] --> J[Plugin Integration]
 J --> A
 H --> K[RAG System]
+L[Large File] --> M[Streaming Buffer]
+M --> N[Window Processing]
+N --> O[Safe Split Detection]
+O --> P[Chunk Window]
+P --> Q[Stream Output]
 style A fill:#f9f,stroke:#333
 style H fill:#bbf,stroke:#333
+style L fill:#f9f,stroke:#333
+style Q fill:#bbf,stroke:#333
 ```
 
 **Diagram sources**
 - [chunker.py](file://markdown_chunker_v2/chunker.py#L43-L90)
 - [parser.py](file://markdown_chunker_v2/parser.py#L38-L81)
+- [README.md](file://docs/architecture/README.md#L148-L307)
 
 ## Detailed Component Analysis
 
@@ -245,6 +275,123 @@ Output([Apply Selected Strategy])
 - [strategies/structural.py](file://markdown_chunker_v2/strategies/structural.py#L1-L151)
 - [strategies/fallback.py](file://markdown_chunker_v2/strategies/fallback.py#L1-L96)
 
+### Parallel Processing Paths (Batch and Streaming)
+
+The system now supports two parallel processing paths: batch and streaming. This architectural enhancement enables efficient processing of documents of all sizes while maintaining memory efficiency for large files.
+
+The **batch processing path** follows the traditional approach of loading the entire document into memory, parsing it completely, and then chunking it. This path is optimal for small-to-medium documents (<10MB) and provides the fastest processing speed.
+
+The **streaming processing path** is designed for large documents (>10MB) and operates on buffer windows to limit memory usage. This path processes the document in chunks, applying safe split detection to maintain chunk quality at window boundaries. The streaming complexity is isolated in a dedicated module (`markdown_chunker_v2/streaming/`), ensuring that the core batch processing pipeline remains simple and performant.
+
+The streaming path includes several specialized components:
+- **BufferManager**: Reads the file in configurable buffer windows (default: 100KB)
+- **FenceTracker**: Maintains state across buffer boundaries to prevent splitting code blocks
+- **SplitDetector**: Identifies safe split points using semantic boundaries (headers, paragraphs)
+- **StreamingChunker**: Coordinates the streaming process and yields chunks incrementally
+
+This dual-path approach provides backward compatibility while adding support for memory-constrained environments and very large documentation processing.
+
+```mermaid
+graph TD
+A[Input] --> B{File Size}
+B --> |< 10MB| C[Batch Processing]
+B --> |>= 10MB| D[Streaming Processing]
+C --> E[Load Full Document]
+E --> F[Parse & Analyze]
+F --> G[Apply Strategy]
+G --> H[Generate Chunks]
+D --> I[Read Buffer Window]
+I --> J[Safe Split Detection]
+J --> K[Process Window]
+K --> L[Apply Strategy]
+L --> M[Yield Chunks]
+M --> N{More Data?}
+N --> |Yes| I
+N --> |No| O[Complete]
+H --> P[Output]
+M --> P
+```
+
+**Diagram sources**
+- [README.md](file://docs/architecture/README.md#L148-L307)
+- [streaming_chunker.py](file://markdown_chunker_v2/streaming/streaming_chunker.py#L17-L103)
+- [buffer_manager.py](file://markdown_chunker_v2/streaming/buffer_manager.py#L13-L64)
+- [split_detector.py](file://markdown_chunker_v2/streaming/split_detector.py#L12-L98)
+- [fence_tracker.py](file://markdown_chunker_v2/streaming/fence_tracker.py#L11-L66)
+
+**Section sources**
+- [chunker.py](file://markdown_chunker_v2/chunker.py#L239-L263)
+- [streaming_chunker.py](file://markdown_chunker_v2/streaming/streaming_chunker.py#L17-L103)
+- [buffer_manager.py](file://markdown_chunker_v2/streaming/buffer_manager.py#L13-L64)
+- [split_detector.py](file://markdown_chunker_v2/streaming/split_detector.py#L12-L98)
+- [fence_tracker.py](file://markdown_chunker_v2/streaming/fence_tracker.py#L11-L66)
+
+### Dedicated Streaming Module
+
+The streaming complexity is isolated in a dedicated module (`markdown_chunker_v2/streaming/`) that contains all components related to streaming processing. This isolation ensures that the core chunking logic remains focused on batch processing while providing a clean, modular interface for streaming operations.
+
+The module includes:
+- **StreamingConfig**: Configuration class with parameters for buffer size, overlap lines, and memory limits
+- **BufferManager**: Manages buffer windows and overlap between windows
+- **FenceTracker**: Tracks code fence state across buffer boundaries to prevent mid-block splits
+- **SplitDetector**: Detects safe split points using semantic boundaries with priority order
+- **StreamingChunker**: Main class that coordinates the streaming process
+
+The StreamingChunker class wraps the base MarkdownChunker and applies it to buffer windows, yielding chunks incrementally. It maintains streaming-specific metadata such as window index and bytes processed, enabling progress tracking for long-running operations.
+
+This modular design allows for independent development and testing of the streaming components while maintaining compatibility with all existing chunking strategies.
+
+```mermaid
+classDiagram
+class StreamingConfig {
++buffer_size : int
++overlap_lines : int
++max_memory_mb : int
++safe_split_threshold : float
+}
+class BufferManager {
++read_windows(stream) : Iterator[Tuple[List[str], List[str], int]]
+-_extract_overlap(buffer) : List[str]
+}
+class FenceTracker {
++track_line(line : str) : None
++is_inside_fence() : bool
++get_fence_info() : Optional[Tuple[str, int]]
++reset() : None
+}
+class SplitDetector {
++find_split_point(buffer, fence_tracker) : int
+-_try_split_at_header(buffer, start_idx) : Optional[int]
+-_try_split_at_paragraph(buffer, start_idx) : Optional[int]
+-_try_split_at_newline(buffer, start_idx, fence_tracker) : Optional[int]
+-_fallback_split(start_idx) : int
+}
+class StreamingChunker {
++chunk_file(file_path) : Iterator[Chunk]
++chunk_stream(stream) : Iterator[Chunk]
+-_process_window(buffer, overlap, window_index, start_chunk_index) : Iterator[Chunk]
+}
+StreamingChunker --> BufferManager
+StreamingChunker --> SplitDetector
+StreamingChunker --> FenceTracker
+StreamingChunker --> MarkdownChunker
+SplitDetector --> FenceTracker
+```
+
+**Diagram sources**
+- [config.py](file://markdown_chunker_v2/streaming/config.py#L8-L23)
+- [buffer_manager.py](file://markdown_chunker_v2/streaming/buffer_manager.py#L13-L64)
+- [fence_tracker.py](file://markdown_chunker_v2/streaming/fence_tracker.py#L11-L66)
+- [split_detector.py](file://markdown_chunker_v2/streaming/split_detector.py#L12-L98)
+- [streaming_chunker.py](file://markdown_chunker_v2/streaming/streaming_chunker.py#L17-L103)
+
+**Section sources**
+- [config.py](file://markdown_chunker_v2/streaming/config.py#L8-L23)
+- [buffer_manager.py](file://markdown_chunker_v2/streaming/buffer_manager.py#L13-L64)
+- [fence_tracker.py](file://markdown_chunker_v2/streaming/fence_tracker.py#L11-L66)
+- [split_detector.py](file://markdown_chunker_v2/streaming/split_detector.py#L12-L98)
+- [streaming_chunker.py](file://markdown_chunker_v2/streaming/streaming_chunker.py#L17-L103)
+
 ## Dependency Analysis
 
 The Markdown Chunker system has a well-defined dependency structure that supports its modular design. The v2 architecture significantly simplifies dependencies compared to the legacy implementation by consolidating functionality and removing circular dependencies. The core dependencies flow in a single direction from the main chunker class to supporting components, creating a clean, linear pipeline.
@@ -262,9 +409,16 @@ E --> G[StructuralStrategy]
 E --> H[FallbackStrategy]
 A --> I[Chunk]
 A --> J[ContentAnalysis]
+K[MarkdownChunker] --> L[StreamingChunker]
+L --> M[BufferManager]
+L --> N[SplitDetector]
+L --> O[FenceTracker]
+L --> P[StreamingConfig]
 style A fill:#f9f,stroke:#333
 style B fill:#bbf,stroke:#333
 style C fill:#bbf,stroke:#333
+style K fill:#f9f,stroke:#333
+style L fill:#bbf,stroke:#333
 ```
 
 **Diagram sources**
@@ -283,17 +437,31 @@ The system uses efficient algorithms for extracting structural elements, leverag
 
 The performance characteristics vary by strategy, with the FallbackStrategy being the fastest but potentially producing lower-quality chunks, while the StructuralStrategy and CodeAwareStrategy provide higher quality at the cost of additional processing. The system includes built-in metrics collection that allows monitoring of processing time, chunk quality, and resource usage, enabling optimization based on real-world performance data.
 
+The introduction of the streaming path adds approximately 10-15% overhead compared to batch processing but provides guaranteed memory bounds regardless of file size. Streaming maintains constant memory usage (~15MB peak) even for multi-gigabyte documents, making it suitable for resource-constrained environments. The batch path remains optimal for smaller documents, providing the fastest processing speed.
+
+**Section sources**
+- [test_streaming_benchmarks.py](file://tests/integration/test_streaming_benchmarks.py#L1-L165)
+- [streaming.md](file://docs/api/streaming.md#L180-L210)
+- [README.md](file://docs/architecture/README.md#L240-L251)
+
 ## Troubleshooting Guide
 
 The Markdown Chunker system includes several mechanisms for troubleshooting and error resilience. The architecture incorporates multiple layers of error handling, from input validation to fallback strategies that ensure chunking can proceed even when primary approaches fail. When issues occur, the system provides informative error messages and warnings that help identify the root cause.
 
 Common issues include documents that are too large, malformed markdown that cannot be parsed correctly, or configuration settings that lead to suboptimal chunking. The system addresses these through sensible defaults, automatic fallback to simpler strategies, and comprehensive validation. For integration with Dify, specific troubleshooting steps are available for issues like missing plugins or configuration errors.
 
+For streaming processing, specific issues may arise:
+- **Memory limits exceeded**: Reduce buffer_size in StreamingConfig
+- **File not found**: Verify file path and permissions
+- **Encoding issues**: Specify encoding explicitly when opening files
+- **Chunk quality at boundaries**: The system uses safe split detection to minimize boundary issues, but complex nested structures may occasionally be split
+
 The architecture audit documents provide detailed guidance on identifying and resolving issues, including performance bottlenecks, content loss, and incorrect chunk boundaries. The test suite includes extensive edge case coverage that helps prevent regressions and ensures consistent behavior across different document types.
 
 **Section sources**
 - [dify-integration.md](file://docs/architecture/dify-integration.md#L126-L153)
 - [orchestrator.py](file://markdown_chunker_legacy/chunker/orchestrator.py#L189-L188)
+- [streaming.md](file://docs/api/streaming.md#L262-L293)
 
 ## Conclusion
 
@@ -302,3 +470,5 @@ The Markdown Chunker system represents a significant evolution from its legacy i
 The architectural decisions to use AST-based parsing for structural accuracy and the strategy pattern for adaptive chunking have proven effective in handling diverse document types appropriately. The modular design enables easy extension with new strategies or parsing capabilities while maintaining backward compatibility through the compatibility layer.
 
 The system successfully balances the competing demands of RAG applications: preserving semantic meaning while creating chunks of appropriate size, handling diverse content types effectively, and providing reliable performance at scale. Its integration with the Dify platform as a tool plugin demonstrates its versatility and readiness for production use in AI-powered applications.
+
+A key enhancement in this version is the introduction of parallel processing paths (batch and streaming) with streaming complexity isolated in a dedicated module. This allows the system to efficiently process documents of all sizes while maintaining memory efficiency for large files. The streaming path provides a robust solution for processing very large documentation (100MB+) in memory-constrained environments, expanding the system's applicability to new use cases.
