@@ -3,10 +3,13 @@ Base strategy class for markdown_chunker v2.
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Tuple
+from typing import TYPE_CHECKING, List, Tuple
 
 from ..config import ChunkConfig
 from ..types import Chunk, ContentAnalysis, LatexType
+
+if TYPE_CHECKING:
+    from ..table_grouping import TableGroup
 
 
 class BaseStrategy(ABC):
@@ -280,5 +283,94 @@ class BaseStrategy(ABC):
                     end_line,
                 )
             )
+
+        return chunks
+
+    def _get_table_groups(
+        self,
+        analysis: ContentAnalysis,
+        lines: List[str],
+        config: ChunkConfig,
+    ) -> List["TableGroup"]:
+        """
+        Get table groups based on configuration.
+
+        If table grouping is enabled, groups related tables.
+        Otherwise, returns each table as a single-table group.
+
+        Args:
+            analysis: Document analysis with tables and headers
+            lines: Document lines array
+            config: Chunking configuration
+
+        Returns:
+            List of TableGroup objects
+
+        Requirements: 5.1, 5.2, 5.3, 5.4
+        """
+        from ..table_grouping import TableGroup
+
+        if not analysis.tables:
+            return []
+
+        grouper = config.get_table_grouper()
+
+        if grouper is not None:
+            # Table grouping enabled - use grouper
+            return grouper.group_tables(analysis.tables, lines, analysis.headers)
+        else:
+            # Table grouping disabled - each table is its own group
+            groups = []
+            for table in analysis.tables:
+                content = "\n".join(lines[table.start_line - 1 : table.end_line])
+                group = TableGroup(
+                    tables=[table],
+                    start_line=table.start_line,
+                    end_line=table.end_line,
+                    content=content,
+                )
+                groups.append(group)
+            return groups
+
+    def _process_table_groups(
+        self,
+        table_groups: List["TableGroup"],
+        config: ChunkConfig,
+    ) -> List[Chunk]:
+        """
+        Create chunks from table groups.
+
+        Sets appropriate metadata for grouped tables.
+
+        Args:
+            table_groups: Groups from _get_table_groups
+            config: Chunking configuration
+
+        Returns:
+            List of chunks with table group metadata
+
+        Requirements: 4.1, 4.2, 4.3
+        """
+        chunks = []
+
+        for group in table_groups:
+            chunk = self._create_chunk(
+                content=group.content,
+                start_line=group.start_line,
+                end_line=group.end_line,
+                content_type="table",
+                is_atomic=True,
+            )
+
+            # Add table group metadata
+            if group.table_count > 1:
+                chunk.metadata["is_table_group"] = True
+                chunk.metadata["table_group_count"] = group.table_count
+
+            # Set oversize metadata if needed
+            if chunk.size > config.max_chunk_size:
+                self._set_oversize_metadata(chunk, "table_integrity", config)
+
+            chunks.append(chunk)
 
         return chunks

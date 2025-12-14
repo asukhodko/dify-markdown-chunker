@@ -2,6 +2,23 @@
 
 All notable changes to the Advanced Markdown Chunker plugin will be documented in this file.
 
+## [2.1.3] - 2025-12-14
+
+### Added
+- **Table Grouping Option** — Groups related tables in same chunk for better retrieval
+  - New `TableGroupingConfig` class with configurable parameters
+  - Proximity-based grouping (`max_distance_lines`)
+  - Section boundary awareness (`require_same_section`)
+  - Size and count limits (`max_group_size`, `max_grouped_tables`)
+  - New metadata fields: `is_table_group`, `table_group_count`
+  - Disabled by default for backward compatibility
+  - Perfect for API documentation with Parameters/Response/Error tables
+
+### Configuration
+- New parameters in `ChunkConfig`:
+  - `group_related_tables` — Enable table grouping (default: False)
+  - `table_grouping_config` — TableGroupingConfig instance for fine-tuned control
+
 ## [2.1.2] - 2025-12-11
 
 ### Added

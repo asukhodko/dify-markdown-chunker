@@ -50,9 +50,7 @@ class TestContentTypeBenchmarks:
         - Chunk quality metrics
         """
         # Select documents by category (reduced for faster testing)
-        content_selection = corpus_selector.select_by_category(
-            samples_per_category=3
-        )
+        content_selection = corpus_selector.select_by_category(samples_per_category=3)
 
         content_results = {}
 
@@ -139,10 +137,10 @@ class TestContentTypeBenchmarks:
                 "document_count": len(documents),
             }
 
-            avg_time = content_results[content_type]['time']['mean'] * 1000
+            avg_time = content_results[content_type]["time"]["mean"] * 1000
             print(f"  Avg time: {avg_time:.2f}ms")
             print(f"  Dominant strategy: {dominant_strategy}")
-            avg_chunks = content_results[content_type]['output']['avg_chunk_count']
+            avg_chunks = content_results[content_type]["output"]["avg_chunk_count"]
             print(f"  Avg chunks: {avg_chunks:.1f}")
 
         # Save results

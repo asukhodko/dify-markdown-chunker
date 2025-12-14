@@ -11,6 +11,7 @@ This is the redesigned version with:
 from .chunker import MarkdownChunker
 from .config import ChunkConfig
 from .hierarchy import HierarchicalChunkingResult, HierarchyBuilder
+from .table_grouping import TableGroupingConfig
 from .types import Chunk, ChunkingMetrics, ChunkingResult, ContentAnalysis, FencedBlock
 from .validator import ValidationResult, Validator, validate_chunks
 
@@ -19,6 +20,7 @@ __version__ = "2.0.0"
 __all__ = [
     "MarkdownChunker",
     "ChunkConfig",
+    "TableGroupingConfig",
     "Chunk",
     "ContentAnalysis",
     "FencedBlock",

@@ -9,8 +9,8 @@ if [ ! -f "$FILE" ]; then
   exit 1
 fi
 
-MAIN_VERSION=$(awk '/^version:/ {print $2; exit}' "$FILE")
-META_VERSION=$(awk '/^  version:/ {print $2; exit}' "$FILE")
+MAIN_VERSION=$(awk '/^version:/ {print $2; exit}' "$FILE" | tr -d '\r')
+META_VERSION=$(awk '/^  version:/ {print $2; exit}' "$FILE" | tr -d '\r')
 
 if [ -z "$MAIN_VERSION" ] || [ -z "$META_VERSION" ]; then
   echo "❌ Failed to extract version or meta.version from manifest.yaml"

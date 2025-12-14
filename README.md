@@ -4,7 +4,7 @@
 
 **Intelligent Markdown document chunking for RAG systems with structural awareness**
 
-[![Version](https://img.shields.io/badge/version-2.1.2-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1.3-orange.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Dify Plugin](https://img.shields.io/badge/dify-1.9.0+-green.svg)](https://dify.ai/)
@@ -89,6 +89,11 @@ This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** w
   - Environment blocks (`\begin{equation}`, `\begin{align}`) preserved complete
   - Supported in all 4 chunking strategies
   - Critical for scientific papers and technical documentation
+- **Table Grouping Option** — groups related tables in same chunk for better retrieval (new)
+  - Configurable proximity threshold (`max_distance_lines`)
+  - Section boundary awareness (`require_same_section`)
+  - Size and count limits (`max_group_size`, `max_grouped_tables`)
+  - Perfect for API documentation with Parameters/Response/Error tables
 - **Structure preservation** — headers, lists, tables, and code stay intact
 - **Adaptive overlap** — context window scales with chunk size (up to 35%)
 
@@ -454,6 +459,53 @@ for chunk in chunks:
         print(f"Has code blocks: {chunk.metadata.get('has_code', False)}")
 ~~~
 
+### Table Grouping Example
+
+```python
+from markdown_chunker import MarkdownChunker, ChunkConfig, TableGroupingConfig
+
+# API documentation with related tables
+api_docs = """
+## GET /users/{id}
+
+### Parameters
+
+| Parameter | Type | Required |
+|-----------|------|----------|
+| id | string | yes |
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| name | string | User name |
+| email | string | Email |
+
+### Error Codes
+
+| Code | Message |
+|------|---------|
+| 404 | Not Found |
+"""
+
+# Enable table grouping
+config = ChunkConfig(
+    group_related_tables=True,
+    table_grouping_config=TableGroupingConfig(
+        max_distance_lines=10,
+        require_same_section=True,
+    )
+)
+
+chunker = MarkdownChunker(config)
+chunks = chunker.chunk(api_docs)
+
+# Related tables grouped together for better retrieval
+for chunk in chunks:
+    if chunk.metadata.get("is_table_group"):
+        print(f"Grouped {chunk.metadata['table_group_count']} tables")
+```
+
 ### Streaming Processing Example
 
 ```python
@@ -731,6 +783,38 @@ config = ChunkConfig(
     strategy_override=None,   # Force specific strategy (code_aware/list_aware/structural/fallback)
 )
 ```
+
+### Table Grouping Configuration
+
+**Group related tables** in the same chunk for better retrieval quality:
+
+```python
+from markdown_chunker import ChunkConfig, TableGroupingConfig
+
+# Enable table grouping
+config = ChunkConfig(
+    group_related_tables=True,
+    table_grouping_config=TableGroupingConfig(
+        max_distance_lines=10,    # Max lines between tables to group
+        max_grouped_tables=5,     # Max tables per group
+        max_group_size=5000,      # Max chars for grouped content
+        require_same_section=True # Only group within same header section
+    )
+)
+
+chunker = MarkdownChunker(config)
+chunks = chunker.chunk(api_docs)
+
+# Grouped table chunks have metadata:
+# - is_table_group: True
+# - table_group_count: number of tables in group
+```
+
+**When to Use:**
+- ✅ API documentation with Parameters/Response/Error tables
+- ✅ Data reports with related comparison tables
+- ✅ Technical specs with multiple related tables
+- ❌ Documents where tables are independent
 
 ### Adaptive Chunk Sizing Configuration
 
@@ -1133,21 +1217,23 @@ MIT License — see [LICENSE](LICENSE)
 
 ## 📝 Changelog
 
-**Current Version:** 2.1.2 (December 2025)
+**Current Version:** 2.1.3 (December 2025)
 
-### Latest: v2.1.2
+### Latest: v2.1.3
 
-**Released:** December 11, 2025
+**Released:** December 14, 2025
 
 **New Features:**
-- ✅ **Enhanced Code-Context Binding** — Intelligent binding of code blocks to explanations (Before/After, Code+Output patterns)
-- ✅ **Adaptive Chunk Sizing** — Automatic size optimization based on content complexity (0.5x–1.5x scaling)
-- ✅ **Hierarchical Chunking** — Parent-child relationships with navigation API (`get_parent`, `get_children`, `get_ancestors`)
-- ✅ **812 Tests** — Comprehensive test coverage (+24.5% from v2.1.1)
+- ✅ **Table Grouping Option** — Groups related tables in same chunk for better retrieval
+  - Proximity-based grouping (`max_distance_lines`)
+  - Section boundary awareness (`require_same_section`)
+  - Size and count limits (`max_group_size`, `max_grouped_tables`)
+  - Perfect for API documentation with Parameters/Response/Error tables
 
-### Previous: v2.1.1 (December 10, 2025)
-- Nested Fencing Support (quadruple/quintuple backticks, tilde fencing)
-- State machine-based parser with proper nesting support
+### Previous: v2.1.2 (December 11, 2025)
+- Enhanced Code-Context Binding — Intelligent binding of code blocks to explanations
+- Adaptive Chunk Sizing — Automatic size optimization based on content complexity
+- Hierarchical Chunking — Parent-child relationships with navigation API
 
 For full release history, see [CHANGELOG.md](CHANGELOG.md).
 

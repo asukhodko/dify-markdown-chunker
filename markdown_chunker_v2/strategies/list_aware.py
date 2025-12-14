@@ -164,7 +164,7 @@ class ListAwareStrategy(BaseStrategy):
 
         # Handle content after last list
         if current_line <= len(lines):
-            text_after = "\n".join(lines[current_line - 1:])
+            text_after = "\n".join(lines[current_line - 1 :])
             if text_after.strip():
                 text_chunks = self._split_text_to_size(text_after, current_line, config)
                 # Add header_path to text chunks after lists

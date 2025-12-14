@@ -6,9 +6,12 @@ Only 8 core parameters instead of 32.
 
 import warnings
 from dataclasses import dataclass
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from .adaptive_sizing import AdaptiveSizeConfig
+
+if TYPE_CHECKING:
+    from .table_grouping import TableGrouper, TableGroupingConfig
 
 
 @dataclass
@@ -65,6 +68,10 @@ class ChunkConfig:
             skip inline math ($...$) (default: True)
         latex_max_context_chars: Maximum characters of surrounding text to bind
             with LaTeX formulas (default: 300)
+        group_related_tables: Enable grouping of related tables into single chunks
+            for better retrieval quality (default: False)
+        table_grouping_config: Configuration for table grouping behavior
+            (auto-created with defaults if group_related_tables=True)
     """
 
     # Size parameters
@@ -108,6 +115,10 @@ class ChunkConfig:
     latex_display_only: bool = True
     latex_max_context_chars: int = 300
 
+    # Table grouping parameters
+    group_related_tables: bool = False
+    table_grouping_config: Optional["TableGroupingConfig"] = None
+
     def __post_init__(self):
         """Validate configuration."""
         self._validate_size_params()
@@ -116,6 +127,7 @@ class ChunkConfig:
         self._validate_code_context_params()
         self._validate_adaptive_sizing_params()
         self._validate_latex_params()
+        self._validate_table_grouping_params()
 
     def _validate_size_params(self):
         """Validate size-related parameters."""
@@ -210,6 +222,30 @@ class ChunkConfig:
                 f"latex_max_context_chars must be non-negative, "
                 f"got {self.latex_max_context_chars}"
             )
+
+    def _validate_table_grouping_params(self):
+        """Validate table grouping parameters."""
+        # TableGroupingConfig validates itself in __post_init__
+        # Here we just ensure consistency
+        pass
+
+    def get_table_grouper(self) -> Optional["TableGrouper"]:
+        """
+        Get TableGrouper instance if table grouping is enabled.
+
+        Returns:
+            TableGrouper instance if group_related_tables is True,
+            None otherwise.
+
+        Requirements: 2.3
+        """
+        if not self.group_related_tables:
+            return None
+
+        from .table_grouping import TableGrouper, TableGroupingConfig
+
+        config = self.table_grouping_config or TableGroupingConfig()
+        return TableGrouper(config)
 
     @property
     def enable_overlap(self) -> bool:

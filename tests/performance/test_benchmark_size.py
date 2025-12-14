@@ -130,9 +130,9 @@ class TestSizeBenchmarks:
                 "document_count": len(documents),
             }
 
-            avg_time = size_results[size_category]['time']['mean'] * 1000
+            avg_time = size_results[size_category]["time"]["mean"] * 1000
             print(f"  Avg time: {avg_time:.2f}ms")
-            throughput = size_results[size_category]['throughput']['kb_per_sec']
+            throughput = size_results[size_category]["throughput"]["kb_per_sec"]
             print(f"  Throughput: {throughput:.1f} KB/s")
 
         # Save results

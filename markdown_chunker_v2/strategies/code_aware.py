@@ -257,6 +257,7 @@ class CodeAwareStrategy(BaseStrategy):
         chunks = []
         current_line = 1
         processed_blocks: Set[int] = set()
+        processed_table_lines: Set[int] = set()
 
         for block_start, block_end, block_type in atomic_ranges:
             # Handle text before atomic block
@@ -281,7 +282,19 @@ class CodeAwareStrategy(BaseStrategy):
                 )
                 chunks.extend(new_chunks)
                 current_line = new_line
+            elif block_type == "table":
+                new_chunks, new_line = self._process_table_block(
+                    lines,
+                    block_start,
+                    block_end,
+                    config,
+                    analysis,
+                    processed_table_lines,
+                )
+                chunks.extend(new_chunks)
+                current_line = new_line
             else:
+                # LaTeX or other atomic blocks
                 new_chunks, new_line = self._process_table_block(
                     lines, block_start, block_end, config
                 )
@@ -371,8 +384,99 @@ class CodeAwareStrategy(BaseStrategy):
         block_start: int,
         block_end: int,
         config: ChunkConfig,
+        analysis: Optional[ContentAnalysis] = None,
+        processed_table_lines: Optional[Set[int]] = None,
     ) -> Tuple[List[Chunk], int]:
-        """Process table block without context binding."""
+        """
+        Process table block, with optional table grouping support.
+
+        Args:
+            lines: Document lines
+            block_start: Table start line
+            block_end: Table end line
+            config: Chunking configuration
+            analysis: Document analysis (for table grouping)
+            processed_table_lines: Set of already processed table start lines
+
+        Returns:
+            Tuple of (chunks, next_line)
+        """
+        # Check if this table was already processed as part of a group
+        if processed_table_lines is not None and block_start in processed_table_lines:
+            return [], block_end + 1
+
+        # Check if table grouping is enabled
+        if config.group_related_tables and analysis is not None:
+            return self._process_table_with_grouping(
+                lines, block_start, block_end, config, analysis, processed_table_lines
+            )
+
+        # Standard single-table processing
+        block_lines = lines[block_start - 1 : block_end]
+        block_content = "\n".join(block_lines)
+
+        if not block_content.strip():
+            return [], block_end + 1
+
+        chunk = self._create_chunk(
+            block_content,
+            block_start,
+            block_end,
+            content_type="table",
+            is_atomic=True,
+        )
+
+        if chunk.size > config.max_chunk_size:
+            self._set_oversize_metadata(chunk, "table_integrity", config)
+
+        return [chunk], block_end + 1
+
+    def _process_table_with_grouping(
+        self,
+        lines: List[str],
+        block_start: int,
+        block_end: int,
+        config: ChunkConfig,
+        analysis: ContentAnalysis,
+        processed_table_lines: Optional[Set[int]],
+    ) -> Tuple[List[Chunk], int]:
+        """
+        Process table with grouping enabled.
+
+        Finds the group containing this table and processes entire group.
+        """
+        # Get table groups
+        table_groups = self._get_table_groups(analysis, lines, config)
+
+        # Find group containing this table
+        for group in table_groups:
+            for table in group.tables:
+                if table.start_line == block_start:
+                    # Found the group - mark all tables as processed
+                    if processed_table_lines is not None:
+                        for t in group.tables:
+                            processed_table_lines.add(t.start_line)
+
+                    # Create chunk for group
+                    chunk = self._create_chunk(
+                        group.content,
+                        group.start_line,
+                        group.end_line,
+                        content_type="table",
+                        is_atomic=True,
+                    )
+
+                    # Add table group metadata
+                    if group.table_count > 1:
+                        chunk.metadata["is_table_group"] = True
+                        chunk.metadata["table_group_count"] = group.table_count
+
+                    if chunk.size > config.max_chunk_size:
+                        self._set_oversize_metadata(chunk, "table_integrity", config)
+
+                    return [chunk], group.end_line + 1
+
+        # Fallback to single table processing
         block_lines = lines[block_start - 1 : block_end]
         block_content = "\n".join(block_lines)
 
