@@ -3,7 +3,7 @@ Property tests for plugin dependencies.
 
 Property 3: Dependencies Completeness
 For any plugin initialization, the requirements.txt file should contain
-dify_plugin==0.5.0b15, markdown-it-py>=3.0.0, and pydantic>=2.0.0
+dify_plugin==0.7.0, markdown-it-py>=3.0.0, and pydantic>=2.0.0
 
 Validates: Requirements 1.4
 """
@@ -29,7 +29,7 @@ def test_requirements_content():
 
     # Required dependencies
     required_deps = [
-        "dify_plugin==0.5.0b15",
+        "dify_plugin==0.7.0",
         "markdown-it-py>=3.0.0",
         "pydantic>=2.0.0",
     ]

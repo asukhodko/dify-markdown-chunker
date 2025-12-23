@@ -2,6 +2,12 @@
 
 All notable changes to the Advanced Markdown Chunker plugin will be documented in this file.
 
+## [2.1.4] - 2025-12-23
+
+### Changed
+- Bumped `dify_plugin` dependency from 0.5.0b15 to 0.7.0
+- Fixed `.difyignore` to properly include README.md and PRIVACY.md in package
+
 ## [2.1.3] - 2025-12-14
 
 ### Added

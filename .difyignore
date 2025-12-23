@@ -19,11 +19,11 @@ tests/
 .coverage
 htmlcov/
 
-# Documentation (keep only README.md)
-# все .md игнорируем
-*.md
-# кроме README.md в корне
-!README.md
+# Documentation - exclude all .md except specific ones
+docs/
+CHANGELOG.md
+CONTRIBUTING.md
+DEVELOPMENT.md
 
 *.backup
 *.bak

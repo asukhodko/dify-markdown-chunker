@@ -4,7 +4,7 @@
 
 **Intelligent Markdown document chunking for RAG systems with structural awareness**
 
-[![Version](https://img.shields.io/badge/version-2.1.3-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1.4-orange.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Dify Plugin](https://img.shields.io/badge/dify-1.9.0+-green.svg)](https://dify.ai/)
@@ -1217,9 +1217,17 @@ MIT License — see [LICENSE](LICENSE)
 
 ## 📝 Changelog
 
-**Current Version:** 2.1.3 (December 2025)
+**Current Version:** 2.1.4 (December 2025)
 
-### Latest: v2.1.3
+### Latest: v2.1.4
+
+**Released:** December 23, 2025
+
+**Changes:**
+- Bumped `dify_plugin` dependency from 0.5.0b15 to 0.7.0
+- Fixed `.difyignore` to properly include README.md and PRIVACY.md in package
+
+### v2.1.3
 
 **Released:** December 14, 2025
 
