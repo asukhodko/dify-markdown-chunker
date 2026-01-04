@@ -1,0 +1,30 @@
+{
+  "fixture_name": "headers_deep",
+  "parameters": {
+    "include_metadata": true,
+    "strategy": "code_aware"
+  },
+  "config_used": {
+    "max_chunk_size": 4096,
+    "min_chunk_size": 512,
+    "overlap_size": 200,
+    "preserve_atomic_blocks": true,
+    "extract_preamble": true,
+    "code_threshold": 0.3,
+    "structure_threshold": 3,
+    "list_ratio_threshold": 0.4,
+    "list_count_threshold": 5,
+    "strategy_override": "code_aware",
+    "enable_code_context_binding": true,
+    "max_context_chars_before": 500,
+    "max_context_chars_after": 300,
+    "related_block_max_gap": 5,
+    "bind_output_blocks": true,
+    "preserve_before_after_pairs": true,
+    "enable_overlap": true
+  },
+  "output": [
+    "<metadata>\n{\n  \"strategy\": \"code_aware\",\n  \"chunk_index\": 0,\n  \"content_type\": \"text\",\n  \"header_path\": [],\n  \"start_line\": 1,\n  \"end_line\": 66\n}\n</metadata>\n# Headers Deep Document\n\nThis document has deeply nested header hierarchy for testing structural chunking.\n\n## Level 2 Section A\n\nContent at level 2.\n\n### Level 3 Section A.1\n\nContent at level 3.\n\n#### Level 4 Section A.1.1\n\nContent at level 4.\n\n##### Level 5 Section A.1.1.1\n\nContent at level 5.\n\n###### Level 6 Section A.1.1.1.1\n\nContent at level 6 - the deepest standard Markdown level.\n\n##### Level 5 Section A.1.1.2\n\nAnother level 5 section.\n\n#### Level 4 Section A.1.2\n\nBack to level 4.\n\n### Level 3 Section A.2\n\nAnother level 3 section.\n\n## Level 2 Section B\n\nA new top-level section.\n\n### Level 3 Section B.1\n\nContent here.\n\n#### Level 4 Section B.1.1\n\nMore content.\n\n### Level 3 Section B.2\n\nFinal subsection.\n\n## Level 2 Section C\n\n### Level 3 Section C.1\n\n#### Level 4 Section C.1.1\n\n##### Level 5 Section C.1.1.1\n\nDeep nesting again.\n\n## Conclusion\n\nThis tests header path tracking through deep hierarchies.\n"
+  ],
+  "snapshot_id": "60b68ad9"
+}

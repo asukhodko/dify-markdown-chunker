@@ -3,6 +3,7 @@ venv/
 .venv/
 env/
 .env
+test_migration_env
 
 # Python cache
 __pycache__/

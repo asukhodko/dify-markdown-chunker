@@ -1,0 +1,38 @@
+{
+  "fixture_name": "latex_formulas",
+  "parameters": {
+    "include_metadata": true,
+    "enable_hierarchy": true,
+    "debug": false,
+    "strategy": "auto"
+  },
+  "config_used": {
+    "max_chunk_size": 4096,
+    "min_chunk_size": 512,
+    "overlap_size": 200,
+    "preserve_atomic_blocks": true,
+    "extract_preamble": true,
+    "code_threshold": 0.3,
+    "structure_threshold": 3,
+    "list_ratio_threshold": 0.4,
+    "list_count_threshold": 5,
+    "strategy_override": null,
+    "enable_code_context_binding": true,
+    "max_context_chars_before": 500,
+    "max_context_chars_after": 300,
+    "related_block_max_gap": 5,
+    "bind_output_blocks": true,
+    "preserve_before_after_pairs": true,
+    "enable_overlap": true
+  },
+  "output": [
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/LaTeX Formulas Document\",\n  \"header_level\": 1,\n  \"section_tags\": [],\n  \"next_content\": \"## Display Math\\n\\nThe Euler's\",\n  \"chunk_index\": 0,\n  \"chunk_id\": \"b82cac9f\",\n  \"parent_id\": \"561c132c\",\n  \"children_ids\": [\n    \"692a76be\",\n    \"a3bbb3f6\",\n    \"97b78a6f\",\n    \"7e444295\",\n    \"2091dc51\",\n    \"adbf3015\"\n  ],\n  \"hierarchy_level\": 1,\n  \"start_line\": 1,\n  \"end_line\": 8\n}\n</metadata>\n# LaTeX Formulas Document\n\nThis document contains various LaTeX formulas for testing LaTeX block handling.\n\n\n## Inline Math\n\nThe quadratic formula is $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$ which solves $ax^2 + bx + c = 0$.\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/LaTeX Formulas Document/Display Math\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \"$x = \\\\frac{-b \\\\pm \\\\sqrt{b^2 - 4ac}}{2a}$ which solves $ax^2 + bx + c = 0$.\\n\",\n  \"overlap_size\": 75,\n  \"next_content\": \"## Complex Equations\\n\\nThe Schrödinger equation describes\",\n  \"chunk_index\": 1,\n  \"chunk_id\": \"692a76be\",\n  \"parent_id\": \"b82cac9f\",\n  \"next_sibling_id\": \"a3bbb3f6\",\n  \"hierarchy_level\": 2,\n  \"start_line\": 9,\n  \"end_line\": 16\n}\n</metadata>\n## Display Math\n\nThe Euler's identity is one of the most beautiful equations:\n\n$$\ne^{i\\pi} + 1 = 0\n$$\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/LaTeX Formulas Document/Complex Equations\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \"equations:\\n\\n$$\\ne^{i\\\\pi} + 1 = 0\\n$$\\n\",\n  \"overlap_size\": 35,\n  \"next_content\": \"## Matrix Notation\\n\\nA rotation matrix in\",\n  \"chunk_index\": 2,\n  \"chunk_id\": \"a3bbb3f6\",\n  \"parent_id\": \"b82cac9f\",\n  \"prev_sibling_id\": \"692a76be\",\n  \"next_sibling_id\": \"97b78a6f\",\n  \"hierarchy_level\": 2,\n  \"start_line\": 17,\n  \"end_line\": 24\n}\n</metadata>\n## Complex Equations\n\nThe Schrödinger equation describes quantum mechanics:\n\n$$\ni\\hbar\\frac{\\partial}{\\partial t}\\Psi(\\mathbf{r},t) = \\hat{H}\\Psi(\\mathbf{r},t)\n$$\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/LaTeX Formulas Document/Matrix Notation\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \"t}\\\\Psi(\\\\mathbf{r},t) = \\\\hat{H}\\\\Psi(\\\\mathbf{r},t)\\n$$\\n\",\n  \"overlap_size\": 52,\n  \"next_content\": \"## Summation and Integration\\n\\nThe Riemann zeta function:\\n\\n$$\\n\\\\zeta(s) =\",\n  \"chunk_index\": 3,\n  \"chunk_id\": \"97b78a6f\",\n  \"parent_id\": \"b82cac9f\",\n  \"prev_sibling_id\": \"a3bbb3f6\",\n  \"next_sibling_id\": \"7e444295\",\n  \"hierarchy_level\": 2,\n  \"start_line\": 25,\n  \"end_line\": 35\n}\n</metadata>\n## Matrix Notation\n\nA rotation matrix in 2D:\n\n$$\nR(\\theta) = \\begin{pmatrix}\n\\cos\\theta & -\\sin\\theta \\\\\n\\sin\\theta & \\cos\\theta\n\\end{pmatrix}\n$$\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/LaTeX Formulas Document/Summation and Integration\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \"\\\\\\\\\\n\\\\sin\\\\theta & \\\\cos\\\\theta\\n\\\\end{pmatrix}\\n$$\\n\",\n  \"overlap_size\": 44,\n  \"next_content\": \"## Aligned Equations\\n\\nMaxwell's equations in differential form:\\n\\n$$\\n\\\\begin{aligned}\\n\\\\nabla \\\\cdot \\\\mathbf{E} &=\",\n  \"chunk_index\": 4,\n  \"chunk_id\": \"7e444295\",\n  \"parent_id\": \"b82cac9f\",\n  \"prev_sibling_id\": \"97b78a6f\",\n  \"next_sibling_id\": \"2091dc51\",\n  \"hierarchy_level\": 2,\n  \"start_line\": 36,\n  \"end_line\": 49\n}\n</metadata>\n## Summation and Integration\n\nThe Riemann zeta function:\n\n$$\n\\zeta(s) = \\sum_{n=1}^{\\infty} \\frac{1}{n^s} = \\prod_{p \\text{ prime}} \\frac{1}{1-p^{-s}}\n$$\n\nThe Gaussian integral:\n\n$$\n\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}\n$$\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/LaTeX Formulas Document/Aligned Equations\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \"Gaussian integral:\\n\\n$$\\n\\\\int_{-\\\\infty}^{\\\\infty} e^{-x^2} dx = \\\\sqrt{\\\\pi}\\n$$\\n\",\n  \"overlap_size\": 75,\n  \"next_content\": \"## Conclusion\\n\\nLaTeX blocks\",\n  \"chunk_index\": 5,\n  \"chunk_id\": \"2091dc51\",\n  \"parent_id\": \"b82cac9f\",\n  \"prev_sibling_id\": \"7e444295\",\n  \"next_sibling_id\": \"adbf3015\",\n  \"hierarchy_level\": 2,\n  \"start_line\": 50,\n  \"end_line\": 62\n}\n</metadata>\n## Aligned Equations\n\nMaxwell's equations in differential form:\n\n$$\n\\begin{aligned}\n\\nabla \\cdot \\mathbf{E} &= \\frac{\\rho}{\\varepsilon_0} \\\\\n\\nabla \\cdot \\mathbf{B} &= 0 \\\\\n\\nabla \\times \\mathbf{E} &= -\\frac{\\partial \\mathbf{B}}{\\partial t} \\\\\n\\nabla \\times \\mathbf{B} &= \\mu_0\\mathbf{J} + \\mu_0\\varepsilon_0\\frac{\\partial \\mathbf{E}}{\\partial t}\n\\end{aligned}\n$$\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/LaTeX Formulas Document/Conclusion\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \" t} \\\\\\\\\\n\\\\nabla \\\\times \\\\mathbf{B} &= \\\\mu_0\\\\mathbf{J} + \\\\mu_0\\\\varepsilon_0\\\\frac{\\\\partial \\\\mathbf{E}}{\\\\partial t}\\n\\\\end{aligned}\\n$$\\n\",\n  \"overlap_size\": 127,\n  \"chunk_index\": 6,\n  \"chunk_id\": \"adbf3015\",\n  \"parent_id\": \"b82cac9f\",\n  \"prev_sibling_id\": \"2091dc51\",\n  \"hierarchy_level\": 2,\n  \"start_line\": 63,\n  \"end_line\": 66\n}\n</metadata>\n## Conclusion\n\nLaTeX blocks should be preserved as atomic units during chunking.\n"
+  ],
+  "snapshot_id": "1a7cd3c2"
+}

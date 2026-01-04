@@ -1,0 +1,30 @@
+{
+  "fixture_name": "nested_fences",
+  "parameters": {
+    "include_metadata": true,
+    "strategy": "code_aware"
+  },
+  "config_used": {
+    "max_chunk_size": 4096,
+    "min_chunk_size": 512,
+    "overlap_size": 200,
+    "preserve_atomic_blocks": true,
+    "extract_preamble": true,
+    "code_threshold": 0.3,
+    "structure_threshold": 3,
+    "list_ratio_threshold": 0.4,
+    "list_count_threshold": 5,
+    "strategy_override": "code_aware",
+    "enable_code_context_binding": true,
+    "max_context_chars_before": 500,
+    "max_context_chars_after": 300,
+    "related_block_max_gap": 5,
+    "bind_output_blocks": true,
+    "preserve_before_after_pairs": true,
+    "enable_overlap": true
+  },
+  "output": [
+    "<metadata>\n{\n  \"strategy\": \"code_aware\",\n  \"content_type\": \"code\",\n  \"chunk_index\": 0,\n  \"has_code\": true,\n  \"header_path\": [],\n  \"start_line\": 1,\n  \"end_line\": 15\n}\n</metadata>\n# Minimal Nested Fencing Example\n\nThis demonstrates the minimal viable nested structure.\n\n\n````markdown\nUse code blocks like this:\n\n```python\ndef example():\n    pass\n```\n````\n\n\nThis is the simplest case of nested fencing.\n"
+  ],
+  "snapshot_id": "58e47511"
+}

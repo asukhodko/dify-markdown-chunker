@@ -1,0 +1,30 @@
+{
+  "fixture_name": "list_heavy",
+  "parameters": {
+    "include_metadata": true,
+    "strategy": "fallback"
+  },
+  "config_used": {
+    "max_chunk_size": 4096,
+    "min_chunk_size": 512,
+    "overlap_size": 200,
+    "preserve_atomic_blocks": true,
+    "extract_preamble": true,
+    "code_threshold": 0.3,
+    "structure_threshold": 3,
+    "list_ratio_threshold": 0.4,
+    "list_count_threshold": 5,
+    "strategy_override": "fallback",
+    "enable_code_context_binding": true,
+    "max_context_chars_before": 500,
+    "max_context_chars_after": 300,
+    "related_block_max_gap": 5,
+    "bind_output_blocks": true,
+    "preserve_before_after_pairs": true,
+    "enable_overlap": true
+  },
+  "output": [
+    "<metadata>\n{\n  \"strategy\": \"fallback\",\n  \"content_type\": \"text\",\n  \"chunk_index\": 0,\n  \"header_path\": [],\n  \"start_line\": 1,\n  \"end_line\": 54\n}\n</metadata>\n# List-Heavy Document\n\nThis document contains many lists for testing list-focused chunking.\n\n## Shopping List\n\n- Fruits\n  - Apples\n  - Bananas\n  - Oranges\n- Vegetables\n  - Carrots\n  - Broccoli\n  - Spinach\n- Dairy\n  - Milk\n  - Cheese\n  - Yogurt\n\n## Task List\n\n1. Complete project setup\n2. Write documentation\n3. Implement features\n   1. Feature A\n   2. Feature B\n   3. Feature C\n4. Test everything\n5. Deploy to production\n\n## Feature Checklist\n\n- [x] User authentication\n- [x] Database setup\n- [ ] API endpoints\n- [ ] Frontend UI\n- [ ] Testing suite\n- [ ] Documentation\n\n## Requirements\n\n* System must be scalable\n* System must be secure\n* System must be maintainable\n* System must be well-documented\n* System must be tested\n\n## Notes\n\n- Note 1: Important consideration\n- Note 2: Another important point\n- Note 3: Final note to remember"
+  ],
+  "snapshot_id": "014ed12b"
+}

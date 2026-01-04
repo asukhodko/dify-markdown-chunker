@@ -1,0 +1,2024 @@
+{
+  "created_at": "pre-migration",
+  "total_snapshots": 228,
+  "fixtures_count": 12,
+  "param_combinations": 19,
+  "snapshots": {
+    "b98680db": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "b98680db.json"
+    },
+    "e723577e": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "e723577e.json"
+    },
+    "67b5a659": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "67b5a659.json"
+    },
+    "09849293": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "09849293.json"
+    },
+    "44c5eb28": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "44c5eb28.json"
+    },
+    "cf96b981": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "cf96b981.json"
+    },
+    "a08a33ff": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "code_aware"
+      },
+      "file": "a08a33ff.json"
+    },
+    "632f07bd": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "list_aware"
+      },
+      "file": "632f07bd.json"
+    },
+    "e0c62695": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "structural"
+      },
+      "file": "e0c62695.json"
+    },
+    "73da4535": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "fallback"
+      },
+      "file": "73da4535.json"
+    },
+    "adb4726c": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": false,
+        "strategy": "code_aware"
+      },
+      "file": "adb4726c.json"
+    },
+    "84c46aa2": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 0
+      },
+      "file": "84c46aa2.json"
+    },
+    "2d5f9eaa": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": true,
+        "max_chunk_size": 1000
+      },
+      "file": "2d5f9eaa.json"
+    },
+    "378c08e7": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 0
+      },
+      "file": "378c08e7.json"
+    },
+    "fdec3377": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": false,
+        "max_chunk_size": 1000
+      },
+      "file": "fdec3377.json"
+    },
+    "e2c2f0e7": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "code_aware"
+      },
+      "file": "e2c2f0e7.json"
+    },
+    "0e76560e": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "structural"
+      },
+      "file": "0e76560e.json"
+    },
+    "ba5b7ac2": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 500,
+        "max_chunk_size": 2000
+      },
+      "file": "ba5b7ac2.json"
+    },
+    "fe8a9784": {
+      "fixture_name": "adaptive_sizing",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 100,
+        "max_chunk_size": 8192
+      },
+      "file": "fe8a9784.json"
+    },
+    "c58dcb94": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "c58dcb94.json"
+    },
+    "800db4b4": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "800db4b4.json"
+    },
+    "9101c444": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "9101c444.json"
+    },
+    "346f3b1e": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "346f3b1e.json"
+    },
+    "c7fcdf73": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "c7fcdf73.json"
+    },
+    "d39d4267": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "d39d4267.json"
+    },
+    "6c94cd12": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "code_aware"
+      },
+      "file": "6c94cd12.json"
+    },
+    "b01ab7b6": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "list_aware"
+      },
+      "file": "b01ab7b6.json"
+    },
+    "0f7c95c6": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "structural"
+      },
+      "file": "0f7c95c6.json"
+    },
+    "e31d6089": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "fallback"
+      },
+      "file": "e31d6089.json"
+    },
+    "191f827f": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": false,
+        "strategy": "code_aware"
+      },
+      "file": "191f827f.json"
+    },
+    "e8963a40": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 0
+      },
+      "file": "e8963a40.json"
+    },
+    "e49cb32b": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": true,
+        "max_chunk_size": 1000
+      },
+      "file": "e49cb32b.json"
+    },
+    "ccc4a2e6": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 0
+      },
+      "file": "ccc4a2e6.json"
+    },
+    "264bd133": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": false,
+        "max_chunk_size": 1000
+      },
+      "file": "264bd133.json"
+    },
+    "a4bd0c38": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "code_aware"
+      },
+      "file": "a4bd0c38.json"
+    },
+    "076b7167": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "structural"
+      },
+      "file": "076b7167.json"
+    },
+    "bb90b578": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 500,
+        "max_chunk_size": 2000
+      },
+      "file": "bb90b578.json"
+    },
+    "2c4c7f4a": {
+      "fixture_name": "code_context",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 100,
+        "max_chunk_size": 8192
+      },
+      "file": "2c4c7f4a.json"
+    },
+    "74a60ee4": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "74a60ee4.json"
+    },
+    "e628a674": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "e628a674.json"
+    },
+    "59aaad95": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "59aaad95.json"
+    },
+    "55648ff8": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "55648ff8.json"
+    },
+    "fa3a8edf": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "fa3a8edf.json"
+    },
+    "fc1a9d4a": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "fc1a9d4a.json"
+    },
+    "633613e6": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "code_aware"
+      },
+      "file": "633613e6.json"
+    },
+    "7f2ad9a3": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "list_aware"
+      },
+      "file": "7f2ad9a3.json"
+    },
+    "135b540a": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "structural"
+      },
+      "file": "135b540a.json"
+    },
+    "4d3c0a23": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "fallback"
+      },
+      "file": "4d3c0a23.json"
+    },
+    "5c1d8cb4": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": false,
+        "strategy": "code_aware"
+      },
+      "file": "5c1d8cb4.json"
+    },
+    "9acf8926": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 0
+      },
+      "file": "9acf8926.json"
+    },
+    "5607e3be": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "max_chunk_size": 1000
+      },
+      "file": "5607e3be.json"
+    },
+    "8b669271": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 0
+      },
+      "file": "8b669271.json"
+    },
+    "2d565fcd": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": false,
+        "max_chunk_size": 1000
+      },
+      "file": "2d565fcd.json"
+    },
+    "e8c10e9e": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "code_aware"
+      },
+      "file": "e8c10e9e.json"
+    },
+    "fa41228b": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "structural"
+      },
+      "file": "fa41228b.json"
+    },
+    "b2acfbcc": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 500,
+        "max_chunk_size": 2000
+      },
+      "file": "b2acfbcc.json"
+    },
+    "d449c2e5": {
+      "fixture_name": "code_heavy",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 100,
+        "max_chunk_size": 8192
+      },
+      "file": "d449c2e5.json"
+    },
+    "b305d99f": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "b305d99f.json"
+    },
+    "88017c49": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "88017c49.json"
+    },
+    "feb278fd": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "feb278fd.json"
+    },
+    "f59337d7": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "f59337d7.json"
+    },
+    "0feb1636": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "0feb1636.json"
+    },
+    "a2d8df2c": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "a2d8df2c.json"
+    },
+    "60b68ad9": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "code_aware"
+      },
+      "file": "60b68ad9.json"
+    },
+    "8f3a7b18": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "list_aware"
+      },
+      "file": "8f3a7b18.json"
+    },
+    "03fe11fa": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "structural"
+      },
+      "file": "03fe11fa.json"
+    },
+    "62ae93fd": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "fallback"
+      },
+      "file": "62ae93fd.json"
+    },
+    "f740d290": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": false,
+        "strategy": "code_aware"
+      },
+      "file": "f740d290.json"
+    },
+    "13b9d918": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 0
+      },
+      "file": "13b9d918.json"
+    },
+    "87b62e56": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": true,
+        "max_chunk_size": 1000
+      },
+      "file": "87b62e56.json"
+    },
+    "c789468d": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 0
+      },
+      "file": "c789468d.json"
+    },
+    "9443bb3e": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": false,
+        "max_chunk_size": 1000
+      },
+      "file": "9443bb3e.json"
+    },
+    "463a462a": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "code_aware"
+      },
+      "file": "463a462a.json"
+    },
+    "6c969e75": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "structural"
+      },
+      "file": "6c969e75.json"
+    },
+    "9c422c4d": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 500,
+        "max_chunk_size": 2000
+      },
+      "file": "9c422c4d.json"
+    },
+    "e3b359e5": {
+      "fixture_name": "headers_deep",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 100,
+        "max_chunk_size": 8192
+      },
+      "file": "e3b359e5.json"
+    },
+    "3fff447a": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "3fff447a.json"
+    },
+    "1baebb55": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "1baebb55.json"
+    },
+    "82078aee": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "82078aee.json"
+    },
+    "47ee91c9": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "47ee91c9.json"
+    },
+    "ccc08eaf": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "ccc08eaf.json"
+    },
+    "c3c0cb68": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "c3c0cb68.json"
+    },
+    "a010e6f5": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "code_aware"
+      },
+      "file": "a010e6f5.json"
+    },
+    "a77e8b38": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "list_aware"
+      },
+      "file": "a77e8b38.json"
+    },
+    "c4ff080f": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "structural"
+      },
+      "file": "c4ff080f.json"
+    },
+    "f6fb1aad": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "fallback"
+      },
+      "file": "f6fb1aad.json"
+    },
+    "a288f5e3": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": false,
+        "strategy": "code_aware"
+      },
+      "file": "a288f5e3.json"
+    },
+    "c37ac6b7": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 0
+      },
+      "file": "c37ac6b7.json"
+    },
+    "c5269bbf": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": true,
+        "max_chunk_size": 1000
+      },
+      "file": "c5269bbf.json"
+    },
+    "4a4a3e3c": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 0
+      },
+      "file": "4a4a3e3c.json"
+    },
+    "01d6e397": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": false,
+        "max_chunk_size": 1000
+      },
+      "file": "01d6e397.json"
+    },
+    "87ee0a5c": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "code_aware"
+      },
+      "file": "87ee0a5c.json"
+    },
+    "53f1af4a": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "structural"
+      },
+      "file": "53f1af4a.json"
+    },
+    "ac586949": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 500,
+        "max_chunk_size": 2000
+      },
+      "file": "ac586949.json"
+    },
+    "45df7f61": {
+      "fixture_name": "large_tables",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 100,
+        "max_chunk_size": 8192
+      },
+      "file": "45df7f61.json"
+    },
+    "d8cf7d6e": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "d8cf7d6e.json"
+    },
+    "6650945f": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "6650945f.json"
+    },
+    "1a7cd3c2": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "1a7cd3c2.json"
+    },
+    "5060edd2": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "5060edd2.json"
+    },
+    "dbee75d7": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "dbee75d7.json"
+    },
+    "c14eb4ae": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "c14eb4ae.json"
+    },
+    "72945553": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "code_aware"
+      },
+      "file": "72945553.json"
+    },
+    "62998255": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "list_aware"
+      },
+      "file": "62998255.json"
+    },
+    "fea38ee1": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "structural"
+      },
+      "file": "fea38ee1.json"
+    },
+    "9e48c28f": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "fallback"
+      },
+      "file": "9e48c28f.json"
+    },
+    "b56a4297": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": false,
+        "strategy": "code_aware"
+      },
+      "file": "b56a4297.json"
+    },
+    "040a2e91": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 0
+      },
+      "file": "040a2e91.json"
+    },
+    "841b7fb7": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": true,
+        "max_chunk_size": 1000
+      },
+      "file": "841b7fb7.json"
+    },
+    "8249b848": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 0
+      },
+      "file": "8249b848.json"
+    },
+    "b49735af": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": false,
+        "max_chunk_size": 1000
+      },
+      "file": "b49735af.json"
+    },
+    "512af8ac": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "code_aware"
+      },
+      "file": "512af8ac.json"
+    },
+    "55a0e0cf": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "structural"
+      },
+      "file": "55a0e0cf.json"
+    },
+    "47fa0b38": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 500,
+        "max_chunk_size": 2000
+      },
+      "file": "47fa0b38.json"
+    },
+    "1aca381a": {
+      "fixture_name": "latex_formulas",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 100,
+        "max_chunk_size": 8192
+      },
+      "file": "1aca381a.json"
+    },
+    "977cfed0": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "977cfed0.json"
+    },
+    "e4049390": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "e4049390.json"
+    },
+    "331490c9": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "331490c9.json"
+    },
+    "4e8bc4ff": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "4e8bc4ff.json"
+    },
+    "bc3cd3ea": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "bc3cd3ea.json"
+    },
+    "559c7f3a": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "559c7f3a.json"
+    },
+    "70c4ff76": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "code_aware"
+      },
+      "file": "70c4ff76.json"
+    },
+    "d195dadd": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "list_aware"
+      },
+      "file": "d195dadd.json"
+    },
+    "f7dbb6a1": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "structural"
+      },
+      "file": "f7dbb6a1.json"
+    },
+    "014ed12b": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "fallback"
+      },
+      "file": "014ed12b.json"
+    },
+    "48593d57": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": false,
+        "strategy": "code_aware"
+      },
+      "file": "48593d57.json"
+    },
+    "42b5b170": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 0
+      },
+      "file": "42b5b170.json"
+    },
+    "9f34cc25": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "max_chunk_size": 1000
+      },
+      "file": "9f34cc25.json"
+    },
+    "0ef83822": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 0
+      },
+      "file": "0ef83822.json"
+    },
+    "2a508a68": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": false,
+        "max_chunk_size": 1000
+      },
+      "file": "2a508a68.json"
+    },
+    "199ce0b7": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "code_aware"
+      },
+      "file": "199ce0b7.json"
+    },
+    "c5f6090a": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "structural"
+      },
+      "file": "c5f6090a.json"
+    },
+    "3226549b": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 500,
+        "max_chunk_size": 2000
+      },
+      "file": "3226549b.json"
+    },
+    "aeb4f0e5": {
+      "fixture_name": "list_heavy",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 100,
+        "max_chunk_size": 8192
+      },
+      "file": "aeb4f0e5.json"
+    },
+    "535f2a6d": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "535f2a6d.json"
+    },
+    "4f90ec3f": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "4f90ec3f.json"
+    },
+    "8aec98a1": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "8aec98a1.json"
+    },
+    "09c5a22c": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "09c5a22c.json"
+    },
+    "9e7c51c7": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "9e7c51c7.json"
+    },
+    "cc05c0f7": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "cc05c0f7.json"
+    },
+    "cdcb29ed": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "code_aware"
+      },
+      "file": "cdcb29ed.json"
+    },
+    "4eb91504": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "list_aware"
+      },
+      "file": "4eb91504.json"
+    },
+    "d9a43050": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "structural"
+      },
+      "file": "d9a43050.json"
+    },
+    "667ef30e": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "fallback"
+      },
+      "file": "667ef30e.json"
+    },
+    "5a619767": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": false,
+        "strategy": "code_aware"
+      },
+      "file": "5a619767.json"
+    },
+    "11fd7af2": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 0
+      },
+      "file": "11fd7af2.json"
+    },
+    "1fcef535": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": true,
+        "max_chunk_size": 1000
+      },
+      "file": "1fcef535.json"
+    },
+    "d0f753bc": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 0
+      },
+      "file": "d0f753bc.json"
+    },
+    "c4941d08": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": false,
+        "max_chunk_size": 1000
+      },
+      "file": "c4941d08.json"
+    },
+    "10ca24a7": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "code_aware"
+      },
+      "file": "10ca24a7.json"
+    },
+    "22cb0f02": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "structural"
+      },
+      "file": "22cb0f02.json"
+    },
+    "dcaa39e8": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 500,
+        "max_chunk_size": 2000
+      },
+      "file": "dcaa39e8.json"
+    },
+    "18137bb3": {
+      "fixture_name": "mixed_content",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 100,
+        "max_chunk_size": 8192
+      },
+      "file": "18137bb3.json"
+    },
+    "21439e63": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "21439e63.json"
+    },
+    "bf87ad87": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "bf87ad87.json"
+    },
+    "0f352010": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "0f352010.json"
+    },
+    "fa64d738": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "fa64d738.json"
+    },
+    "18ac01b8": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "18ac01b8.json"
+    },
+    "b2197f88": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "b2197f88.json"
+    },
+    "58e47511": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "code_aware"
+      },
+      "file": "58e47511.json"
+    },
+    "145699b8": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "list_aware"
+      },
+      "file": "145699b8.json"
+    },
+    "b9c8419b": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "structural"
+      },
+      "file": "b9c8419b.json"
+    },
+    "a01d4608": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "fallback"
+      },
+      "file": "a01d4608.json"
+    },
+    "1c6bf3d9": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": false,
+        "strategy": "code_aware"
+      },
+      "file": "1c6bf3d9.json"
+    },
+    "255dae17": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 0
+      },
+      "file": "255dae17.json"
+    },
+    "f4788d9a": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": true,
+        "max_chunk_size": 1000
+      },
+      "file": "f4788d9a.json"
+    },
+    "82f05886": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 0
+      },
+      "file": "82f05886.json"
+    },
+    "5cac804c": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": false,
+        "max_chunk_size": 1000
+      },
+      "file": "5cac804c.json"
+    },
+    "8bb51636": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "code_aware"
+      },
+      "file": "8bb51636.json"
+    },
+    "f25445bd": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "structural"
+      },
+      "file": "f25445bd.json"
+    },
+    "de24a2d7": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 500,
+        "max_chunk_size": 2000
+      },
+      "file": "de24a2d7.json"
+    },
+    "15216ea7": {
+      "fixture_name": "nested_fences",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 100,
+        "max_chunk_size": 8192
+      },
+      "file": "15216ea7.json"
+    },
+    "f6a4b05a": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "f6a4b05a.json"
+    },
+    "20e50d4c": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "20e50d4c.json"
+    },
+    "e5cf881f": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "e5cf881f.json"
+    },
+    "c74c3879": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "c74c3879.json"
+    },
+    "4d68b159": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "4d68b159.json"
+    },
+    "ac2b5df2": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "ac2b5df2.json"
+    },
+    "e8c1a2f9": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "code_aware"
+      },
+      "file": "e8c1a2f9.json"
+    },
+    "c01ad9da": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "list_aware"
+      },
+      "file": "c01ad9da.json"
+    },
+    "29bc10fa": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "structural"
+      },
+      "file": "29bc10fa.json"
+    },
+    "691e9d4a": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "fallback"
+      },
+      "file": "691e9d4a.json"
+    },
+    "713e0f3a": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": false,
+        "strategy": "code_aware"
+      },
+      "file": "713e0f3a.json"
+    },
+    "4f7ff8f7": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 0
+      },
+      "file": "4f7ff8f7.json"
+    },
+    "ee5d8525": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": true,
+        "max_chunk_size": 1000
+      },
+      "file": "ee5d8525.json"
+    },
+    "b430afdd": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 0
+      },
+      "file": "b430afdd.json"
+    },
+    "b38b89df": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": false,
+        "max_chunk_size": 1000
+      },
+      "file": "b38b89df.json"
+    },
+    "493d33a3": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "code_aware"
+      },
+      "file": "493d33a3.json"
+    },
+    "dca8e539": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "structural"
+      },
+      "file": "dca8e539.json"
+    },
+    "4063a119": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 500,
+        "max_chunk_size": 2000
+      },
+      "file": "4063a119.json"
+    },
+    "cf87b925": {
+      "fixture_name": "simple_text",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 100,
+        "max_chunk_size": 8192
+      },
+      "file": "cf87b925.json"
+    },
+    "347ad610": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "347ad610.json"
+    },
+    "55287afb": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "55287afb.json"
+    },
+    "14ef3341": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "14ef3341.json"
+    },
+    "ba2ba0c4": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "ba2ba0c4.json"
+    },
+    "8f2f56e5": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "8f2f56e5.json"
+    },
+    "4882a210": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "4882a210.json"
+    },
+    "08f88a44": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "code_aware"
+      },
+      "file": "08f88a44.json"
+    },
+    "415e417d": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "list_aware"
+      },
+      "file": "415e417d.json"
+    },
+    "4ecc494a": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "structural"
+      },
+      "file": "4ecc494a.json"
+    },
+    "18df3fc0": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "fallback"
+      },
+      "file": "18df3fc0.json"
+    },
+    "f6b2cb31": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": false,
+        "strategy": "code_aware"
+      },
+      "file": "f6b2cb31.json"
+    },
+    "8c3df952": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 0
+      },
+      "file": "8c3df952.json"
+    },
+    "e56229ec": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": true,
+        "max_chunk_size": 1000
+      },
+      "file": "e56229ec.json"
+    },
+    "8c5d377d": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 0
+      },
+      "file": "8c5d377d.json"
+    },
+    "ef14c5b3": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": false,
+        "max_chunk_size": 1000
+      },
+      "file": "ef14c5b3.json"
+    },
+    "395b3de7": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "code_aware"
+      },
+      "file": "395b3de7.json"
+    },
+    "511ede4e": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "structural"
+      },
+      "file": "511ede4e.json"
+    },
+    "2c9ff911": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 500,
+        "max_chunk_size": 2000
+      },
+      "file": "2c9ff911.json"
+    },
+    "c5d57980": {
+      "fixture_name": "structural",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 100,
+        "max_chunk_size": 8192
+      },
+      "file": "c5d57980.json"
+    },
+    "2f96f54c": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "2f96f54c.json"
+    },
+    "cb68f735": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": false,
+        "strategy": "auto"
+      },
+      "file": "cb68f735.json"
+    },
+    "8ac09caf": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "8ac09caf.json"
+    },
+    "0980e31f": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "0980e31f.json"
+    },
+    "34fb7ca5": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "auto"
+      },
+      "file": "34fb7ca5.json"
+    },
+    "ab1a5ac8": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": false,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "auto"
+      },
+      "file": "ab1a5ac8.json"
+    },
+    "fe5cec31": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "code_aware"
+      },
+      "file": "fe5cec31.json"
+    },
+    "9f0591c0": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "list_aware"
+      },
+      "file": "9f0591c0.json"
+    },
+    "0b810fd4": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "structural"
+      },
+      "file": "0b810fd4.json"
+    },
+    "d409ea14": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": true,
+        "strategy": "fallback"
+      },
+      "file": "d409ea14.json"
+    },
+    "3c2a67b1": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": false,
+        "strategy": "code_aware"
+      },
+      "file": "3c2a67b1.json"
+    },
+    "24f204cb": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 0
+      },
+      "file": "24f204cb.json"
+    },
+    "01ff0baa": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": true,
+        "max_chunk_size": 1000
+      },
+      "file": "01ff0baa.json"
+    },
+    "1a1c2466": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 0
+      },
+      "file": "1a1c2466.json"
+    },
+    "33651841": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": false,
+        "max_chunk_size": 1000
+      },
+      "file": "33651841.json"
+    },
+    "d9aedf9d": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": false,
+        "strategy": "code_aware"
+      },
+      "file": "d9aedf9d.json"
+    },
+    "7d5c4c18": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": true,
+        "enable_hierarchy": true,
+        "debug": true,
+        "strategy": "structural"
+      },
+      "file": "7d5c4c18.json"
+    },
+    "711de8b1": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": true,
+        "chunk_overlap": 500,
+        "max_chunk_size": 2000
+      },
+      "file": "711de8b1.json"
+    },
+    "1dc577fe": {
+      "fixture_name": "table_grouping",
+      "parameters": {
+        "include_metadata": false,
+        "chunk_overlap": 100,
+        "max_chunk_size": 8192
+      },
+      "file": "1dc577fe.json"
+    }
+  }
+}

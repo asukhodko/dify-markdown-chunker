@@ -1,0 +1,37 @@
+{
+  "fixture_name": "latex_formulas",
+  "parameters": {
+    "include_metadata": false,
+    "enable_hierarchy": false,
+    "strategy": "auto"
+  },
+  "config_used": {
+    "max_chunk_size": 4096,
+    "min_chunk_size": 512,
+    "overlap_size": 200,
+    "preserve_atomic_blocks": true,
+    "extract_preamble": true,
+    "code_threshold": 0.3,
+    "structure_threshold": 3,
+    "list_ratio_threshold": 0.4,
+    "list_count_threshold": 5,
+    "strategy_override": null,
+    "enable_code_context_binding": true,
+    "max_context_chars_before": 500,
+    "max_context_chars_after": 300,
+    "related_block_max_gap": 5,
+    "bind_output_blocks": true,
+    "preserve_before_after_pairs": true,
+    "enable_overlap": true
+  },
+  "output": [
+    "# LaTeX Formulas Document\n\nThis document contains various LaTeX formulas for testing LaTeX block handling.\n\n\n## Inline Math\n\nThe quadratic formula is $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$ which solves $ax^2 + bx + c = 0$.\n\n## Display Math\n\nThe Euler's",
+    "$x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$ which solves $ax^2 + bx + c = 0$.\n\n## Display Math\n\nThe Euler's identity is one of the most beautiful equations:\n\n$$\ne^{i\\pi} + 1 = 0\n$$\n\n## Complex Equations\n\nThe Schrödinger equation describes",
+    "equations:\n\n$$\ne^{i\\pi} + 1 = 0\n$$\n\n## Complex Equations\n\nThe Schrödinger equation describes quantum mechanics:\n\n$$\ni\\hbar\\frac{\\partial}{\\partial t}\\Psi(\\mathbf{r},t) = \\hat{H}\\Psi(\\mathbf{r},t)\n$$\n\n## Matrix Notation\n\nA rotation matrix in",
+    "t}\\Psi(\\mathbf{r},t) = \\hat{H}\\Psi(\\mathbf{r},t)\n$$\n\n## Matrix Notation\n\nA rotation matrix in 2D:\n\n$$\nR(\\theta) = \\begin{pmatrix}\n\\cos\\theta & -\\sin\\theta \\\\\n\\sin\\theta & \\cos\\theta\n\\end{pmatrix}\n$$\n\n## Summation and Integration\n\nThe Riemann zeta function:\n\n$$\n\\zeta(s) =",
+    "\\\\\n\\sin\\theta & \\cos\\theta\n\\end{pmatrix}\n$$\n\n## Summation and Integration\n\nThe Riemann zeta function:\n\n$$\n\\zeta(s) = \\sum_{n=1}^{\\infty} \\frac{1}{n^s} = \\prod_{p \\text{ prime}} \\frac{1}{1-p^{-s}}\n$$\n\nThe Gaussian integral:\n\n$$\n\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}\n$$\n\n## Aligned Equations\n\nMaxwell's equations in differential form:\n\n$$\n\\begin{aligned}\n\\nabla \\cdot \\mathbf{E} &=",
+    "Gaussian integral:\n\n$$\n\\int_{-\\infty}^{\\infty} e^{-x^2} dx = \\sqrt{\\pi}\n$$\n\n## Aligned Equations\n\nMaxwell's equations in differential form:\n\n$$\n\\begin{aligned}\n\\nabla \\cdot \\mathbf{E} &= \\frac{\\rho}{\\varepsilon_0} \\\\\n\\nabla \\cdot \\mathbf{B} &= 0 \\\\\n\\nabla \\times \\mathbf{E} &= -\\frac{\\partial \\mathbf{B}}{\\partial t} \\\\\n\\nabla \\times \\mathbf{B} &= \\mu_0\\mathbf{J} + \\mu_0\\varepsilon_0\\frac{\\partial \\mathbf{E}}{\\partial t}\n\\end{aligned}\n$$\n\n## Conclusion\n\nLaTeX blocks",
+    " t} \\\\\n\\nabla \\times \\mathbf{B} &= \\mu_0\\mathbf{J} + \\mu_0\\varepsilon_0\\frac{\\partial \\mathbf{E}}{\\partial t}\n\\end{aligned}\n$$\n\n## Conclusion\n\nLaTeX blocks should be preserved as atomic units during chunking.\n"
+  ],
+  "snapshot_id": "6650945f"
+}

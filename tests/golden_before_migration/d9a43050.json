@@ -1,0 +1,34 @@
+{
+  "fixture_name": "mixed_content",
+  "parameters": {
+    "include_metadata": true,
+    "strategy": "structural"
+  },
+  "config_used": {
+    "max_chunk_size": 4096,
+    "min_chunk_size": 512,
+    "overlap_size": 200,
+    "preserve_atomic_blocks": true,
+    "extract_preamble": true,
+    "code_threshold": 0.3,
+    "structure_threshold": 3,
+    "list_ratio_threshold": 0.4,
+    "list_count_threshold": 5,
+    "strategy_override": "structural",
+    "enable_code_context_binding": true,
+    "max_context_chars_before": 500,
+    "max_context_chars_after": 300,
+    "related_block_max_gap": 5,
+    "bind_output_blocks": true,
+    "preserve_before_after_pairs": true,
+    "enable_overlap": true
+  },
+  "output": [
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Mixed Content Document\",\n  \"header_level\": 1,\n  \"section_tags\": [],\n  \"next_content\": \"## Code Section\\n\\nHere's a code\",\n  \"chunk_index\": 0,\n  \"start_line\": 1,\n  \"end_line\": 8\n}\n</metadata>\n# Mixed Content Document\n\nThis document combines various Markdown elements.\n\n\n## Introduction\n\nSome introductory text before we dive into the details.\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Mixed Content Document/Code Section\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \" introductory text before we dive into the details.\\n\",\n  \"overlap_size\": 52,\n  \"next_content\": \"## List Section\\n\\nKey points to remember:\\n\\n- First\",\n  \"chunk_index\": 1,\n  \"has_code\": true,\n  \"start_line\": 9,\n  \"end_line\": 17\n}\n</metadata>\n## Code Section\n\nHere's a code example:\n\n```python\ndef greet(name):\n    return f\"Hello, {name}!\"\n```\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Mixed Content Document/List Section\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \"   return f\\\"Hello, {name}!\\\"\\n```\\n\",\n  \"overlap_size\": 32,\n  \"next_content\": \"## Table Section\\n\\n| Feature | Status | Priority\",\n  \"chunk_index\": 2,\n  \"start_line\": 18,\n  \"end_line\": 27\n}\n</metadata>\n## List Section\n\nKey points to remember:\n\n- First important point\n- Second important point\n  - Sub-point A\n  - Sub-point B\n- Third important point\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Mixed Content Document/Table Section\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \"A\\n  - Sub-point B\\n- Third important point\\n\",\n  \"overlap_size\": 42,\n  \"next_content\": \"## Conclusion\\n\\nThis document demonstrates mixed\",\n  \"chunk_index\": 3,\n  \"start_line\": 28,\n  \"end_line\": 35\n}\n</metadata>\n## Table Section\n\n| Feature | Status | Priority |\n|---------|--------|----------|\n| Auth    | Done   | High     |\n| API     | WIP    | High     |\n| UI      | Todo   | Medium   |\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Mixed Content Document/Conclusion\",\n  \"header_level\": 2,\n  \"section_tags\": [\n    \"Final Notes\"\n  ],\n  \"previous_content\": \"    | WIP    | High     |\\n| UI      | Todo   | Medium   |\\n\",\n  \"overlap_size\": 58,\n  \"chunk_index\": 4,\n  \"start_line\": 36,\n  \"end_line\": 45\n}\n</metadata>\n## Conclusion\n\nThis document demonstrates mixed content handling.\n\n### Final Notes\n\n1. Code blocks preserved\n2. Lists maintained\n3. Tables intact\n"
+  ],
+  "snapshot_id": "d9a43050"
+}

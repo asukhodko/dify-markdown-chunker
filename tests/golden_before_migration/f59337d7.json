@@ -1,0 +1,36 @@
+{
+  "fixture_name": "headers_deep",
+  "parameters": {
+    "include_metadata": true,
+    "enable_hierarchy": true,
+    "debug": true,
+    "strategy": "auto"
+  },
+  "config_used": {
+    "max_chunk_size": 4096,
+    "min_chunk_size": 512,
+    "overlap_size": 200,
+    "preserve_atomic_blocks": true,
+    "extract_preamble": true,
+    "code_threshold": 0.3,
+    "structure_threshold": 3,
+    "list_ratio_threshold": 0.4,
+    "list_count_threshold": 5,
+    "strategy_override": null,
+    "enable_code_context_binding": true,
+    "max_context_chars_before": 500,
+    "max_context_chars_after": 300,
+    "related_block_max_gap": 5,
+    "bind_output_blocks": true,
+    "preserve_before_after_pairs": true,
+    "enable_overlap": true
+  },
+  "output": [
+    "<metadata>\n{\n  \"chunk_id\": \"56d7e7ff\",\n  \"content_type\": \"document\",\n  \"header_path\": \"/\",\n  \"header_level\": 0,\n  \"parent_id\": null,\n  \"children_ids\": [\n    \"90c036e8\"\n  ],\n  \"hierarchy_level\": 0,\n  \"is_root\": true,\n  \"strategy\": \"hierarchical\",\n  \"is_leaf\": false,\n  \"start_line\": 1,\n  \"end_line\": 66\n}\n</metadata>\n# Headers Deep Document\n\nThis document has deeply nested header hierarchy for testing structural chunking.",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Headers Deep Document\",\n  \"header_level\": 1,\n  \"section_tags\": [\n    \"Level 3 Section A.1\",\n    \"Level 4 Section A.1.1\",\n    \"Level 5 Section A.1.1.1\",\n    \"Level 6 Section A.1.1.1.1\",\n    \"Level 5 Section A.1.1.2\",\n    \"Level 4 Section A.1.2\",\n    \"Level 3 Section A.2\"\n  ],\n  \"next_content\": \"## Level 2 Section B\\n\\nA new top-level section.\\n\\n### Level 3\",\n  \"chunk_index\": 0,\n  \"has_code\": false,\n  \"chunk_id\": \"90c036e8\",\n  \"parent_id\": \"56d7e7ff\",\n  \"children_ids\": [\n    \"0ca8cf26\",\n    \"2cae9d1a\",\n    \"aeffe57e\"\n  ],\n  \"hierarchy_level\": 1,\n  \"is_leaf\": true,\n  \"start_line\": 1,\n  \"end_line\": 36\n}\n</metadata>\n# Headers Deep Document\n\nThis document has deeply nested header hierarchy for testing structural chunking.\n\n\n## Level 2 Section A\n\nContent at level 2.\n\n### Level 3 Section A.1\n\nContent at level 3.\n\n#### Level 4 Section A.1.1\n\nContent at level 4.\n\n##### Level 5 Section A.1.1.1\n\nContent at level 5.\n\n###### Level 6 Section A.1.1.1.1\n\nContent at level 6 - the deepest standard Markdown level.\n\n##### Level 5 Section A.1.1.2\n\nAnother level 5 section.\n\n#### Level 4 Section A.1.2\n\nBack to level 4.\n\n### Level 3 Section A.2\n\nAnother level 3 section.\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Headers Deep Document/Level 2 Section B\",\n  \"header_level\": 2,\n  \"section_tags\": [\n    \"Level 3 Section B.1\",\n    \"Level 4 Section B.1.1\",\n    \"Level 3 Section B.2\"\n  ],\n  \"previous_content\": \"deepest standard Markdown level.\\n\\n##### Level 5 Section A.1.1.2\\n\\nAnother level 5 section.\\n\\n#### Level 4 Section A.1.2\\n\\nBack to level 4.\\n\\n### Level 3 Section A.2\\n\\nAnother level 3 section.\\n\",\n  \"overlap_size\": 187,\n  \"next_content\": \"## Level 2 Section C\\n\\n### Level 3 Section\",\n  \"chunk_index\": 1,\n  \"has_code\": false,\n  \"chunk_id\": \"0ca8cf26\",\n  \"parent_id\": \"90c036e8\",\n  \"next_sibling_id\": \"2cae9d1a\",\n  \"hierarchy_level\": 2,\n  \"is_leaf\": true,\n  \"start_line\": 37,\n  \"end_line\": 52\n}\n</metadata>\n## Level 2 Section B\n\nA new top-level section.\n\n### Level 3 Section B.1\n\nContent here.\n\n#### Level 4 Section B.1.1\n\nMore content.\n\n### Level 3 Section B.2\n\nFinal subsection.\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Headers Deep Document/Level 2 Section C\",\n  \"header_level\": 2,\n  \"section_tags\": [\n    \"Level 3 Section C.1\",\n    \"Level 4 Section C.1.1\",\n    \"Level 5 Section C.1.1.1\"\n  ],\n  \"previous_content\": \"content.\\n\\n### Level 3 Section B.2\\n\\nFinal subsection.\\n\",\n  \"overlap_size\": 53,\n  \"next_content\": \"## Conclusion\\n\\nThis\",\n  \"chunk_index\": 2,\n  \"has_code\": false,\n  \"chunk_id\": \"2cae9d1a\",\n  \"parent_id\": \"90c036e8\",\n  \"prev_sibling_id\": \"0ca8cf26\",\n  \"next_sibling_id\": \"aeffe57e\",\n  \"hierarchy_level\": 2,\n  \"is_leaf\": true,\n  \"start_line\": 53,\n  \"end_line\": 62\n}\n</metadata>\n## Level 2 Section C\n\n### Level 3 Section C.1\n\n#### Level 4 Section C.1.1\n\n##### Level 5 Section C.1.1.1\n\nDeep nesting again.\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Headers Deep Document/Conclusion\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \"5 Section C.1.1.1\\n\\nDeep nesting again.\\n\",\n  \"overlap_size\": 39,\n  \"chunk_index\": 3,\n  \"has_code\": false,\n  \"chunk_id\": \"aeffe57e\",\n  \"parent_id\": \"90c036e8\",\n  \"prev_sibling_id\": \"2cae9d1a\",\n  \"hierarchy_level\": 2,\n  \"is_leaf\": true,\n  \"start_line\": 63,\n  \"end_line\": 66\n}\n</metadata>\n## Conclusion\n\nThis tests header path tracking through deep hierarchies.\n"
+  ],
+  "snapshot_id": "f59337d7"
+}

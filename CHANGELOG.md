@@ -2,6 +2,35 @@
 
 All notable changes to the Advanced Markdown Chunker plugin will be documented in this file.
 
+## [2.1.5] - 2026-01-04
+
+### Changed
+- **Migration to chunkana 0.1.0** — Complete migration from embedded code to external library
+  - Removed embedded `markdown_chunker` and `markdown_chunker_v2` directories (reduced repository size by ~80%)
+  - Added migration adapter (`adapter.py`) providing full compatibility layer
+  - All functionality preserved with improved maintainability and performance
+  - Updated dependencies to use `chunkana==0.1.0` instead of embedded code
+
+### Added
+- **Build System Improvements** — Enhanced packaging and development workflow
+  - Added automatic `dify-plugin` CLI installation in Makefile (`make install-dify-plugin`)
+  - Fixed package creation and validation commands (`make package`, `make validate-package`)
+  - Improved code quality checks and linting with proper error handling
+  - Enhanced development commands with better error messages and status reporting
+
+### Fixed
+- **Testing Infrastructure** — Comprehensive test coverage for migration
+  - 99 migration-compatible tests passing (down from 812 due to embedded code removal)
+  - Property-based testing for correctness validation using Hypothesis
+  - Regression testing against pre-migration snapshots for behavioral compatibility
+  - Fixed Makefile test commands to run only compatible tests
+
+### Technical Details
+- Migration adapter preserves exact pre-migration behavior including debug modes
+- All chunking strategies, metadata filtering, and output formatting maintained
+- Backward-compatible API with no breaking changes for existing users
+- Improved memory efficiency and reduced plugin package size
+
 ## [2.1.4] - 2025-12-23
 
 ### Changed

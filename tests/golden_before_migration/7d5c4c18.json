@@ -1,0 +1,37 @@
+{
+  "fixture_name": "table_grouping",
+  "parameters": {
+    "include_metadata": true,
+    "enable_hierarchy": true,
+    "debug": true,
+    "strategy": "structural"
+  },
+  "config_used": {
+    "max_chunk_size": 4096,
+    "min_chunk_size": 512,
+    "overlap_size": 200,
+    "preserve_atomic_blocks": true,
+    "extract_preamble": true,
+    "code_threshold": 0.3,
+    "structure_threshold": 3,
+    "list_ratio_threshold": 0.4,
+    "list_count_threshold": 5,
+    "strategy_override": "structural",
+    "enable_code_context_binding": true,
+    "max_context_chars_before": 500,
+    "max_context_chars_after": 300,
+    "related_block_max_gap": 5,
+    "bind_output_blocks": true,
+    "preserve_before_after_pairs": true,
+    "enable_overlap": true
+  },
+  "output": [
+    "<metadata>\n{\n  \"chunk_id\": \"84983a9d\",\n  \"content_type\": \"document\",\n  \"header_path\": \"/\",\n  \"header_level\": 0,\n  \"parent_id\": null,\n  \"children_ids\": [\n    \"d4ed3bda\"\n  ],\n  \"hierarchy_level\": 0,\n  \"is_root\": true,\n  \"strategy\": \"hierarchical\",\n  \"is_leaf\": false,\n  \"start_line\": 1,\n  \"end_line\": 92\n}\n</metadata>\n# Table Grouping Document\n\nThis document tests table grouping scenarios where related tables should be kept together.",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Table Grouping Document\",\n  \"header_level\": 1,\n  \"section_tags\": [\n    \"Users Table\",\n    \"Posts Table\",\n    \"Comments Table\"\n  ],\n  \"next_content\": \"## API Endpoints\\n\\n### GET Endpoints\\n\\n| Endpoint | Description | Auth |\\n|----------|-------------|------|\\n| /users | List all users | No |\\n| /users/:id | Get user by ID | No |\\n| /posts | List all\",\n  \"chunk_index\": 0,\n  \"has_code\": false,\n  \"chunk_id\": \"d4ed3bda\",\n  \"parent_id\": \"84983a9d\",\n  \"children_ids\": [\n    \"ef2a1a26\",\n    \"c1c1a427\",\n    \"f75df55f\",\n    \"e4b6d053\"\n  ],\n  \"hierarchy_level\": 1,\n  \"is_leaf\": true,\n  \"start_line\": 1,\n  \"end_line\": 34\n}\n</metadata>\n# Table Grouping Document\n\nThis document tests table grouping scenarios where related tables should be kept together.\n\n\n## Database Schema\n\n### Users Table\n\n| Column | Type | Constraints |\n|--------|------|-------------|\n| id | INTEGER | PRIMARY KEY |\n| username | VARCHAR(50) | NOT NULL, UNIQUE |\n| email | VARCHAR(100) | NOT NULL |\n| created_at | TIMESTAMP | DEFAULT NOW() |\n\n### Posts Table\n\n| Column | Type | Constraints |\n|--------|------|-------------|\n| id | INTEGER | PRIMARY KEY |\n| user_id | INTEGER | FOREIGN KEY (users.id) |\n| title | VARCHAR(200) | NOT NULL |\n| content | TEXT | |\n| published | BOOLEAN | DEFAULT FALSE |\n\n### Comments Table\n\n| Column | Type | Constraints |\n|--------|------|-------------|\n| id | INTEGER | PRIMARY KEY |\n| post_id | INTEGER | FOREIGN KEY (posts.id) |\n| user_id | INTEGER | FOREIGN KEY (users.id) |\n| body | TEXT | NOT NULL |\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Table Grouping Document/API Endpoints\",\n  \"header_level\": 2,\n  \"section_tags\": [\n    \"GET Endpoints\",\n    \"POST Endpoints\",\n    \"DELETE Endpoints\"\n  ],\n  \"previous_content\": \"Constraints |\\n|--------|------|-------------|\\n| id | INTEGER | PRIMARY KEY |\\n| post_id | INTEGER | FOREIGN KEY (posts.id) |\\n| user_id | INTEGER | FOREIGN KEY (users.id) |\\n| body | TEXT | NOT NULL |\\n\",\n  \"overlap_size\": 198,\n  \"next_content\": \"## Comparison Tables\\n\\n### Before Migration\\n\\n| Metric | Value |\\n|--------|-------|\\n| Response Time |\",\n  \"chunk_index\": 1,\n  \"has_code\": false,\n  \"chunk_id\": \"ef2a1a26\",\n  \"parent_id\": \"d4ed3bda\",\n  \"next_sibling_id\": \"c1c1a427\",\n  \"hierarchy_level\": 2,\n  \"is_leaf\": true,\n  \"start_line\": 35,\n  \"end_line\": 61\n}\n</metadata>\n## API Endpoints\n\n### GET Endpoints\n\n| Endpoint | Description | Auth |\n|----------|-------------|------|\n| /users | List all users | No |\n| /users/:id | Get user by ID | No |\n| /posts | List all posts | No |\n| /posts/:id | Get post by ID | No |\n\n### POST Endpoints\n\n| Endpoint | Description | Auth |\n|----------|-------------|------|\n| /users | Create user | No |\n| /posts | Create post | Yes |\n| /comments | Add comment | Yes |\n\n### DELETE Endpoints\n\n| Endpoint | Description | Auth |\n|----------|-------------|------|\n| /users/:id | Delete user | Admin |\n| /posts/:id | Delete post | Owner |\n| /comments/:id | Delete comment | Owner |\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Table Grouping Document/Comparison Tables\",\n  \"header_level\": 2,\n  \"section_tags\": [\n    \"Before Migration\",\n    \"After Migration\"\n  ],\n  \"previous_content\": \"Endpoints\\n\\n| Endpoint | Description | Auth |\\n|----------|-------------|------|\\n| /users/:id | Delete user | Admin |\\n| /posts/:id | Delete post | Owner |\\n| /comments/:id | Delete comment | Owner |\\n\",\n  \"overlap_size\": 196,\n  \"next_content\": \"## Isolated Table\\n\\nThis table stands alone and\",\n  \"chunk_index\": 2,\n  \"has_code\": false,\n  \"chunk_id\": \"c1c1a427\",\n  \"parent_id\": \"d4ed3bda\",\n  \"prev_sibling_id\": \"ef2a1a26\",\n  \"next_sibling_id\": \"f75df55f\",\n  \"hierarchy_level\": 2,\n  \"is_leaf\": true,\n  \"start_line\": 62,\n  \"end_line\": 79\n}\n</metadata>\n## Comparison Tables\n\n### Before Migration\n\n| Metric | Value |\n|--------|-------|\n| Response Time | 500ms |\n| Throughput | 100 req/s |\n| Error Rate | 5% |\n\n### After Migration\n\n| Metric | Value |\n|--------|-------|\n| Response Time | 50ms |\n| Throughput | 1000 req/s |\n| Error Rate | 0.1% |\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Table Grouping Document/Isolated Table\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \"|\\n|--------|-------|\\n| Response Time | 50ms |\\n| Throughput | 1000 req/s |\\n| Error Rate | 0.1% |\\n\",\n  \"overlap_size\": 96,\n  \"next_content\": \"## Conclusion\\n\\nRelated\",\n  \"chunk_index\": 3,\n  \"has_code\": false,\n  \"chunk_id\": \"f75df55f\",\n  \"parent_id\": \"d4ed3bda\",\n  \"prev_sibling_id\": \"c1c1a427\",\n  \"next_sibling_id\": \"e4b6d053\",\n  \"hierarchy_level\": 2,\n  \"is_leaf\": true,\n  \"start_line\": 80,\n  \"end_line\": 88\n}\n</metadata>\n## Isolated Table\n\nThis table stands alone and should not be grouped:\n\n| Setting | Value |\n|---------|-------|\n| Debug | false |\n| Timeout | 30s |\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Table Grouping Document/Conclusion\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \"Debug | false |\\n| Timeout | 30s |\\n\",\n  \"overlap_size\": 34,\n  \"chunk_index\": 4,\n  \"has_code\": false,\n  \"chunk_id\": \"e4b6d053\",\n  \"parent_id\": \"d4ed3bda\",\n  \"prev_sibling_id\": \"f75df55f\",\n  \"hierarchy_level\": 2,\n  \"is_leaf\": true,\n  \"start_line\": 89,\n  \"end_line\": 92\n}\n</metadata>\n## Conclusion\n\nRelated tables within the same section should be grouped together.\n"
+  ],
+  "snapshot_id": "7d5c4c18"
+}

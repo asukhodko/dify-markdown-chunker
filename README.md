@@ -4,7 +4,7 @@
 
 **Intelligent Markdown document chunking for RAG systems with structural awareness**
 
-[![Version](https://img.shields.io/badge/version-2.1.4-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1.5-orange.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Dify Plugin](https://img.shields.io/badge/dify-1.9.0+-green.svg)](https://dify.ai/)
@@ -1217,9 +1217,27 @@ MIT License — see [LICENSE](LICENSE)
 
 ## 📝 Changelog
 
-**Current Version:** 2.1.4 (December 2025)
+**Current Version:** 2.1.5 (January 2026)
 
-### Latest: v2.1.4
+### Latest: v2.1.5
+
+**Released:** January 4, 2026
+
+**Changes:**
+- ✅ **Migration to chunkana 0.1.0** — Complete migration from embedded code to external library
+  - Removed embedded `markdown_chunker` and `markdown_chunker_v2` directories
+  - Added migration adapter (`adapter.py`) for full compatibility
+  - All functionality preserved with improved maintainability
+- ✅ **Build System Improvements** — Enhanced packaging and development workflow
+  - Added automatic `dify-plugin` CLI installation in Makefile
+  - Fixed package creation and validation commands
+  - Improved code quality checks and linting
+- ✅ **Testing Infrastructure** — Comprehensive test coverage for migration
+  - 99 migration-compatible tests passing
+  - Property-based testing for correctness validation
+  - Regression testing against pre-migration snapshots
+
+### Previous: v2.1.4
 
 **Released:** December 23, 2025
 
