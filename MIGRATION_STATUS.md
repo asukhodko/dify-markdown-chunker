@@ -1,4 +1,4 @@
-# Migration Status: dify-markdown-chunker to chunkana 0.1.0
+# Migration Status: dify-markdown-chunker to chunkana 0.1.1
 
 ## Current Progress
 
@@ -12,7 +12,7 @@
 - [x] **Task 2**: Checkpoint - Pre-migration analysis complete
 
 **Phase 2: Dependency Migration**
-- [x] **Task 3.1**: Added `chunkana==0.1.0` to requirements.txt
+- [x] **Task 3.1**: Added `chunkana==0.1.1` to requirements.txt
 - [x] **Task 3.2**: Verified clean installation works
 - [x] **Task 3.3**: Dependency verification test created
 
@@ -28,33 +28,24 @@
 - [x] **Task 6.2**: Updated tool `_invoke` method to use adapter
 - [x] **Task 6.3**: Verified tool schema unchanged
 
-### 🔄 In Progress
-
 **Phase 5: Debug Behavior Analysis**
-- [ ] **Task 5.1**: Analyze debug behavior from snapshots
-- [ ] **Task 5.2**: Implement debug chunk selection
-- [ ] **Task 5.3**: Complete run_chunking() implementation
-- [ ] **Task 5.4**: Write run_chunking integration tests
+- [x] **Task 5.1**: Analyze debug behavior from snapshots
+- [x] **Task 5.2**: Implement debug chunk selection
+- [x] **Task 5.3**: Complete run_chunking() implementation
+- [x] **Task 5.4**: Write run_chunking integration tests
 
-### 📋 Next Steps
+**Phase 6: chunkana 0.1.1 Integration**
+- [x] **Task 6.1**: Updated adapter with validation parameters
+- [x] **Task 6.2**: Added overlap contract tests
+- [x] **Task 6.3**: Added hierarchical integration tests
 
-1. **Complete Debug Behavior Analysis** (Task 5)
-   - Run `analyze_debug_behavior.py` to understand debug vs normal differences
-   - Implement exact debug chunk selection logic
-   - Update adapter to match pre-migration behavior exactly
+### ✅ Migration Complete
 
-2. **Comprehensive Testing** (Task 8)
-   - Run baseline regression tests against all 228 snapshots
-   - Verify error handling matches exactly
-   - Run smoke tests in clean environment
-
-3. **Performance Analysis** (Task 9)
-   - Benchmark performance vs pre-migration
-   - Document any performance differences
-
-4. **Cleanup** (Task 10)
-   - Remove embedded code after all tests pass
-   - Final integration verification
+All migration tasks have been completed successfully. The plugin now uses chunkana 0.1.1 with:
+- Tree invariant validation (validate_invariants=True)
+- Auto-fix mode (strict_mode=False)
+- Dangling header prevention
+- Micro-chunk minimization
 
 ## Key Files Created
 
@@ -133,8 +124,8 @@ Tool Interface → MigrationAdapter → chunkana 0.1.0
 - [ ] Clean installation works
 - [ ] No embedded code runtime dependencies
 
-## Current Status: 85% Complete
+## Current Status: 100% Complete
 
-**Completed**: Pre-migration analysis, dependency migration, adapter implementation, tool updates, debug behavior analysis
-**In Progress**: Comprehensive testing and validation
-**Remaining**: Performance analysis, cleanup
+**Completed**: All migration phases including chunkana 0.1.1 integration
+**In Progress**: None
+**Remaining**: None

@@ -26,7 +26,13 @@ class MarkdownChunkTool(Tool):
     - Supporting configurable chunk size and overlap
     - Providing rich metadata for each chunk
 
-    Uses chunkana 0.1.0 library with migration adapter for compatibility.
+    Uses chunkana 0.1.1 library with migration adapter for compatibility.
+    
+    New in chunkana 0.1.1:
+    - Tree invariant validation for hierarchical mode
+    - Auto-fix mode for hierarchical issues
+    - Dangling header prevention
+    - Micro-chunk minimization
     """
 
     def _invoke(

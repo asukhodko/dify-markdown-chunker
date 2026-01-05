@@ -36,7 +36,7 @@ help:
 	@echo "Maintenance:"
 	@echo "  make clean           - Clean temporary files"
 	@echo ""
-	@echo "Note: This plugin now uses chunkana==0.1.0 library via migration adapter."
+	@echo "Note: This plugin now uses chunkana==0.1.1 library via migration adapter."
 	@echo "      Legacy embedded code has been removed. Use 'make test' for current tests."
 
 test:

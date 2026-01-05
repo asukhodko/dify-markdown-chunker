@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
-"""Migration adapter for dify-markdown-chunker to chunkana 0.1.0.
+"""Migration adapter for dify-markdown-chunker to chunkana 0.1.1.
 
 This adapter provides compatibility layer between the plugin's tool interface
 and the chunkana library, ensuring exact behavioral compatibility.
+
+New in chunkana 0.1.1:
+- Tree invariant validation (validate_invariants=True by default)
+- Auto-fix mode for hierarchical issues (strict_mode=False by default)
+- Dangling header prevention
+- Micro-chunk minimization
 """
 
 import json
@@ -19,7 +25,12 @@ from chunkana import (
 
 
 class MigrationAdapter:
-    """Adapter to migrate from embedded markdown_chunker to chunkana 0.1.0."""
+    """Adapter to migrate from embedded markdown_chunker to chunkana 0.1.1.
+    
+    Features enabled by default:
+    - validate_invariants=True: Validates tree structure in hierarchical mode
+    - strict_mode=False: Auto-fixes issues instead of raising exceptions
+    """
 
     def __init__(self):
         """Initialize adapter with captured config defaults."""
@@ -60,6 +71,9 @@ class MigrationAdapter:
                 "max_chunk_size": max_chunk_size,
                 "overlap_size": chunk_overlap,
                 "strategy_override": strategy_override,
+                # chunkana 0.1.1: Enable tree validation with auto-fix
+                "validate_invariants": True,
+                "strict_mode": False,
             }
         )
 

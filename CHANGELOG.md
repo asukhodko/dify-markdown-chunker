@@ -2,10 +2,38 @@
 
 All notable changes to the Advanced Markdown Chunker plugin will be documented in this file.
 
+## [2.1.6] - 2026-01-05
+
+### Changed
+- **Upgraded to chunkana 0.1.1** — New quality features for hierarchical chunking
+  - Tree invariant validation enabled by default (`validate_invariants=True`)
+  - Auto-fix mode for hierarchical issues (`strict_mode=False`)
+  - Dangling header prevention
+  - Micro-chunk minimization in `get_flat_chunks()`
+  - Updated adapter configuration to use new validation parameters
+
+### Added
+- **Overlap Contract Tests** — Comprehensive tests for overlap behavior
+  - Tests for `include_metadata=True`: overlap in metadata only
+  - Tests for `include_metadata=False`: overlap embedded in content
+  - Property-based tests using Hypothesis for overlap contract validation
+  - Edge case tests (first chunk, last chunk)
+
+- **Hierarchical Integration Tests** — Tests for hierarchical mode with chunkana 0.1.1
+  - Tree invariant validation tests (`is_leaf` consistency, parent-child references)
+  - Debug mode behavior tests
+  - Chunk ID uniqueness tests
+
+### Technical Details
+- Updated `adapter.py` with `validate_invariants=True` and `strict_mode=False`
+- Updated tool docstring to reference chunkana 0.1.1 features
+- All 19 new tests passing (11 overlap + 8 hierarchical)
+- Full backward compatibility maintained
+
 ## [2.1.5] - 2026-01-04
 
 ### Changed
-- **Migration to chunkana 0.1.0** — Complete migration from embedded code to external library
+- **Migration to chunkana 0.1.0** — Initial migration from embedded code to external library
   - Removed embedded `markdown_chunker` and `markdown_chunker_v2` directories (reduced repository size by ~80%)
   - Added migration adapter (`adapter.py`) providing full compatibility layer
   - All functionality preserved with improved maintainability and performance

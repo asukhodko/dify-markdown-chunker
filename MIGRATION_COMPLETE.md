@@ -1,8 +1,8 @@
-# Migration Complete: dify-markdown-chunker → chunkana 0.1.0
+# Migration Complete: dify-markdown-chunker → chunkana 0.1.1
 
 ## Migration Status: ✅ COMPLETE + CLEANED UP
 
-The migration from embedded `markdown_chunker_v2` code to external `chunkana==0.1.0` library has been successfully completed and all embedded code has been removed.
+The migration from embedded `markdown_chunker_v2` code to external `chunkana==0.1.1` library has been successfully completed and all embedded code has been removed.
 
 ## Summary
 
@@ -10,7 +10,7 @@ The migration from embedded `markdown_chunker_v2` code to external `chunkana==0.
 - **Test Results**: 999+ tests passing (99.9% success rate)
 - **Functional Compatibility**: 100% preserved
 - **Performance**: No degradation
-- **Dependencies**: Successfully migrated to `chunkana==0.1.0`
+- **Dependencies**: Successfully migrated to `chunkana==0.1.1`
 - **Cleanup**: ✅ All embedded code removed
 
 ## Completed Phases
@@ -22,7 +22,7 @@ The migration from embedded `markdown_chunker_v2` code to external `chunkana==0.
 - **Files**: `MIGRATION_ANALYSIS.md`, `tests/config_defaults_snapshot.json`
 
 ### ✅ Phase 2: Dependency Migration  
-- Added `chunkana==0.1.0` to `requirements.txt`
+- Added `chunkana==0.1.1` to `requirements.txt`
 - Verified external library installation and imports
 - **Files**: `requirements.txt`
 
@@ -158,7 +158,7 @@ class MigrationAdapter:
 
 The plugin now consists of:
 - **285 lines** of migration adapter code (`adapter.py`)
-- **External dependency** on `chunkana==0.1.0` 
+- **External dependency** on `chunkana==0.1.1` 
 - **Zero embedded chunking code**
 - **100% functional compatibility** with original behavior
 - **Clean, maintainable codebase**
@@ -182,7 +182,13 @@ The migration has been successfully completed with full cleanup:
 - ✅ **Production readiness**
 - ✅ **Clean codebase**
 
-The dify-markdown-chunker plugin now uses the external `chunkana==0.1.0` library exclusively, with no embedded code remaining. The migration adapter provides seamless compatibility while keeping the codebase clean and maintainable.
+The dify-markdown-chunker plugin now uses the external `chunkana==0.1.1` library exclusively, with no embedded code remaining. The migration adapter provides seamless compatibility while keeping the codebase clean and maintainable.
+
+**New in chunkana 0.1.1:**
+- Tree invariant validation (validate_invariants=True by default)
+- Auto-fix mode for hierarchical issues (strict_mode=False by default)
+- Dangling header prevention
+- Micro-chunk minimization
 
 ---
 *Migration completed: January 4, 2026*
