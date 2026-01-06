@@ -88,10 +88,9 @@ class TestOutputFilter:
 
         assert result[0]["metadata"]["indexable"] is False
 
-    def test_indexable_true_for_non_root(self):
-        """Non-root chunks have indexable=True."""
+    def test_indexable_true_for_leaf(self):
+        """Leaf chunks have indexable=True."""
         chunks = [
-            {"content": "internal", "metadata": {"is_root": False, "is_leaf": False}},
             {"content": "leaf", "metadata": {"is_root": False, "is_leaf": True}},
         ]
 
@@ -99,7 +98,26 @@ class TestOutputFilter:
         result = filter_obj.filter(chunks, debug=True)
 
         assert result[0]["metadata"]["indexable"] is True
-        assert result[1]["metadata"]["indexable"] is True
+
+    def test_indexable_for_non_leaf_depends_on_content(self):
+        """Non-leaf chunks have indexable based on significant content."""
+        # Short content (< 100 chars) -> indexable=False
+        chunks_short = [
+            {"content": "internal", "metadata": {"is_root": False, "is_leaf": False}},
+        ]
+
+        filter_obj = OutputFilter(FilterConfig())
+        result_short = filter_obj.filter(chunks_short, debug=True)
+        assert result_short[0]["metadata"]["indexable"] is False
+
+        # Long content (> 100 chars) -> indexable=True
+        long_content = "This is a non-leaf chunk with significant content. " * 5
+        chunks_long = [
+            {"content": long_content, "metadata": {"is_root": False, "is_leaf": False}},
+        ]
+
+        result_long = filter_obj.filter(chunks_long, debug=True)
+        assert result_long[0]["metadata"]["indexable"] is True
 
     def test_empty_chunks_list(self):
         """Empty list returns empty list."""
