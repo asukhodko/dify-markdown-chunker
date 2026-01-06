@@ -22,8 +22,8 @@ def test_adapter():
     print(f"✓ Config built: max_chunk_size={config.max_chunk_size}, overlap_size={config.overlap_size}")
     
     # Test flag parsing
-    include_metadata, enable_hierarchy, debug = adapter.parse_tool_flags()
-    print(f"✓ Flags parsed: metadata={include_metadata}, hierarchy={enable_hierarchy}, debug={debug}")
+    include_metadata, enable_hierarchy, debug, leaf_only = adapter.parse_tool_flags()
+    print(f"✓ Flags parsed: metadata={include_metadata}, hierarchy={enable_hierarchy}, debug={debug}, leaf_only={leaf_only}")
     
     # Test simple chunking
     text = "# Header\n\nThis is a test paragraph with some content."

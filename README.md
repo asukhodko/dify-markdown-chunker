@@ -197,6 +197,49 @@ Add the chunker to your Dify workflow:
 | `chunk_overlap` | number | 200 | Base overlap size (adaptive: actual max = min(overlap_size, chunk_size * 0.35)) |
 | `strategy` | select | auto | Chunking strategy (auto/code_aware/list_aware/structural/fallback) |
 | `include_metadata` | boolean | true | Embed metadata in chunk text (see below) |
+| `enable_hierarchy` | boolean | false | Create parent-child relationships between chunks |
+| `debug` | boolean | false | Include all chunks (root, intermediate, leaf) in hierarchical mode |
+| `leaf_only` | boolean | false | Return only leaf chunks in hierarchical mode (recommended for vector DB) |
+
+### Hierarchical Chunking Mode
+
+When `enable_hierarchy=true`, the plugin returns chunks organized in a tree structure with parent-child relationships.
+
+**Chunk Types:**
+
+| Type | is_root | is_leaf | indexable | Description |
+|------|---------|---------|-----------|-------------|
+| Root | true | false | false | Document root, covers entire document |
+| Internal | false | false | true | Section headers with children |
+| Leaf | false | true | true | Content chunks for indexing |
+
+**Filtering Behavior:**
+
+- `debug=false` (default): Root chunk excluded from results
+- `debug=true`: All chunks included for debugging
+- `leaf_only=true`: Only leaf chunks returned (recommended for vector DB)
+
+**Recommended Usage for Vector DB:**
+
+```yaml
+- node: chunk_for_indexing
+  type: tool
+  tool: advanced_markdown_chunker
+  config:
+    enable_hierarchy: true
+    leaf_only: true  # Only indexable content chunks
+```
+
+**For Debugging Hierarchy:**
+
+```yaml
+- node: debug_hierarchy
+  type: tool
+  tool: advanced_markdown_chunker
+  config:
+    enable_hierarchy: true
+    debug: true  # Include root and internal nodes
+```
 
 ### Understanding `chunk_overlap`
 

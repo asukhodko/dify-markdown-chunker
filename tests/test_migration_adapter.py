@@ -39,21 +39,23 @@ class TestMigrationAdapter:
 
     def test_parse_tool_flags_defaults(self):
         """Test parse_tool_flags with default values."""
-        include_metadata, enable_hierarchy, debug = self.adapter.parse_tool_flags()
+        include_metadata, enable_hierarchy, debug, leaf_only = self.adapter.parse_tool_flags()
 
         assert include_metadata is True
         assert enable_hierarchy is False
         assert debug is False
+        assert leaf_only is False
 
     def test_parse_tool_flags_custom(self):
         """Test parse_tool_flags with custom values."""
-        include_metadata, enable_hierarchy, debug = self.adapter.parse_tool_flags(
-            include_metadata=False, enable_hierarchy=True, debug=True
+        include_metadata, enable_hierarchy, debug, leaf_only = self.adapter.parse_tool_flags(
+            include_metadata=False, enable_hierarchy=True, debug=True, leaf_only=True
         )
 
         assert include_metadata is False
         assert enable_hierarchy is True
         assert debug is True
+        assert leaf_only is True
 
     def test_filter_metadata_for_rag(self):
         """Test metadata filtering for RAG."""

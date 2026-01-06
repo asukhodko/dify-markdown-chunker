@@ -4,14 +4,6 @@ All notable changes to the Advanced Markdown Chunker plugin will be documented i
 
 ## [2.1.6] - 2026-01-05
 
-### Changed
-- **Upgraded to chunkana 0.1.1** — New quality features for hierarchical chunking
-  - Tree invariant validation enabled by default (`validate_invariants=True`)
-  - Auto-fix mode for hierarchical issues (`strict_mode=False`)
-  - Dangling header prevention
-  - Micro-chunk minimization in `get_flat_chunks()`
-  - Updated adapter configuration to use new validation parameters
-
 ### Added
 - **Overlap Contract Tests** — Comprehensive tests for overlap behavior
   - Tests for `include_metadata=True`: overlap in metadata only
@@ -24,11 +16,52 @@ All notable changes to the Advanced Markdown Chunker plugin will be documented i
   - Debug mode behavior tests
   - Chunk ID uniqueness tests
 
+- **`leaf_only` parameter** — Return only leaf chunks in hierarchical mode
+  - New tool parameter for vector database indexing optimization
+  - Excludes internal nodes (sections with children) from output
+  - Recommended for RAG systems where only content chunks are needed
+
+- **`indexable` field** — Indicates if chunk should be indexed
+  - Added to all chunks in hierarchical mode
+  - Root chunk: `indexable=false`
+  - All other chunks: `indexable=true`
+
+- **OutputFilter component** — Filters hierarchical output for downstream consumers
+  - Excludes root chunk by default (use `debug=true` to include)
+  - Adds `indexable` field to metadata
+  - Supports `leaf_only` filtering
+
+- **InputValidator component** — Validates library output with sensible defaults
+  - Sets `is_leaf=true` if missing (safe default for indexing)
+  - Sets `is_root=false` if missing
+  - Logs warnings for missing fields
+
+### Changed
+- **Upgraded to chunkana 0.1.1** — New quality features for hierarchical chunking
+  - Tree invariant validation enabled by default (`validate_invariants=True`)
+  - Auto-fix mode for hierarchical issues (`strict_mode=False`)
+  - Dangling header prevention
+  - Micro-chunk minimization in `get_flat_chunks()`
+  - Updated adapter configuration to use new validation parameters
+- **Upgraded to chunkana 0.1.2** — Universal dangling header fix
+  - All header levels (3-6) now handled correctly
+  - `section_tags` recalculated after post-processing
+  - `header_moved_from` tracking with chunk_index
+  - MetadataRecalculator component for accurate metadata
+
+- **Hierarchical mode behavior** — Root chunk excluded by default
+  - Use `debug=true` to include root and all intermediate nodes
+  - Production output now safe for direct vector DB indexing
+
 ### Technical Details
 - Updated `adapter.py` with `validate_invariants=True` and `strict_mode=False`
 - Updated tool docstring to reference chunkana 0.1.1 features
 - All 19 new tests passing (11 overlap + 8 hierarchical)
 - Full backward compatibility maintained
+- New files: `output_filter.py`, `input_validator.py`
+- New tests: `test_output_filter.py`, `test_input_validator.py`, `test_hierarchical_filtering.py`
+- Updated `adapter.py` with filtering integration
+- Updated `tools/markdown_chunk_tool.yaml` with `leaf_only` parameter
 
 ## [2.1.5] - 2026-01-04
 

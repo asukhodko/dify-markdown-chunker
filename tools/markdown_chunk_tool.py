@@ -27,7 +27,7 @@ class MarkdownChunkTool(Tool):
     - Providing rich metadata for each chunk
 
     Uses chunkana 0.1.1 library with migration adapter for compatibility.
-    
+
     New in chunkana 0.1.1:
     - Tree invariant validation for hierarchical mode
     - Auto-fix mode for hierarchical issues
@@ -54,6 +54,8 @@ class MarkdownChunkTool(Tool):
                   chunking (default: False)
                 - debug (bool, optional): Debug mode - include all chunks
                   (default: False)
+                - leaf_only (bool, optional): Return only leaf chunks in
+                  hierarchical mode (default: False)
 
         Yields:
             ToolInvokeMessage: Success message with chunked results or
@@ -75,9 +77,10 @@ class MarkdownChunkTool(Tool):
             include_metadata = tool_parameters.get("include_metadata", True)
             enable_hierarchy = tool_parameters.get("enable_hierarchy", False)
             debug = tool_parameters.get("debug", False)
+            leaf_only = tool_parameters.get("leaf_only", False)
 
             # 3. Use migration adapter for chunking
-            adapter = MigrationAdapter()
+            adapter = MigrationAdapter(leaf_only=leaf_only)
 
             # Build config using adapter
             config = adapter.build_chunker_config(
@@ -86,11 +89,12 @@ class MarkdownChunkTool(Tool):
                 strategy=strategy,
             )
 
-            # Parse tool flags
-            include_metadata, enable_hierarchy, debug = adapter.parse_tool_flags(
+            # Parse tool flags (leaf_only already passed to adapter constructor)
+            include_metadata, enable_hierarchy, debug, _ = adapter.parse_tool_flags(
                 include_metadata=include_metadata,
                 enable_hierarchy=enable_hierarchy,
                 debug=debug,
+                leaf_only=leaf_only,
             )
 
             # 4. Run chunking through adapter
