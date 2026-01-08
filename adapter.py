@@ -212,12 +212,66 @@ class MigrationAdapter:
         return result
 
     def _render_without_metadata(self, raw_chunks: list[dict[str, Any]]) -> list[str]:
-        """Render without metadata (clean content).
+        """Render without metadata (with embedded overlap).
 
-        IMPORTANT: Does NOT use render_with_embedded_overlap!
-        Overlap comes from library in metadata (previous_content, next_content).
+        IMPORTANT: Embeds overlap content (previous_content + content + next_content)
+        into the returned strings for context preservation.
         """
-        return [chunk.get("content", "") for chunk in raw_chunks]
+        return [self._embed_overlap(chunk) for chunk in raw_chunks]
+
+    def _embed_overlap(self, chunk: dict[str, Any]) -> str:
+        """
+        Embed overlap content into chunk for include_metadata=False mode.
+
+        Combines previous_content + content + next_content with proper
+        markdown formatting.
+
+        Args:
+            chunk: Raw chunk dict with content and metadata
+
+        Returns:
+            String with embedded overlap content
+
+        Example:
+            Input chunk:
+            {
+                "content": "## Section\\n\\nMain content...",
+                "metadata": {
+                    "previous_content": "...end of previous section.",
+                    "next_content": "## Next Section\\n\\nNext content..."
+                }
+            }
+
+            Output:
+            "...end of previous section.\\n\\n## Section\\n\\nMain content...\\n\\n"
+            "## Next Section\\n\\nNext content..."
+        """
+        try:
+            metadata = chunk.get("metadata", {})
+
+            # Extract content parts
+            prev = metadata.get("previous_content", "").strip()
+            content = chunk.get("content", "").strip()
+            next_ = metadata.get("next_content", "").strip()
+
+            # Build parts list (filter empty)
+            parts = []
+            if prev:
+                parts.append(prev)
+            if content:
+                parts.append(content)
+            if next_:
+                parts.append(next_)
+
+            # Join with markdown separator
+            if not parts:
+                return ""
+
+            return "\n\n".join(parts)
+
+        except Exception:
+            # Graceful fallback on any error
+            return chunk.get("content", "")
 
     def _chunk_to_dict(self, chunk: Any) -> dict[str, Any]:
         """Convert Chunk object to dictionary."""
