@@ -54,9 +54,8 @@ class TestBasicIntegration:
         assert "from dify_plugin import Tool" in content
         assert "from dify_plugin.entities.tool import ToolInvokeMessage" in content
 
-        # Library imports (v2 uses simplified imports)
-        assert "from markdown_chunker import MarkdownChunker" in content
-        assert "ChunkConfig" in content
+        # Migration adapter import (updated for migration)
+        assert "from adapter import MigrationAdapter" in content
 
     def test_tool_handles_all_parameters(self, tool_file):
         """Test that tool handles all 5 parameters."""
@@ -71,17 +70,17 @@ class TestBasicIntegration:
     def test_tool_creates_chunk_config(self, tool_file):
         """Test that tool creates ChunkConfig."""
         content = tool_file.read_text()
-        assert "ChunkConfig(" in content
+        assert "build_chunker_config(" in content
 
     def test_tool_instantiates_chunker(self, tool_file):
-        """Test that tool instantiates MarkdownChunker."""
+        """Test that tool instantiates adapter."""
         content = tool_file.read_text()
-        assert "MarkdownChunker(" in content
+        assert "MigrationAdapter(" in content
 
     def test_tool_calls_chunk_method(self, tool_file):
-        """Test that tool calls chunk method."""
+        """Test that tool calls chunking method."""
         content = tool_file.read_text()
-        assert ".chunk(" in content
+        assert "run_chunking(" in content
 
     def test_tool_formats_results(self, tool_file):
         """Test that tool formats results."""
@@ -215,13 +214,13 @@ class TestBasicIntegration:
 
         required_elements = [
             ("_invoke method", "def _invoke("),
-            ("ChunkConfig creation", "ChunkConfig("),
-            ("MarkdownChunker instantiation", "MarkdownChunker("),
-            ("chunk method call", ".chunk("),
+            ("adapter config creation", "build_chunker_config("),
+            ("adapter instantiation", "MigrationAdapter("),
+            ("chunking method call", "run_chunking("),
             ("error handling", "try:"),
             ("validation error handling", "except ValueError"),
             ("general error handling", "except Exception"),
-            ("result formatting", "content"),
+            ("result formatting", "formatted_result"),
             ("result yielding", "yield"),
         ]
 

@@ -234,7 +234,7 @@ Team of 8 people worked for 6 months."""
         # Simulate content from manual test document
         markdown = """# Пример хорошо описанной задачи для грейдапа
 
-По https://wiki.tcsbank.ru/pages/viewpage.action?pageId=3251338229
+По https://wiki.example.com/pages/viewpage.action?pageId=3251338229
 
 ## Scope
 

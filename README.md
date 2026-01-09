@@ -4,7 +4,7 @@
 
 **Intelligent Markdown document chunking for RAG systems with structural awareness**
 
-[![Version](https://img.shields.io/badge/version-2.1.4-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1.5-orange.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Dify Plugin](https://img.shields.io/badge/dify-1.9.0+-green.svg)](https://dify.ai/)
@@ -197,6 +197,49 @@ Add the chunker to your Dify workflow:
 | `chunk_overlap` | number | 200 | Base overlap size (adaptive: actual max = min(overlap_size, chunk_size * 0.35)) |
 | `strategy` | select | auto | Chunking strategy (auto/code_aware/list_aware/structural/fallback) |
 | `include_metadata` | boolean | true | Embed metadata in chunk text (see below) |
+| `enable_hierarchy` | boolean | false | Create parent-child relationships between chunks |
+| `debug` | boolean | false | Include all chunks (root, intermediate, leaf) in hierarchical mode |
+| `leaf_only` | boolean | false | Return only leaf chunks in hierarchical mode (recommended for vector DB) |
+
+### Hierarchical Chunking Mode
+
+When `enable_hierarchy=true`, the plugin returns chunks organized in a tree structure with parent-child relationships.
+
+**Chunk Types:**
+
+| Type | is_root | is_leaf | indexable | Description |
+|------|---------|---------|-----------|-------------|
+| Root | true | false | false | Document root, covers entire document |
+| Internal | false | false | true | Section headers with children |
+| Leaf | false | true | true | Content chunks for indexing |
+
+**Filtering Behavior:**
+
+- `debug=false` (default): Root chunk excluded from results
+- `debug=true`: All chunks included for debugging
+- `leaf_only=true`: Only leaf chunks returned (recommended for vector DB)
+
+**Recommended Usage for Vector DB:**
+
+```yaml
+- node: chunk_for_indexing
+  type: tool
+  tool: advanced_markdown_chunker
+  config:
+    enable_hierarchy: true
+    leaf_only: true  # Only indexable content chunks
+```
+
+**For Debugging Hierarchy:**
+
+```yaml
+- node: debug_hierarchy
+  type: tool
+  tool: advanced_markdown_chunker
+  config:
+    enable_hierarchy: true
+    debug: true  # Include root and internal nodes
+```
 
 ### Understanding `chunk_overlap`
 
@@ -1217,9 +1260,27 @@ MIT License — see [LICENSE](LICENSE)
 
 ## 📝 Changelog
 
-**Current Version:** 2.1.4 (December 2025)
+**Current Version:** 2.1.5 (January 2026)
 
-### Latest: v2.1.4
+### Latest: v2.1.5
+
+**Released:** January 4, 2026
+
+**Changes:**
+- ✅ **Migration to chunkana 0.1.0** — Complete migration from embedded code to external library
+  - Removed embedded `markdown_chunker` and `markdown_chunker_v2` directories
+  - Added migration adapter (`adapter.py`) for full compatibility
+  - All functionality preserved with improved maintainability
+- ✅ **Build System Improvements** — Enhanced packaging and development workflow
+  - Added automatic `dify-plugin` CLI installation in Makefile
+  - Fixed package creation and validation commands
+  - Improved code quality checks and linting
+- ✅ **Testing Infrastructure** — Comprehensive test coverage for migration
+  - 99 migration-compatible tests passing
+  - Property-based testing for correctness validation
+  - Regression testing against pre-migration snapshots
+
+### Previous: v2.1.4
 
 **Released:** December 23, 2025
 

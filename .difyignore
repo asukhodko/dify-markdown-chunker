@@ -5,6 +5,7 @@
 venv/
 .venv/
 env/
+test_migration_env
 
 # Python cache (MUST exclude)
 __pycache__/

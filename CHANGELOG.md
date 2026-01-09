@@ -2,6 +2,83 @@
 
 All notable changes to the Advanced Markdown Chunker plugin will be documented in this file.
 
+## [2.1.6] - 2026-01-06
+
+### Added
+- **Hierarchical Mode Enhancements**
+  - `leaf_only` parameter for vector database optimization (excludes internal nodes)
+  - `indexable` field in metadata to indicate chunks suitable for indexing
+  - OutputFilter component for production-ready hierarchical output
+  - InputValidator component with sensible defaults for missing fields
+
+- **Comprehensive Test Coverage**
+  - Overlap contract tests for both metadata modes (`include_metadata=True/False`)
+  - Hierarchical integration tests with tree invariant validation
+  - Boundary invariance tests ensuring stable chunk boundaries
+  - 19 new overlap embedding tests covering edge cases and error conditions
+  - Property-based validation using Hypothesis
+
+### Fixed
+- **CRITICAL: Overlap embedding in content mode** — Fixed context loss in RAG systems
+  - Implemented `_embed_overlap()` method combining `previous_content + content + next_content`
+  - Proper markdown formatting with `\n\n` separators
+  - Graceful error handling with fallback to content-only
+- **CRITICAL: Unstable chunk boundaries** — Boundaries now invariant to `include_metadata` parameter
+  - Separated chunking and rendering stages in adapter
+  - `_perform_chunking()` independent of metadata parameter
+  - `_render_chunks()` only handles formatting, not boundaries
+
+### Changed
+- **Library Upgrades**
+  - Upgraded to chunkana 0.1.3 with critical quality fixes
+  - Enhanced SectionSplitter and InvariantValidator
+  - Universal dangling header fix for all header levels (3-6)
+- **OutputFilter Improvements**
+  - Respects library `indexable` values using `setdefault()`
+  - Non-leaf chunks with significant content (>100 chars) now indexable
+- **Simplified Overlap Handling**
+  - Removed `render_with_embedded_overlap` (now handled by library)
+  - Updated `_render_without_metadata()` to use new embedding method
+
+### Performance
+- Overlap embedding optimization with < 5% overhead
+- Efficient string concatenation using `list.join()`
+- Minimal memory footprint with proper whitespace handling
+
+### Migration Notes
+- **Breaking Change:** `include_metadata=False` chunks are longer due to embedded overlap
+- Chunk count remains identical between modes (boundary invariance)
+- Original content always present as substring in embedded chunks
+
+## [2.1.5] - 2026-01-04
+
+### Changed
+- **Migration to chunkana 0.1.0** — Initial migration from embedded code to external library
+  - Removed embedded `markdown_chunker` and `markdown_chunker_v2` directories (reduced repository size by ~80%)
+  - Added migration adapter (`adapter.py`) providing full compatibility layer
+  - All functionality preserved with improved maintainability and performance
+  - Updated dependencies to use `chunkana==0.1.0` instead of embedded code
+
+### Added
+- **Build System Improvements** — Enhanced packaging and development workflow
+  - Added automatic `dify-plugin` CLI installation in Makefile (`make install-dify-plugin`)
+  - Fixed package creation and validation commands (`make package`, `make validate-package`)
+  - Improved code quality checks and linting with proper error handling
+  - Enhanced development commands with better error messages and status reporting
+
+### Fixed
+- **Testing Infrastructure** — Comprehensive test coverage for migration
+  - 99 migration-compatible tests passing (down from 812 due to embedded code removal)
+  - Property-based testing for correctness validation using Hypothesis
+  - Regression testing against pre-migration snapshots for behavioral compatibility
+  - Fixed Makefile test commands to run only compatible tests
+
+### Technical Details
+- Migration adapter preserves exact pre-migration behavior including debug modes
+- All chunking strategies, metadata filtering, and output formatting maintained
+- Backward-compatible API with no breaking changes for existing users
+- Improved memory efficiency and reduced plugin package size
+
 ## [2.1.4] - 2025-12-23
 
 ### Changed

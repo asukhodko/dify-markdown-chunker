@@ -1,0 +1,34 @@
+{
+  "fixture_name": "adaptive_sizing",
+  "parameters": {
+    "include_metadata": true,
+    "enable_hierarchy": true,
+    "debug": true,
+    "strategy": "auto"
+  },
+  "config_used": {
+    "max_chunk_size": 4096,
+    "min_chunk_size": 512,
+    "overlap_size": 200,
+    "preserve_atomic_blocks": true,
+    "extract_preamble": true,
+    "code_threshold": 0.3,
+    "structure_threshold": 3,
+    "list_ratio_threshold": 0.4,
+    "list_count_threshold": 5,
+    "strategy_override": null,
+    "enable_code_context_binding": true,
+    "max_context_chars_before": 500,
+    "max_context_chars_after": 300,
+    "related_block_max_gap": 5,
+    "bind_output_blocks": true,
+    "preserve_before_after_pairs": true,
+    "enable_overlap": true
+  },
+  "output": [
+    "<metadata>\n{\n  \"chunk_id\": \"207f978a\",\n  \"content_type\": \"document\",\n  \"header_path\": \"/\",\n  \"header_level\": 0,\n  \"parent_id\": null,\n  \"children_ids\": [\n    \"13ab70e5\",\n    \"421976fb\"\n  ],\n  \"hierarchy_level\": 0,\n  \"is_root\": true,\n  \"strategy\": \"hierarchical\",\n  \"is_leaf\": false,\n  \"start_line\": 1,\n  \"end_line\": 97\n}\n</metadata>\n# Document\n\n",
+    "<metadata>\n{\n  \"strategy\": \"code_aware\",\n  \"content_type\": \"code\",\n  \"is_atomic\": true,\n  \"has_related_code\": true,\n  \"related_code_count\": 2,\n  \"code_relationship\": \"sequential\",\n  \"explanation_bound\": true,\n  \"code_role\": \"example\",\n  \"code_roles\": [\n    \"example\",\n    \"example\"\n  ],\n  \"next_content\": \"\\n## Sparse Text Section\\n\\nThis section contains mostly prose with minimal structure.\\n\\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore\",\n  \"chunk_index\": 0,\n  \"has_code\": true,\n  \"header_path\": [],\n  \"chunk_id\": \"13ab70e5\",\n  \"parent_id\": \"207f978a\",\n  \"next_sibling_id\": \"421976fb\",\n  \"hierarchy_level\": 1,\n  \"is_leaf\": true,\n  \"start_line\": 1,\n  \"end_line\": 44\n}\n</metadata>\n# Adaptive Sizing Document\n\nThis document tests adaptive chunk sizing with varying content density.\n\n## Dense Code Section\n\nThis section has high code density:\n\n\n```python\nclass DataProcessor:\n    def __init__(self, config):\n        self.config = config\n        self.data = []\n        self.processed = False\n    \n    def load(self, source):\n        with open(source) as f:\n            self.data = json.load(f)\n        return self\n    \n    def transform(self, func):\n        self.data = [func(item) for item in self.data]\n        return self\n    \n    def filter(self, predicate):\n        self.data = [item for item in self.data if predicate(item)]\n        return self\n    \n    def save(self, target):\n        with open(target, 'w') as f:\n            json.dump(self.data, f)\n        self.processed = True\n        return self\n```\n\n```python\ndef process_batch(items, batch_size=100):\n    results = []\n    for i in range(0, len(items), batch_size):\n        batch = items[i:i+batch_size]\n        processed = [transform(item) for item in batch]\n        results.extend(processed)\n    return results\n```",
+    "<metadata>\n{\n  \"strategy\": \"code_aware\",\n  \"content_type\": \"code\",\n  \"previous_content\": \"   for i in range(0, len(items), batch_size):\\n        batch = items[i:i+batch_size]\\n        processed = [transform(item) for item in batch]\\n        results.extend(processed)\\n    return results\\n```\",\n  \"overlap_size\": 196,\n  \"chunk_index\": 1,\n  \"has_code\": true,\n  \"header_path\": [],\n  \"chunk_id\": \"421976fb\",\n  \"parent_id\": \"207f978a\",\n  \"prev_sibling_id\": \"13ab70e5\",\n  \"hierarchy_level\": 1,\n  \"is_leaf\": true,\n  \"start_line\": 45,\n  \"end_line\": 97\n}\n</metadata>\n\n## Sparse Text Section\n\nThis section contains mostly prose with minimal structure.\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\nSed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.\n\n## Mixed Density Section\n\nSome introductory text here.\n\n\n```javascript\nconst handler = async (req, res) => {\n    const { id } = req.params;\n    const data = await fetchData(id);\n    res.json(data);\n};\n```\n\nMore explanatory text between code blocks.\n\n```javascript\napp.get('/api/:id', handler);\n```\n\n\nFinal remarks about the implementation.\n\n## List-Heavy Section\n\nKey features:\n- Feature A with detailed description\n- Feature B with another description\n- Feature C with yet another description\n- Feature D\n- Feature E\n- Feature F\n\nImplementation steps:\n1. Initialize the system\n2. Configure parameters\n3. Load data sources\n4. Process records\n5. Validate results\n6. Export output\n\n## Conclusion\n\nAdaptive sizing should adjust chunk sizes based on content density.\n"
+  ],
+  "snapshot_id": "09849293"
+}

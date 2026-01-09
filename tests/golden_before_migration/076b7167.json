@@ -1,0 +1,37 @@
+{
+  "fixture_name": "code_context",
+  "parameters": {
+    "include_metadata": true,
+    "enable_hierarchy": true,
+    "debug": true,
+    "strategy": "structural"
+  },
+  "config_used": {
+    "max_chunk_size": 4096,
+    "min_chunk_size": 512,
+    "overlap_size": 200,
+    "preserve_atomic_blocks": true,
+    "extract_preamble": true,
+    "code_threshold": 0.3,
+    "structure_threshold": 3,
+    "list_ratio_threshold": 0.4,
+    "list_count_threshold": 5,
+    "strategy_override": "structural",
+    "enable_code_context_binding": true,
+    "max_context_chars_before": 500,
+    "max_context_chars_after": 300,
+    "related_block_max_gap": 5,
+    "bind_output_blocks": true,
+    "preserve_before_after_pairs": true,
+    "enable_overlap": true
+  },
+  "output": [
+    "<metadata>\n{\n  \"chunk_id\": \"5b6c8629\",\n  \"content_type\": \"document\",\n  \"header_path\": \"/\",\n  \"header_level\": 0,\n  \"parent_id\": null,\n  \"children_ids\": [\n    \"5ecf5752\"\n  ],\n  \"hierarchy_level\": 0,\n  \"is_root\": true,\n  \"strategy\": \"hierarchical\",\n  \"is_leaf\": true,\n  \"start_line\": 1,\n  \"end_line\": 86\n}\n</metadata>\n# Code Context Binding Document\n\nThis document tests code-context binding scenarios where explanatory text should be bound to code blocks.",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Code Context Binding Document\",\n  \"header_level\": 1,\n  \"section_tags\": [],\n  \"next_content\": \"## Input/Output Examples\\n\\nHere's how to use the sorting function:\\n\\n```python\\ndef quicksort(arr):\\n    if len(arr) <= 1:\\n        return arr\\n    pivot =\",\n  \"chunk_index\": 0,\n  \"has_code\": true,\n  \"chunk_id\": \"5ecf5752\",\n  \"parent_id\": \"5b6c8629\",\n  \"children_ids\": [\n    \"b73eb256\",\n    \"0c49f540\",\n    \"1ab5fbf6\",\n    \"5b74e191\"\n  ],\n  \"hierarchy_level\": 1,\n  \"is_leaf\": true,\n  \"start_line\": 1,\n  \"end_line\": 18\n}\n</metadata>\n# Code Context Binding Document\n\nThis document tests code-context binding scenarios where explanatory text should be bound to code blocks.\n\n\n## Function Documentation\n\nThe following function calculates factorial recursively:\n\n```python\ndef factorial(n):\n    \"\"\"Calculate factorial of n.\"\"\"\n    if n <= 1:\n        return 1\n    return n * factorial(n - 1)\n```\n\nThe time complexity is O(n) and space complexity is O(n) due to recursion.\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Code Context Binding Document/Input/Output Examples\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \" n.\\\"\\\"\\\"\\n    if n <= 1:\\n        return 1\\n    return n * factorial(n - 1)\\n```\\n\\nThe time complexity is O(n) and space complexity is O(n) due to recursion.\\n\",\n  \"overlap_size\": 151,\n  \"next_content\": \"## Before/After Pairs\\n\\nBefore optimization:\\n\\n```python\\ndef slow_sum(numbers):\\n   \",\n  \"chunk_index\": 1,\n  \"has_code\": true,\n  \"chunk_id\": \"b73eb256\",\n  \"parent_id\": \"5ecf5752\",\n  \"next_sibling_id\": \"0c49f540\",\n  \"hierarchy_level\": 2,\n  \"is_leaf\": true,\n  \"start_line\": 19,\n  \"end_line\": 40\n}\n</metadata>\n## Input/Output Examples\n\nHere's how to use the sorting function:\n\n```python\ndef quicksort(arr):\n    if len(arr) <= 1:\n        return arr\n    pivot = arr[len(arr) // 2]\n    left = [x for x in arr if x < pivot]\n    middle = [x for x in arr if x == pivot]\n    right = [x for x in arr if x > pivot]\n    return quicksort(left) + middle + quicksort(right)\n```\n\nExample output:\n\n```\n>>> quicksort([3, 6, 8, 10, 1, 2, 1])\n[1, 1, 2, 3, 6, 8, 10]\n```\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Code Context Binding Document/Before/After Pairs\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \" pivot]\\n    return quicksort(left) + middle + quicksort(right)\\n```\\n\\nExample output:\\n\\n```\\n>>> quicksort([3, 6, 8, 10, 1, 2, 1])\\n[1, 1, 2, 3, 6, 8, 10]\\n```\\n\",\n  \"overlap_size\": 154,\n  \"next_content\": \"## Related Code Blocks\\n\\nConfiguration setup:\\n\\n```yaml\\ndatabase:\\n  host: localhost\\n \",\n  \"chunk_index\": 2,\n  \"has_code\": true,\n  \"chunk_id\": \"0c49f540\",\n  \"parent_id\": \"5ecf5752\",\n  \"prev_sibling_id\": \"b73eb256\",\n  \"next_sibling_id\": \"1ab5fbf6\",\n  \"hierarchy_level\": 2,\n  \"is_leaf\": true,\n  \"start_line\": 41,\n  \"end_line\": 59\n}\n</metadata>\n## Before/After Pairs\n\nBefore optimization:\n\n```python\ndef slow_sum(numbers):\n    total = 0\n    for n in numbers:\n        total = total + n\n    return total\n```\n\nAfter optimization:\n\n```python\ndef fast_sum(numbers):\n    return sum(numbers)\n```\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Code Context Binding Document/Related Code Blocks\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \"optimization:\\n\\n```python\\ndef fast_sum(numbers):\\n    return sum(numbers)\\n```\\n\",\n  \"overlap_size\": 76,\n  \"next_content\": \"## Conclusion\\n\\nCode\",\n  \"chunk_index\": 3,\n  \"has_code\": true,\n  \"chunk_id\": \"1ab5fbf6\",\n  \"parent_id\": \"5ecf5752\",\n  \"prev_sibling_id\": \"0c49f540\",\n  \"next_sibling_id\": \"5b74e191\",\n  \"hierarchy_level\": 2,\n  \"is_leaf\": true,\n  \"start_line\": 60,\n  \"end_line\": 82\n}\n</metadata>\n## Related Code Blocks\n\nConfiguration setup:\n\n```yaml\ndatabase:\n  host: localhost\n  port: 5432\n  name: myapp\n```\n\nConnection code:\n\n```python\nimport psycopg2\n\nconn = psycopg2.connect(\n    host=\"localhost\",\n    port=5432,\n    dbname=\"myapp\"\n)\n```\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Code Context Binding Document/Conclusion\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \"= psycopg2.connect(\\n    host=\\\"localhost\\\",\\n    port=5432,\\n    dbname=\\\"myapp\\\"\\n)\\n```\\n\",\n  \"overlap_size\": 82,\n  \"chunk_index\": 4,\n  \"has_code\": false,\n  \"chunk_id\": \"5b74e191\",\n  \"parent_id\": \"5ecf5752\",\n  \"prev_sibling_id\": \"1ab5fbf6\",\n  \"hierarchy_level\": 2,\n  \"is_leaf\": true,\n  \"start_line\": 83,\n  \"end_line\": 86\n}\n</metadata>\n## Conclusion\n\nCode context binding helps keep related content together.\n"
+  ],
+  "snapshot_id": "076b7167"
+}

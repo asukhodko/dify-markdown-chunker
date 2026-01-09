@@ -97,10 +97,10 @@ class TestErrorHandling:
         """Property 19: Exception Handling - Test try block covers all operations."""
         content = tool_file.read_text()
 
-        # Try block should contain main operations
-        assert "ChunkConfig" in content
-        assert "MarkdownChunker" in content
-        assert "chunk(" in content
+        # Try block should contain main operations (updated for migration)
+        assert "MigrationAdapter" in content
+        assert "build_chunker_config" in content
+        assert "run_chunking" in content
 
     def test_error_messages_include_exception_details(self, tool_file):
         """Property 19, 20, 21: Error messages include exception details."""

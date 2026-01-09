@@ -27,9 +27,9 @@ def test_requirements_content():
     with open(requirements_file, "r") as f:
         content = f.read()
 
-    # Required dependencies
+    # Required dependencies (using >= for flexibility)
     required_deps = [
-        "dify_plugin==0.7.0",
+        "dify_plugin>=0.7.0",
         "markdown-it-py>=3.0.0",
         "pydantic>=2.0.0",
     ]

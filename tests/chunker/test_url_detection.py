@@ -30,7 +30,7 @@ class TestURLDetection:
         assert self.builder._is_url_line("Documentation: https://example.com")
         assert self.builder._is_url_line("Source: http://github.com/repo")
         assert self.builder._is_url_line(
-            "Основная матрица: https://wiki.tcsbank.ru/pages/viewpage.action"
+            "Основная матрица: https://wiki.example.com/pages/viewpage.action"
         )
 
     def test_url_dominance_check(self):
@@ -79,13 +79,13 @@ class TestURLDetection:
     def test_russian_text_with_url(self):
         """Russian text label with URL is detected."""
         assert self.builder._is_url_line(
-            "Матрица для Тимлидов: https://wiki.tcsbank.ru/display/ITCAREER/IT+Manager"
+            "Матрица для Тимлидов: https://wiki.example.com/display/ITCAREER/IT+Manager"
         )
 
     def test_url_with_hash_fragment(self):
         """URLs with hash fragments are detected."""
         assert self.builder._is_url_line(
-            "https://wiki.tcsbank.ru/pages/viewpage.action?pageId=759187309#section"
+            "https://wiki.example.com/pages/viewpage.action?pageId=759187309#section"
         )
 
     def test_empty_line(self):

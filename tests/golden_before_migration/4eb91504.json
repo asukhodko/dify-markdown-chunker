@@ -1,0 +1,32 @@
+{
+  "fixture_name": "mixed_content",
+  "parameters": {
+    "include_metadata": true,
+    "strategy": "list_aware"
+  },
+  "config_used": {
+    "max_chunk_size": 4096,
+    "min_chunk_size": 512,
+    "overlap_size": 200,
+    "preserve_atomic_blocks": true,
+    "extract_preamble": true,
+    "code_threshold": 0.3,
+    "structure_threshold": 3,
+    "list_ratio_threshold": 0.4,
+    "list_count_threshold": 5,
+    "strategy_override": "list_aware",
+    "enable_code_context_binding": true,
+    "max_context_chars_before": 500,
+    "max_context_chars_after": 300,
+    "related_block_max_gap": 5,
+    "bind_output_blocks": true,
+    "preserve_before_after_pairs": true,
+    "enable_overlap": true
+  },
+  "output": [
+    "<metadata>\n{\n  \"strategy\": \"list_aware\",\n  \"content_type\": \"list\",\n  \"has_nested_lists\": true,\n  \"max_list_depth\": 1,\n  \"list_item_count\": 5,\n  \"has_context_binding\": true,\n  \"context_type\": \"introduction\",\n  \"list_types\": [\n    \"bullet\"\n  ],\n  \"checkbox_stats\": null,\n  \"hierarchy_preserved\": true,\n  \"header_path\": \"\",\n  \"header_level\": 0,\n  \"next_content\": \"\\n## Table Section\\n\\n| Feature | Status | Priority |\\n|---------|--------|----------|\\n| Auth  \",\n  \"chunk_index\": 0,\n  \"start_line\": 1,\n  \"end_line\": 26\n}\n</metadata>\nKey points to remember:\n\n- First important point\n- Second important point\n  - Sub-point A\n  - Sub-point B\n- Third important point",
+    "<metadata>\n{\n  \"strategy\": \"list_aware\",\n  \"header_path\": \"/Mixed Content Document/List Section\",\n  \"header_level\": 2,\n  \"previous_content\": \"A\\n  - Sub-point B\\n- Third important point\",\n  \"overlap_size\": 41,\n  \"next_content\": \"1. Code blocks\",\n  \"chunk_index\": 1,\n  \"content_type\": \"table\",\n  \"start_line\": 27,\n  \"end_line\": 41\n}\n</metadata>\n\n## Table Section\n\n| Feature | Status | Priority |\n|---------|--------|----------|\n| Auth    | Done   | High     |\n| API     | WIP    | High     |\n| UI      | Todo   | Medium   |\n\n## Conclusion\n\nThis document demonstrates mixed content handling.\n\n### Final Notes\n",
+    "<metadata>\n{\n  \"strategy\": \"list_aware\",\n  \"content_type\": \"list\",\n  \"max_list_depth\": 0,\n  \"list_item_count\": 3,\n  \"context_type\": null,\n  \"list_types\": [\n    \"numbered\"\n  ],\n  \"checkbox_stats\": null,\n  \"hierarchy_preserved\": true,\n  \"header_path\": \"/Mixed Content Document/Conclusion/Final Notes\",\n  \"header_level\": 3,\n  \"previous_content\": \"  |\\n\\n## Conclusion\\n\\nThis document demonstrates mixed content handling.\\n\\n### Final Notes\\n\",\n  \"overlap_size\": 88,\n  \"chunk_index\": 2,\n  \"start_line\": 42,\n  \"end_line\": 44\n}\n</metadata>\n1. Code blocks preserved\n2. Lists maintained\n3. Tables intact"
+  ],
+  "snapshot_id": "4eb91504"
+}

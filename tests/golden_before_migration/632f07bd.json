@@ -1,0 +1,31 @@
+{
+  "fixture_name": "adaptive_sizing",
+  "parameters": {
+    "include_metadata": true,
+    "strategy": "list_aware"
+  },
+  "config_used": {
+    "max_chunk_size": 4096,
+    "min_chunk_size": 512,
+    "overlap_size": 200,
+    "preserve_atomic_blocks": true,
+    "extract_preamble": true,
+    "code_threshold": 0.3,
+    "structure_threshold": 3,
+    "list_ratio_threshold": 0.4,
+    "list_count_threshold": 5,
+    "strategy_override": "list_aware",
+    "enable_code_context_binding": true,
+    "max_context_chars_before": 500,
+    "max_context_chars_after": 300,
+    "related_block_max_gap": 5,
+    "bind_output_blocks": true,
+    "preserve_before_after_pairs": true,
+    "enable_overlap": true
+  },
+  "output": [
+    "<metadata>\n{\n  \"strategy\": \"list_aware\",\n  \"content_type\": \"list\",\n  \"max_list_depth\": 0,\n  \"list_item_count\": 6,\n  \"has_context_binding\": true,\n  \"context_type\": \"introduction\",\n  \"list_types\": [\n    \"bullet\"\n  ],\n  \"checkbox_stats\": null,\n  \"hierarchy_preserved\": true,\n  \"header_path\": \"\",\n  \"header_level\": 0,\n  \"next_content\": \"Implementation steps:\\n\\n1. Initialize the system\\n2. Configure parameters\\n3. Load\",\n  \"chunk_index\": 0,\n  \"start_line\": 1,\n  \"end_line\": 84\n}\n</metadata>\nKey features:\n\n- Feature A with detailed description\n- Feature B with another description\n- Feature C with yet another description\n- Feature D\n- Feature E\n- Feature F",
+    "<metadata>\n{\n  \"strategy\": \"list_aware\",\n  \"content_type\": \"list\",\n  \"max_list_depth\": 0,\n  \"list_item_count\": 6,\n  \"has_context_binding\": true,\n  \"context_type\": \"introduction\",\n  \"list_types\": [\n    \"numbered\"\n  ],\n  \"checkbox_stats\": null,\n  \"hierarchy_preserved\": true,\n  \"header_path\": \"/Adaptive Sizing Document/List-Heavy Section\",\n  \"header_level\": 2,\n  \"previous_content\": \"another description\\n- Feature D\\n- Feature E\\n- Feature F\",\n  \"overlap_size\": 55,\n  \"chunk_index\": 1,\n  \"start_line\": 85,\n  \"end_line\": 97\n}\n</metadata>\nImplementation steps:\n\n1. Initialize the system\n2. Configure parameters\n3. Load data sources\n4. Process records\n5. Validate results\n6. Export output\n\n\n## Conclusion\n\nAdaptive sizing should adjust chunk sizes based on content density.\n"
+  ],
+  "snapshot_id": "632f07bd"
+}

@@ -1,0 +1,35 @@
+{
+  "fixture_name": "large_tables",
+  "parameters": {
+    "include_metadata": true,
+    "strategy": "structural"
+  },
+  "config_used": {
+    "max_chunk_size": 4096,
+    "min_chunk_size": 512,
+    "overlap_size": 200,
+    "preserve_atomic_blocks": true,
+    "extract_preamble": true,
+    "code_threshold": 0.3,
+    "structure_threshold": 3,
+    "list_ratio_threshold": 0.4,
+    "list_count_threshold": 5,
+    "strategy_override": "structural",
+    "enable_code_context_binding": true,
+    "max_context_chars_before": 500,
+    "max_context_chars_after": 300,
+    "related_block_max_gap": 5,
+    "bind_output_blocks": true,
+    "preserve_before_after_pairs": true,
+    "enable_overlap": true
+  },
+  "output": [
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Large Tables Document\",\n  \"header_level\": 1,\n  \"section_tags\": [],\n  \"next_content\": \"## Wide Table\\n\\n| ID | Name | Email | Phone | Address | City | Country | Postal | Status | Created\",\n  \"chunk_index\": 0,\n  \"start_line\": 1,\n  \"end_line\": 12\n}\n</metadata>\n# Large Tables Document\n\nThis document contains various table structures for testing table handling.\n\n\n## Simple Table\n\n| Name  | Age | City     |\n|-------|-----|----------|\n| Alice | 30  | New York |\n| Bob   | 25  | London   |\n| Carol | 35  | Paris    |\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Large Tables Document/Wide Table\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \"Alice | 30  | New York |\\n| Bob   | 25  | London   |\\n| Carol | 35  | Paris    |\\n\",\n  \"overlap_size\": 79,\n  \"next_content\": \"## Tall Table\\n\\n| Item | Value |\\n|------|-------|\\n| Row 1 | Data 1 |\\n| Row 2 | Data 2 |\\n| Row 3 |\",\n  \"chunk_index\": 1,\n  \"start_line\": 13,\n  \"end_line\": 20\n}\n</metadata>\n## Wide Table\n\n| ID | Name | Email | Phone | Address | City | Country | Postal | Status | Created |\n|----|------|-------|-------|---------|------|---------|--------|--------|---------|\n| 1 | Alice | alice@example.com | 555-0101 | 123 Main St | NYC | USA | 10001 | Active | 2024-01-01 |\n| 2 | Bob | bob@example.com | 555-0102 | 456 Oak Ave | LA | USA | 90001 | Active | 2024-01-02 |\n| 3 | Carol | carol@example.com | 555-0103 | 789 Pine Rd | CHI | USA | 60601 | Inactive | 2024-01-03 |\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Large Tables Document/Tall Table\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \"| 456 Oak Ave | LA | USA | 90001 | Active | 2024-01-02 |\\n| 3 | Carol | carol@example.com | 555-0103 | 789 Pine Rd | CHI | USA | 60601 | Inactive | 2024-01-03 |\\n\",\n  \"overlap_size\": 160,\n  \"next_content\": \"## Table with Alignment\\n\\n| Left | Center | Right\",\n  \"chunk_index\": 2,\n  \"start_line\": 21,\n  \"end_line\": 37\n}\n</metadata>\n## Tall Table\n\n| Item | Value |\n|------|-------|\n| Row 1 | Data 1 |\n| Row 2 | Data 2 |\n| Row 3 | Data 3 |\n| Row 4 | Data 4 |\n| Row 5 | Data 5 |\n| Row 6 | Data 6 |\n| Row 7 | Data 7 |\n| Row 8 | Data 8 |\n| Row 9 | Data 9 |\n| Row 10 | Data 10 |\n| Row 11 | Data 11 |\n| Row 12 | Data 12 |\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Large Tables Document/Table with Alignment\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \"8 | Data 8 |\\n| Row 9 | Data 9 |\\n| Row 10 | Data 10 |\\n| Row 11 | Data 11 |\\n| Row 12 | Data 12 |\\n\",\n  \"overlap_size\": 95,\n  \"next_content\": \"## Multiple Related Tables\\n\\n### Users Table\\n\\n| UserID | Username | Role |\\n|--------|----------|------|\\n|\",\n  \"chunk_index\": 3,\n  \"start_line\": 38,\n  \"end_line\": 45\n}\n</metadata>\n## Table with Alignment\n\n| Left | Center | Right |\n|:-----|:------:|------:|\n| L1   | C1     | R1    |\n| L2   | C2     | R2    |\n| L3   | C3     | R3    |\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Large Tables Document/Multiple Related Tables\",\n  \"header_level\": 2,\n  \"section_tags\": [\n    \"Users Table\",\n    \"Permissions Table\"\n  ],\n  \"previous_content\": \"L2   | C2     | R2    |\\n| L3   | C3     | R3    |\\n\",\n  \"overlap_size\": 50,\n  \"next_content\": \"## Conclusion\\n\\nTables\",\n  \"chunk_index\": 4,\n  \"start_line\": 46,\n  \"end_line\": 64\n}\n</metadata>\n## Multiple Related Tables\n\n### Users Table\n\n| UserID | Username | Role |\n|--------|----------|------|\n| 1 | admin | Administrator |\n| 2 | user1 | User |\n| 3 | user2 | User |\n\n### Permissions Table\n\n| RoleID | Permission |\n|--------|------------|\n| 1 | read |\n| 1 | write |\n| 1 | delete |\n| 2 | read |\n",
+    "<metadata>\n{\n  \"strategy\": \"structural\",\n  \"content_type\": \"section\",\n  \"header_path\": \"/Large Tables Document/Conclusion\",\n  \"header_level\": 2,\n  \"section_tags\": [],\n  \"previous_content\": \"RoleID | Permission |\\n|--------|------------|\\n| 1 | read |\\n| 1 | write |\\n| 1 | delete |\\n| 2 | read |\\n\",\n  \"overlap_size\": 101,\n  \"chunk_index\": 5,\n  \"start_line\": 65,\n  \"end_line\": 68\n}\n</metadata>\n## Conclusion\n\nTables should be kept atomic during chunking.\n"
+  ],
+  "snapshot_id": "c4ff080f"
+}
