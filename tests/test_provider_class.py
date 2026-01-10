@@ -8,9 +8,14 @@ import sys
 from pathlib import Path
 
 import pytest
+from adapter import MigrationAdapter
 
 
 class TestProviderClass:
+    def setup_method(self):
+        """Set up test fixtures."""
+        self.adapter = MigrationAdapter()
+
     """Property 8, 9: Provider Class Validation"""
 
     @pytest.fixture
@@ -23,7 +28,6 @@ class TestProviderClass:
 
         try:
             from markdown_chunker import MarkdownChunkerProvider
-
             return MarkdownChunkerProvider
         finally:
             # Clean up sys.path

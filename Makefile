@@ -1,4 +1,4 @@
-.PHONY: test test-all lint clean install test-quick validate package validate-package release help test-verbose test-coverage format benchmark demo quality-check install-dify-plugin
+.PHONY: test lint clean install test-quick validate package validate-package release help test-verbose test-coverage format benchmark demo quality-check install-dify-plugin
 
 # Python from venv
 PYTHON = venv/bin/python3.12
@@ -13,8 +13,7 @@ help:
 	@echo "  make install-dify-plugin - Install dify-plugin CLI"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test            - Run migration-compatible tests (99 tests)"
-	@echo "  make test-all        - Run ALL tests (will fail - legacy embedded tests)"
+	@echo "  make test            - Run all tests (99 tests)"
 	@echo "  make test-verbose    - Run tests with verbose output"
 	@echo "  make test-coverage   - Run tests with coverage report"
 	@echo "  make test-quick      - Run quick migration tests (16 tests)"
@@ -37,17 +36,11 @@ help:
 	@echo "  make clean           - Clean temporary files"
 	@echo ""
 	@echo "Note: This plugin now uses chunkana==0.1.1 library via migration adapter."
-	@echo "      Legacy embedded code has been removed. Use 'make test' for current tests."
+	@echo "      Legacy embedded code has been removed. Repository contains only working tests."
 
 test:
-	@echo "Running plugin tests (migration-compatible tests only)..."
-	@$(PYTHON) -m pytest tests/test_migration_adapter.py tests/test_migration_regression.py tests/test_integration_basic.py tests/test_error_handling.py tests/test_dependencies.py tests/test_entry_point.py tests/test_manifest.py tests/test_provider_class.py tests/test_provider_yaml.py tests/test_tool_yaml.py -v
-
-test-all:
-	@echo "Running ALL tests (including legacy embedded tests - will fail after migration)..."
-	@echo "⚠️  Note: Most tests will fail because embedded code was removed"
-	@echo "⚠️  Use 'make test' for migration-compatible tests only"
-	@$(PYTHON) -m pytest tests/
+	@echo "Running all tests..."
+	@$(PYTHON) -m pytest tests/ -v
 
 test-verbose:
 	@echo "Running tests with verbose output..."

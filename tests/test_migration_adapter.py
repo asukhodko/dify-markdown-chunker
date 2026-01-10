@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Tests for migration adapter."""
 
-from chunkana import ChunkerConfig
-
 from adapter import MigrationAdapter
+from chunkana import ChunkerConfig
 
 
 class TestMigrationAdapter:

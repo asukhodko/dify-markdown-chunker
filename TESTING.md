@@ -1,103 +1,91 @@
-# Testing Guide - Post Migration
+# Testing Documentation
 
-## Overview
+This document describes the testing strategy and structure for this project after the test suite cleanup.
 
-After migrating from embedded `markdown_chunker_v2` code to external `chunkana==0.1.0` library, the testing strategy has been updated to focus on migration-compatible tests.
+## Test Suite Overview
+
+The test suite has been cleaned up and optimized to work with the migration adapter architecture:
+
+- **Total tests removed**: 0
+- **Total tests adapted**: 45
+- **Migration-compatible tests**: Tests that work without modification
 
 ## Test Categories
 
-### ✅ Migration-Compatible Tests (99 tests)
-These tests work with the current migrated implementation:
+### Migration Tests (`test_migration_*.py`)
+Tests that use the `MigrationAdapter` to bridge legacy functionality with the new Chunkana library.
 
-```bash
-make test              # Run all migration-compatible tests
-make test-quick        # Run core migration tests (16 tests)
-make test-verbose      # Run with verbose output
-make test-coverage     # Run with coverage report
-```
+### Integration Tests (`test_integration_*.py`)
+Tests that verify component interactions and end-to-end functionality.
 
-**Included test files:**
-- `tests/test_migration_adapter.py` - Migration adapter unit tests (10 tests)
-- `tests/test_migration_regression.py` - Regression tests with golden snapshots (6 tests)
-- `tests/test_integration_basic.py` - Basic integration tests (21 tests)
-- `tests/test_error_handling.py` - Error handling validation (12 tests)
-- `tests/test_dependencies.py` - Dependency validation (6 tests)
-- `tests/test_entry_point.py` - Entry point validation (9 tests)
-- `tests/test_manifest.py` - Manifest validation (12 tests)
-- `tests/test_provider_class.py` - Provider class tests (8 tests)
-- `tests/test_provider_yaml.py` - Provider YAML tests (5 tests)
-- `tests/test_tool_yaml.py` - Tool YAML tests (10 tests)
-
-### ❌ Legacy Embedded Tests (~900 tests)
-These tests import from removed `markdown_chunker` and `markdown_chunker_v2` modules:
-
-```bash
-make test-all          # Will show import errors for legacy tests
-```
-
-**Why they fail:**
-- Import from `markdown_chunker_v2.*` (removed)
-- Import from `markdown_chunker.*` (removed)
-- Test embedded implementation details (no longer relevant)
-
-## Test Results
-
-### Current Status
-- **99 tests passing** ✅ (migration-compatible)
-- **~900 tests failing** ❌ (legacy embedded tests)
-- **Total coverage**: Core plugin functionality fully tested
-
-### Key Test Coverage
-- ✅ Migration adapter functionality
-- ✅ Regression testing with golden snapshots
-- ✅ Plugin integration (Dify compatibility)
-- ✅ Error handling and validation
-- ✅ Configuration and dependencies
-- ✅ YAML manifest validation
+### Adapted Tests (`test_*_adapted.py`)
+Legacy tests that have been adapted to work with the new architecture while preserving their original test logic.
 
 ## Running Tests
 
-### Recommended Commands
+### All Tests
 ```bash
-# Standard testing (recommended)
-make test              # 99 migration-compatible tests
-
-# Quick validation
-make test-quick        # 16 core migration tests
-
-# Development testing
-make test-verbose      # Detailed output
-make test-coverage     # With coverage report
+make test-all
 ```
 
-### Legacy Tests (Not Recommended)
+### Migration-Compatible Tests Only
 ```bash
-# Will show many import errors
-make test-all          # All tests including legacy
+make test
 ```
 
-## Migration Impact
+### Specific Test Categories
+```bash
+# Migration tests
+pytest tests/test_migration_*.py -v
 
-### What Changed
-1. **Removed**: ~15,000 lines of embedded chunking code
-2. **Added**: 285 lines of migration adapter code
-3. **Preserved**: 100% functional compatibility
-4. **Updated**: Test suite to focus on plugin functionality
+# Integration tests  
+pytest tests/test_integration_*.py -v
 
-### What's Tested
-- **Plugin Integration**: Dify tool interface works correctly
-- **Functional Compatibility**: Same behavior as before migration
-- **Error Handling**: Proper error messages and validation
-- **Configuration**: All parameters work as expected
-- **Regression**: Golden snapshots ensure output consistency
+# Adapted tests
+pytest tests/test_*_adapted.py -v
+```
 
-### What's Not Tested
-- **Internal chunking algorithms**: Now handled by chunkana library
-- **Low-level parsing**: Delegated to external dependency
-- **Strategy implementations**: Covered by chunkana's own tests
+### Test Coverage
+```bash
+make test-coverage
+```
 
-## Conclusion
+## Test Development Guidelines
 
-The current test suite provides comprehensive coverage of the plugin's functionality while maintaining a clean, focused approach. The migration adapter ensures 100% compatibility with the original behavior, validated through regression testing with golden snapshots.
+1. **New tests should use MigrationAdapter**: Don't import legacy modules directly
+2. **Follow naming conventions**: Use appropriate prefixes for test categories
+3. **Preserve test intent**: When adapting tests, maintain the original test logic
+4. **Add property tests**: Use Hypothesis for testing universal properties
+5. **Test error conditions**: Ensure error handling is properly tested
 
-For day-to-day development, use `make test` to run the 99 migration-compatible tests that validate the plugin works correctly with the chunkana library.
+## Test Infrastructure
+
+- **pytest.ini**: Configuration for test discovery and execution
+- **Makefile**: Test targets for different test categories
+- **Migration adapter**: Bridge between legacy and new implementations
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Import errors**: Ensure you're using `MigrationAdapter` instead of legacy imports
+2. **Test discovery**: Check that test files follow naming conventions
+3. **Assertion failures**: Verify that adapted tests preserve original assertions
+
+### Getting Help
+
+If you encounter issues with tests:
+1. Check the test logs for specific error messages
+2. Verify that the migration adapter is working correctly
+3. Review the test adaptation documentation
+4. Run tests in verbose mode for more details
+
+## Test Cleanup History
+
+This test suite was cleaned up on 2026-01-10 with the following changes:
+- Removed redundant tests that duplicated existing coverage
+- Adapted valuable legacy tests to use the migration adapter
+- Updated test infrastructure for better organization
+- Preserved unique test logic and assertions
+
+For more details, see the cleanup reports in the project documentation.

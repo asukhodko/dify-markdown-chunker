@@ -175,3 +175,22 @@ Use GitHub Issues for feature requests. Include:
 By contributing, you agree that your contributions will be licensed under the MIT License.
 
 Thank you for contributing! 🎉
+
+## Test Guidelines
+
+When contributing tests to this project:
+
+1. **Use the migration adapter**: New tests should use `MigrationAdapter` instead of legacy modules
+2. **Follow naming conventions**: 
+   - `test_migration_*.py` for tests using the migration adapter
+   - `test_integration_*.py` for integration tests
+   - `test_*_adapted.py` for adapted legacy tests
+3. **Run the full test suite**: Ensure `make test-all` passes before submitting
+4. **Avoid redundant tests**: Check if similar functionality is already tested
+
+### Test Categories
+
+- **Unit tests**: Test individual components in isolation
+- **Integration tests**: Test component interactions
+- **Migration tests**: Test adapter functionality
+- **Property tests**: Test universal properties with generated data

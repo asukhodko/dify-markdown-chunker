@@ -1161,7 +1161,83 @@ For detailed benchmarks and methodology, see [Performance Guide](docs/guides/per
 
 ### Testing
 
+This project uses pytest for testing. The test suite has been cleaned up and optimized:
+
+- **Migration-compatible tests**: Tests that work with the current adapter-based architecture
+- **Adapted tests**: Legacy tests that have been adapted to use the migration adapter
+- **Removed tests**: 0 redundant tests were removed during cleanup
+
+### Running Tests
+
 ```bash
+# Run all tests
+make test-all
+
+# Run only migration-compatible tests
+make test
+
+# Run specific test categories
+pytest tests/test_migration_*.py  # Migration tests
+pytest tests/test_integration_*.py  # Integration tests
+```
+
+### Test Structure
+
+The test suite is organized as follows:
+- `tests/test_migration_*.py` - Tests using the migration adapter
+- `tests/test_integration_*.py` - Integration tests
+- `tests/test_*_adapted.py` - Adapted legacy tests
+# Run all tests
+make test-all
+
+# Run only migration-compatible tests
+make test
+
+# Run specific test categories
+pytest tests/test_migration_*.py  # Migration tests
+pytest tests/test_integration_*.py  # Integration tests
+```
+
+### Test Structure
+
+The test suite is organized as follows:
+- `tests/test_migration_*.py` - Tests using the migration adapter
+- `tests/test_integration_*.py` - Integration tests
+- `tests/test_*_adapted.py` - Adapted legacy tests
+# Run all tests
+make test-all
+
+# Run only migration-compatible tests
+make test
+
+# Run specific test categories
+pytest tests/test_migration_*.py  # Migration tests
+pytest tests/test_integration_*.py  # Integration tests
+```
+
+### Test Structure
+
+The test suite is organized as follows:
+- `tests/test_migration_*.py` - Tests using the migration adapter
+- `tests/test_integration_*.py` - Integration tests
+- `tests/test_*_adapted.py` - Adapted legacy tests
+# Run all tests
+make test-all
+
+# Run only migration-compatible tests
+make test
+
+# Run specific test categories
+pytest tests/test_migration_*.py  # Migration tests
+pytest tests/test_integration_*.py  # Integration tests
+```
+
+### Test Structure
+
+The test suite is organized as follows:
+- `tests/test_migration_*.py` - Tests using the migration adapter
+- `tests/test_integration_*.py` - Integration tests
+- `tests/test_*_adapted.py` - Adapted legacy tests
 # Run all tests (812)
 make test
 

@@ -35,6 +35,10 @@ from input_validator import InputValidator
 from output_filter import FilterConfig, OutputFilter
 
 
+# Compatibility alias for legacy tests
+MarkdownChunker = None  # Will be set after MigrationAdapter is defined
+
+
 class MigrationAdapter:
     """Adapter to migrate from embedded markdown_chunker to chunkana 0.1.3.
 
@@ -324,3 +328,6 @@ class MigrationAdapter:
             filtered[key] = value
 
         return filtered
+
+# Compatibility alias for legacy tests that import MarkdownChunker
+MarkdownChunker = MigrationAdapter
