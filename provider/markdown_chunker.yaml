@@ -6,9 +6,9 @@ identity:
     zh_Hans: 高级 Markdown 分块器
     ru_RU: Продвинутый Markdown чанкер
   description:
-    en_US: Advanced Markdown chunking with structural awareness for better RAG performance
-    zh_Hans: 具有结构感知的高级 Markdown 分块，提升 RAG 性能
-    ru_RU: Продвинутое чанкование Markdown с учётом структуры для улучшения RAG
+    en_US: Advanced Markdown chunking powered by chunkana library with structural awareness for better RAG performance
+    zh_Hans: 基于 chunkana 库的高级 Markdown 分块，具有结构感知，提升 RAG 性能
+    ru_RU: Продвинутое чанкование Markdown на основе библиотеки chunkana с учётом структуры для улучшения RAG
   icon: icon.svg
   tags:
     - productivity

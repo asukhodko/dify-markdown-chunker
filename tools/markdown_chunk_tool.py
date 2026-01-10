@@ -1,11 +1,20 @@
 """Advanced Markdown Chunker Tool for Dify
 
 This module implements the Tool class for the Advanced Markdown Chunker plugin.
-It provides intelligent, structure-aware chunking of Markdown documents for RAG systems.
+It provides intelligent, structure-aware chunking of Markdown documents for RAG systems,
+powered by the chunkana engine.
+
+Key Features:
+- Automatic strategy selection based on content analysis
+- Structure preservation (code blocks, tables, lists, headers)
+- Hierarchical chunking with parent-child relationships
+- Configurable overlap with adaptive capping
+- Rich metadata embedding for improved retrieval
+- Migration adapter ensuring backward compatibility
 
 Author: asukhodko
-Version: 2.1.5
-Date: 2026-01-04
+Version: 2.1.5 (chunkana-powered)
+Date: 2026-01-10
 """
 
 from collections.abc import Generator
@@ -26,13 +35,13 @@ class MarkdownChunkTool(Tool):
     - Supporting configurable chunk size and overlap
     - Providing rich metadata for each chunk
 
-    Uses chunkana 0.1.1 library with migration adapter for compatibility.
+    Powered by chunkana engine with migration adapter for full compatibility.
 
-    New in chunkana 0.1.1:
-    - Tree invariant validation for hierarchical mode
-    - Auto-fix mode for hierarchical issues
-    - Dangling header prevention
-    - Micro-chunk minimization
+    Architecture:
+    - Uses chunkana library for core chunking algorithms
+    - Migration adapter provides plugin interface compatibility
+    - Input validation and output filtering for Dify integration
+    - Support for both flat and hierarchical chunking modes
     """
 
     def _invoke(

@@ -142,8 +142,8 @@ make package
 - **Solution**: Install dependencies: `pip install -r requirements.txt`
 
 **Problem**: Import errors
-- **Solution**: Use correct imports: `from markdown_chunker import MarkdownChunker`
-- **Solution**: Don't use legacy imports: `from stage1 import ...`
+- **Solution**: Use correct imports: `from chunkana import MarkdownChunker`
+- **Solution**: Don't use legacy imports: `from markdown_chunker import ...`
 
 ### Development Setup Issues
 

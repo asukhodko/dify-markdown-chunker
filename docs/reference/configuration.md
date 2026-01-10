@@ -2,234 +2,239 @@
 
 ## 🎯 Overview
 
-The `stage1.config` module provides a flexible configuration system for all Stage 1 components. It allows fine-tuning of parsing, extraction, detection, and analysis behaviors.
+The Advanced Markdown Chunker plugin provides configuration through two levels:
+1. **Plugin UI Parameters** - Simple configuration through Dify's tool interface
+2. **Direct chunkana Configuration** - Advanced configuration for direct library usage
 
-## 📋 Main Configuration Classes
+## 📋 Plugin UI Configuration
 
-### `Stage1Config`
+### Available Parameters
 
-The main configuration class that orchestrates all component configurations:
+The plugin exposes the following parameters through the Dify tool interface:
 
-```python
-from stage1.config import Stage1Config
-
-# Default configuration
-config = Stage1Config()
-
-# Custom configuration
-config = Stage1Config(
-    parser=ParserConfig(preferred_parser="markdown-it-py"),
-    extractor=ExtractorConfig(include_positions=True),
-    detector=DetectorConfig(generate_anchors=True),
-    analyzer=AnalyzerConfig(analyze_languages=True)
-)
-
-# Use with interface
-from stage1.interface import Stage1Interface
-interface = Stage1Interface(config)
+```yaml
+tool: advanced_markdown_chunker
+parameters:
+  input_text: string (required)
+  max_chunk_size: number (default: 4096)
+  chunk_overlap: number (default: 200)
+  strategy: select (default: auto)
+  include_metadata: boolean (default: true)
+  enable_hierarchy: boolean (default: false)
+  debug: boolean (default: false)
+  leaf_only: boolean (default: false)
 ```
 
-### Configuration Structure
+### Parameter Details
 
-```python
-from stage1.config import (
-    Stage1Config, ParserConfig, ExtractorConfig, 
-    DetectorConfig, AnalyzerConfig
-)
+#### Basic Parameters
 
-# Complete configuration example
-config = Stage1Config(
-    # Parser configuration
-    parser=ParserConfig(
-        preferred_parser="markdown-it-py",
-        fallback_parsers=["mistune", "commonmark"],
-        enable_positions=True,
-        strict_mode=False
-    ),
-    
-    # Fenced block extractor configuration
-    extractor=ExtractorConfig(
-        include_positions=True,
-        handle_nesting=True,
-        strict_mode=False,
-        max_nesting_depth=10
-    ),
-    
-    # Element detector configuration
-    detector=DetectorConfig(
-        detect_headers=True,
-        detect_lists=True,
-        detect_tables=True,
-        generate_anchors=True,
-        build_hierarchy=True
-    ),
-    
-    # Content analyzer configuration
-    analyzer=AnalyzerConfig(
-        analyze_languages=True,
-        detect_patterns=True,
-        calculate_complexity=True,
-        include_readability=True
-    )
-)
+| Parameter | Type | Default | Range/Options | Description |
+|-----------|------|---------|---------------|-------------|
+| `max_chunk_size` | number | 4096 | 512-16384 | Maximum chunk size in characters |
+| `chunk_overlap` | number | 200 | 0-35% of chunk_size | Overlap between consecutive chunks |
+| `strategy` | select | auto | auto, code_aware, list_aware, structural, fallback | Chunking strategy selection |
+
+#### Metadata and Output Control
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `include_metadata` | boolean | true | Embed metadata block in chunk text |
+| `enable_hierarchy` | boolean | false | Create parent-child relationships between chunks |
+| `debug` | boolean | false | Include all chunk types (root, intermediate, leaf) |
+| `leaf_only` | boolean | false | Return only leaf chunks (content only, no headers) |
+
+### Configuration Examples
+
+#### Basic RAG Configuration
+
+```yaml
+- node: chunk_for_rag
+  type: tool
+  tool: advanced_markdown_chunker
+  config:
+    max_chunk_size: 2048
+    chunk_overlap: 100
+    strategy: auto
+    include_metadata: true
 ```
 
-## 🔧 Component Configurations
+#### Hierarchical Processing
 
-### ParserConfig
-
-Configuration for Markdown parsing:
-
-```python
-from stage1.config import ParserConfig
-
-config = ParserConfig(
-    # Parser selection
-    preferred_parser="markdown-it-py",      # Primary parser choice
-    fallback_parsers=["mistune", "commonmark"],  # Fallback order
-    auto_fallback=True,                     # Auto-fallback on errors
-    
-    # Parser features
-    enable_positions=True,                  # Include position information
-    enable_extensions=True,                 # Enable parser extensions
-    strict_mode=False,                      # Strict CommonMark compliance
-    
-    # Performance settings
-    max_parse_time=10.0,                   # Maximum parse time (seconds)
-    enable_caching=True,                   # Cache parsed results
-    
-    # Parser-specific options
-    parser_options={
-        "markdown-it-py": {
-            "html": True,                   # Allow HTML
-            "linkify": True,               # Auto-link URLs
-            "typographer": True            # Enable typographic replacements
-        },
-        "mistune": {
-            "escape": False,               # Don't escape HTML
-            "hard_wrap": False             # Don't convert \n to <br>
-        }
-    }
-)
+```yaml
+- node: hierarchical_chunks
+  type: tool
+  tool: advanced_markdown_chunker
+  config:
+    max_chunk_size: 4096
+    enable_hierarchy: true
+    leaf_only: true  # Only content chunks for vector DB
+    debug: false
 ```
 
-### ExtractorConfig
+#### Code Documentation Processing
 
-Configuration for fenced block extraction:
+```yaml
+- node: code_docs_chunks
+  type: tool
+  tool: advanced_markdown_chunker
+  config:
+    max_chunk_size: 6144  # Larger chunks for code
+    chunk_overlap: 200
+    strategy: code_aware
+    include_metadata: true
+```
+
+#### Clean Text Output
+
+```yaml
+- node: clean_text_chunks
+  type: tool
+  tool: advanced_markdown_chunker
+  config:
+    max_chunk_size: 2048
+    chunk_overlap: 100
+    include_metadata: false  # No metadata embedding
+```
+
+## 🔧 Direct chunkana Configuration
+
+For advanced features not available in the plugin UI, use chunkana directly:
+
+### Basic Configuration
 
 ```python
-from stage1.config import ExtractorConfig
+from chunkana import MarkdownChunker, ChunkConfig
 
-config = ExtractorConfig(
-    # Position tracking
-    include_positions=True,                 # Include line/column positions
-    include_offsets=True,                  # Include character offsets
+# Basic configuration
+config = ChunkConfig(
+    max_chunk_size=4096,
+    min_chunk_size=512,
+    overlap_size=200,
+    include_metadata=True,
+    preserve_atomic_blocks=True
+)
+
+chunker = MarkdownChunker(config)
+```
+
+### Advanced Configuration
+
+```python
+from chunkana import ChunkConfig, AdaptiveSizeConfig, TableGroupingConfig
+
+# Advanced configuration with all features
+config = ChunkConfig(
+    # Size control
+    max_chunk_size=4096,
+    min_chunk_size=512,
+    overlap_size=200,
     
-    # Nesting support
-    handle_nesting=True,                   # Process nested blocks
-    max_nesting_depth=10,                  # Maximum nesting level
-    strict_nesting=False,                  # Strict nesting validation
+    # Strategy control
+    strategy_override=None,  # None = auto-select
+    code_threshold=0.3,
+    structure_threshold=3,
+    list_ratio_threshold=0.40,
+    list_count_threshold=5,
     
-    # Block validation
-    strict_mode=False,                     # Allow malformed blocks
-    require_language=False,                # Require language specification
-    validate_syntax=False,                 # Validate code syntax
+    # Advanced features (not in plugin UI)
+    use_adaptive_sizing=True,
+    adaptive_config=AdaptiveSizeConfig(
+        base_size=1500,
+        min_scale=0.5,
+        max_scale=1.5,
+        code_weight=0.4,
+        table_weight=0.3,
+        list_weight=0.2,
+        sentence_length_weight=0.1
+    ),
     
-    # Language support
-    supported_languages=None,              # None = all languages
-    language_aliases={                     # Language name aliases
-        "js": "javascript",
-        "py": "python",
-        "sh": "bash"
-    },
+    # Code-context binding
+    enable_code_context_binding=True,
+    max_context_chars_before=500,
+    max_context_chars_after=300,
+    bind_output_blocks=True,
+    preserve_before_after_pairs=True,
     
-    # Content processing
-    preserve_indentation=True,             # Keep original indentation
-    normalize_newlines=True,               # Normalize line endings
-    trim_content=False,                    # Trim whitespace from content
+    # Table grouping
+    group_related_tables=True,
+    table_grouping_config=TableGroupingConfig(
+        max_distance_lines=10,
+        max_grouped_tables=5,
+        max_group_size=5000,
+        require_same_section=True
+    ),
+    
+    # Hierarchy
+    enable_hierarchy=False,
+    debug_mode=False,
+    leaf_only=False,
     
     # Performance
-    max_block_size=100000,                 # Maximum block size (chars)
-    enable_caching=True                    # Cache extraction results
+    enable_streaming=False,
+    streaming_config=None
 )
 ```
 
-### DetectorConfig
-
-Configuration for element detection:
+### Configuration Profiles
 
 ```python
-from stage1.config import DetectorConfig
+from chunkana import ChunkConfig
 
-config = DetectorConfig(
-    # Element types to detect
-    detect_headers=True,                   # Detect headers (h1-h6)
-    detect_lists=True,                     # Detect lists
-    detect_tables=True,                    # Detect tables
-    detect_blockquotes=True,               # Detect blockquotes
-    detect_horizontal_rules=True,          # Detect horizontal rules
-    
-    # Header processing
-    generate_anchors=True,                 # Generate anchor IDs
-    build_hierarchy=True,                  # Build header hierarchy
-    normalize_anchors=True,                # Normalize anchor format
-    anchor_prefix="",                      # Prefix for anchors
-    
-    # List processing
-    detect_task_lists=True,                # Detect task lists (checkboxes)
-    normalize_list_markers=True,           # Normalize list markers
-    calculate_nesting=True,                # Calculate nesting levels
-    
-    # Table processing
-    detect_alignment=True,                 # Detect column alignment
-    normalize_tables=True,                 # Normalize table format
-    require_headers=False,                 # Require table headers
-    
-    # Performance
-    max_elements=10000,                    # Maximum elements to detect
-    enable_caching=True                    # Cache detection results
-)
+# Predefined profiles
+config = ChunkConfig.for_code_heavy()      # Code documentation
+config = ChunkConfig.for_dify_rag()        # Matches plugin defaults
+config = ChunkConfig.for_search_indexing() # Search optimization
+config = ChunkConfig.minimal()             # Minimal processing
 ```
 
-### AnalyzerConfig
+## 📊 Parameter Mapping: Plugin → chunkana
 
-Configuration for content analysis:
+### Direct Mappings
+
+| Plugin Parameter | chunkana Config | Notes |
+|------------------|-----------------|-------|
+| `max_chunk_size` | `max_chunk_size` | Direct 1:1 mapping |
+| `chunk_overlap` | `overlap_size` | Plugin caps at 35% of chunk size |
+| `include_metadata` | `include_metadata` | Direct 1:1 mapping |
+| `enable_hierarchy` | `enable_hierarchy` | Direct 1:1 mapping |
+| `debug` | `debug_mode` | Direct 1:1 mapping |
+| `leaf_only` | `leaf_only` | Direct 1:1 mapping |
+
+### Strategy Mapping
+
+| Plugin Value | chunkana Config | Behavior |
+|--------------|-----------------|----------|
+| `auto` | `strategy_override=None` | Automatic selection based on content |
+| `code_aware` | `strategy_override="code_aware"` | Force code-aware strategy |
+| `list_aware` | `strategy_override="list_aware"` | Force list-aware strategy |
+| `structural` | `strategy_override="structural"` | Force structural strategy |
+| `fallback` | `strategy_override="fallback"` | Force fallback strategy |
+
+### Advanced Features (chunkana Only)
+
+Features available only through direct chunkana usage:
 
 ```python
-from stage1.config import AnalyzerConfig
+# Adaptive chunk sizing
+config.use_adaptive_sizing = True
+config.adaptive_config = AdaptiveSizeConfig(...)
 
-config = AnalyzerConfig(
-    # Analysis features
-    analyze_languages=True,                # Detect programming languages
-    detect_patterns=True,                  # Identify document patterns
-    calculate_complexity=True,             # Compute complexity metrics
-    include_readability=True,              # Calculate readability scores
-    analyze_structure=True,                # Analyze document structure
-    
-    # Language detection
-    min_code_block_size=10,               # Minimum size for detection
-    language_confidence_threshold=0.7,     # Confidence threshold
-    detect_inline_code=True,              # Analyze inline code
-    
-    # Complexity calculation
-    complexity_weights={                   # Weights for complexity factors
-        'nesting': 0.3,                   # Nesting depth weight
-        'code_ratio': 0.2,                # Code content weight
-        'structure': 0.3,                 # Structure complexity weight
-        'length': 0.2                     # Document length weight
-    },
-    
-    # Pattern detection
-    pattern_confidence_threshold=0.6,      # Pattern detection threshold
-    detect_api_docs=True,                 # Detect API documentation
-    detect_tutorials=True,                # Detect tutorial format
-    detect_references=True,               # Detect reference manuals
-    
-    # Performance settings
-    max_analysis_time=5.0,                # Maximum analysis time
-    enable_caching=True,                  # Cache analysis results
-    sample_size=None                      # Sample size for large docs (None = all)
-)
+# Code-context binding
+config.enable_code_context_binding = True
+config.preserve_before_after_pairs = True
+
+# Table grouping
+config.group_related_tables = True
+config.table_grouping_config = TableGroupingConfig(...)
+
+# Streaming processing
+config.enable_streaming = True
+config.streaming_config = StreamingConfig(...)
+
+# Custom strategy thresholds
+config.code_threshold = 0.25
+config.list_ratio_threshold = 0.35
 ```
 
 ## 🎯 Configuration Patterns
@@ -238,121 +243,87 @@ config = AnalyzerConfig(
 
 ```python
 import os
-from stage1.config import Stage1Config, ParserConfig
+from chunkana import ChunkConfig
 
-def create_config_from_env() -> Stage1Config:
+def create_config_from_env() -> ChunkConfig:
     """Create configuration from environment variables."""
-    return Stage1Config(
-        parser=ParserConfig(
-            preferred_parser=os.getenv("STAGE1_PARSER", "markdown-it-py"),
-            enable_positions=os.getenv("STAGE1_POSITIONS", "true").lower() == "true",
-            strict_mode=os.getenv("STAGE1_STRICT", "false").lower() == "true"
-        )
+    return ChunkConfig(
+        max_chunk_size=int(os.getenv("CHUNK_SIZE", "4096")),
+        overlap_size=int(os.getenv("CHUNK_OVERLAP", "200")),
+        include_metadata=os.getenv("INCLUDE_METADATA", "true").lower() == "true",
+        strategy_override=os.getenv("STRATEGY_OVERRIDE", None)
     )
 
 config = create_config_from_env()
 ```
 
-### Profile-Based Configuration
+### Content-Adaptive Configuration
 
 ```python
-from stage1.config import Stage1Config
+from chunkana import MarkdownChunker, ChunkConfig
 
-class ConfigProfiles:
-    """Predefined configuration profiles."""
-    
-    @staticmethod
-    def fast_processing() -> Stage1Config:
-        """Configuration optimized for speed."""
-        return Stage1Config(
-            parser=ParserConfig(
-                preferred_parser="mistune",
-                enable_positions=False,
-                enable_caching=True
-            ),
-            analyzer=AnalyzerConfig(
-                analyze_languages=False,
-                calculate_complexity=False,
-                include_readability=False
-            )
-        )
-    
-    @staticmethod
-    def comprehensive_analysis() -> Stage1Config:
-        """Configuration for detailed analysis."""
-        return Stage1Config(
-            parser=ParserConfig(
-                preferred_parser="markdown-it-py",
-                enable_positions=True,
-                strict_mode=True
-            ),
-            analyzer=AnalyzerConfig(
-                analyze_languages=True,
-                detect_patterns=True,
-                calculate_complexity=True,
-                include_readability=True
-            )
-        )
-    
-    @staticmethod
-    def code_focused() -> Stage1Config:
-        """Configuration optimized for code-heavy documents."""
-        return Stage1Config(
-            extractor=ExtractorConfig(
-                handle_nesting=True,
-                validate_syntax=True,
-                preserve_indentation=True
-            ),
-            analyzer=AnalyzerConfig(
-                analyze_languages=True,
-                detect_patterns=False
-            )
-        )
-
-# Use profiles
-config = ConfigProfiles.fast_processing()
-```
-
-### Dynamic Configuration
-
-```python
-from stage1.config import Stage1Config
-from stage1.content_analyzer import analyze_content
-
-def adaptive_config(md_text: str) -> Stage1Config:
+def adaptive_config(md_text: str) -> ChunkConfig:
     """Create configuration based on content analysis."""
-    # Quick analysis with minimal config
-    quick_analysis = analyze_content(md_text)
+    # Quick analysis
+    chunker = MarkdownChunker()
+    analysis = chunker.analyze_content(md_text)
     
-    if quick_analysis.code_ratio > 0.5:
+    if analysis.code_ratio > 0.5:
         # Code-heavy document
-        return Stage1Config(
-            extractor=ExtractorConfig(
-                handle_nesting=True,
-                validate_syntax=True
-            ),
-            analyzer=AnalyzerConfig(
-                analyze_languages=True
-            )
+        return ChunkConfig(
+            max_chunk_size=6144,  # Larger chunks for code
+            strategy_override="code_aware",
+            enable_code_context_binding=True,
+            preserve_before_after_pairs=True
         )
-    elif quick_analysis.complexity_score > 0.7:
-        # Complex document
-        return Stage1Config(
-            detector=DetectorConfig(
-                build_hierarchy=True,
-                generate_anchors=True
-            ),
-            analyzer=AnalyzerConfig(
-                calculate_complexity=True,
-                analyze_structure=True
+    elif analysis.list_ratio > 0.4:
+        # List-heavy document
+        return ChunkConfig(
+            strategy_override="list_aware",
+            list_ratio_threshold=0.35  # Lower threshold
+        )
+    elif analysis.table_count > 3:
+        # Table-heavy document
+        return ChunkConfig(
+            group_related_tables=True,
+            table_grouping_config=TableGroupingConfig(
+                max_distance_lines=15,
+                require_same_section=True
             )
         )
     else:
-        # Simple document
-        return ConfigProfiles.fast_processing()
+        # Standard document
+        return ChunkConfig.for_dify_rag()
 
 # Use adaptive configuration
 config = adaptive_config(markdown_text)
+chunker = MarkdownChunker(config)
+```
+
+### Performance-Optimized Configuration
+
+```python
+# Fast processing (minimal features)
+fast_config = ChunkConfig(
+    max_chunk_size=2048,
+    overlap_size=0,  # No overlap
+    include_metadata=False,
+    strategy_override="fallback",  # Fastest strategy
+    use_adaptive_sizing=False,
+    enable_code_context_binding=False,
+    group_related_tables=False
+)
+
+# Quality processing (all features)
+quality_config = ChunkConfig(
+    max_chunk_size=4096,
+    overlap_size=200,
+    include_metadata=True,
+    use_adaptive_sizing=True,
+    enable_code_context_binding=True,
+    group_related_tables=True,
+    enable_hierarchy=True
+)
 ```
 
 ## 📁 Configuration Files
@@ -361,201 +332,199 @@ config = adaptive_config(markdown_text)
 
 ```python
 import json
-from stage1.config import Stage1Config
+from chunkana import ChunkConfig
 
-def load_config_from_json(file_path: str) -> Stage1Config:
+def load_config_from_json(file_path: str) -> ChunkConfig:
     """Load configuration from JSON file."""
     with open(file_path, 'r') as f:
         config_data = json.load(f)
     
-    return Stage1Config.from_dict(config_data)
+    return ChunkConfig(**config_data)
 
-def save_config_to_json(config: Stage1Config, file_path: str):
-    """Save configuration to JSON file."""
-    with open(file_path, 'w') as f:
-        json.dump(config.to_dict(), f, indent=2)
-
-# Example JSON structure
+# Example JSON configuration
 config_json = {
-    "parser": {
-        "preferred_parser": "markdown-it-py",
-        "enable_positions": True,
-        "strict_mode": False
+    "max_chunk_size": 4096,
+    "overlap_size": 200,
+    "include_metadata": True,
+    "strategy_override": None,
+    "use_adaptive_sizing": True,
+    "enable_code_context_binding": True,
+    "group_related_tables": True,
+    "adaptive_config": {
+        "base_size": 1500,
+        "min_scale": 0.5,
+        "max_scale": 1.5
     },
-    "extractor": {
-        "include_positions": True,
-        "handle_nesting": True,
-        "max_nesting_depth": 10
-    },
-    "detector": {
-        "detect_headers": True,
-        "generate_anchors": True,
-        "build_hierarchy": True
-    },
-    "analyzer": {
-        "analyze_languages": True,
-        "calculate_complexity": True
+    "table_grouping_config": {
+        "max_distance_lines": 10,
+        "require_same_section": True
     }
 }
 ```
 
 ### YAML Configuration
 
-```python
-import yaml
-from stage1.config import Stage1Config
+```yaml
+# chunkana_config.yaml
+max_chunk_size: 4096
+overlap_size: 200
+include_metadata: true
+strategy_override: null
 
-def load_config_from_yaml(file_path: str) -> Stage1Config:
-    """Load configuration from YAML file."""
-    with open(file_path, 'r') as f:
-        config_data = yaml.safe_load(f)
-    
-    return Stage1Config.from_dict(config_data)
+# Advanced features
+use_adaptive_sizing: true
+adaptive_config:
+  base_size: 1500
+  min_scale: 0.5
+  max_scale: 1.5
+  code_weight: 0.4
+  table_weight: 0.3
+  list_weight: 0.2
+  sentence_length_weight: 0.1
 
-# Example YAML file (stage1_config.yaml)
-"""
-parser:
-  preferred_parser: markdown-it-py
-  enable_positions: true
-  strict_mode: false
-  fallback_parsers:
-    - mistune
-    - commonmark
+enable_code_context_binding: true
+max_context_chars_before: 500
+preserve_before_after_pairs: true
 
-extractor:
-  include_positions: true
-  handle_nesting: true
-  max_nesting_depth: 10
-  supported_languages:
-    - python
-    - javascript
-    - bash
+group_related_tables: true
+table_grouping_config:
+  max_distance_lines: 10
+  max_grouped_tables: 5
+  require_same_section: true
 
-detector:
-  detect_headers: true
-  detect_lists: true
-  detect_tables: true
-  generate_anchors: true
-  build_hierarchy: true
-
-analyzer:
-  analyze_languages: true
-  detect_patterns: true
-  calculate_complexity: true
-  complexity_weights:
-    nesting: 0.3
-    code_ratio: 0.2
-    structure: 0.3
-    length: 0.2
-"""
+# Strategy thresholds
+code_threshold: 0.3
+list_ratio_threshold: 0.40
+list_count_threshold: 5
 ```
 
 ## 🔍 Configuration Validation
 
-### Validation Methods
+### Plugin Parameter Validation
 
-```python
-from stage1.config import Stage1Config, ConfigValidationError
+The plugin automatically validates parameters:
 
-try:
-    config = Stage1Config(
-        parser=ParserConfig(preferred_parser="invalid-parser")
-    )
-    config.validate()  # Raises ConfigValidationError
-except ConfigValidationError as e:
-    print(f"Configuration error: {e}")
-
-# Check configuration compatibility
-compatibility = config.check_compatibility()
-if not compatibility.is_valid:
-    print(f"Compatibility issues: {compatibility.issues}")
+```yaml
+# This will be rejected
+config:
+  max_chunk_size: 100  # Too small (minimum 512)
+  chunk_overlap: 2000  # Too large (max 35% of chunk_size)
 ```
 
-### Configuration Merging
+### chunkana Configuration Validation
 
 ```python
-# Merge configurations
-base_config = ConfigProfiles.fast_processing()
-custom_config = Stage1Config(
-    analyzer=AnalyzerConfig(analyze_languages=True)
-)
+from chunkana import ChunkConfig, ConfigValidationError
 
-merged_config = base_config.merge(custom_config)
+try:
+    config = ChunkConfig(
+        max_chunk_size=100,  # Invalid: too small
+        overlap_size=5000    # Invalid: larger than chunk size
+    )
+    config.validate()
+except ConfigValidationError as e:
+    print(f"Configuration error: {e}")
+    print(f"Suggestions: {e.suggestions}")
 ```
 
 ## 📊 Configuration Impact
 
-### Performance Impact
+### Performance Comparison
 
-```python
-from stage1.benchmark import benchmark_config
-
-# Benchmark different configurations
-configs = [
-    ConfigProfiles.fast_processing(),
-    ConfigProfiles.comprehensive_analysis(),
-    ConfigProfiles.code_focused()
-]
-
-results = benchmark_config(configs, test_documents)
-for config_name, metrics in results.items():
-    print(f"{config_name}:")
-    print(f"  Processing time: {metrics.avg_time:.3f}s")
-    print(f"  Memory usage: {metrics.memory_usage}MB")
-    print(f"  Accuracy score: {metrics.accuracy:.2f}")
-```
+| Configuration | Processing Speed | Memory Usage | Feature Completeness |
+|---------------|------------------|--------------|---------------------|
+| Plugin UI (basic) | Fast | Low | Medium |
+| Plugin UI (hierarchical) | Medium | Medium | Medium-High |
+| chunkana (minimal) | Very Fast | Very Low | Low |
+| chunkana (full features) | Medium | Medium | Very High |
 
 ### Feature Matrix
 
-```python
-# Get feature matrix for configuration
-features = config.get_feature_matrix()
-print("Enabled features:")
-for component, component_features in features.items():
-    print(f"  {component}:")
-    for feature, enabled in component_features.items():
-        status = "✓" if enabled else "✗"
-        print(f"    {status} {feature}")
-```
+| Feature | Plugin UI | Direct chunkana |
+|---------|-----------|-----------------|
+| Basic chunking | ✅ | ✅ |
+| Strategy selection | ✅ (5 strategies) | ✅ (5 strategies + custom) |
+| Overlap control | ✅ (capped) | ✅ (full control) |
+| Metadata embedding | ✅ | ✅ |
+| Hierarchical chunking | ✅ (basic) | ✅ (full navigation) |
+| Adaptive sizing | ❌ | ✅ |
+| Code-context binding | ❌ | ✅ |
+| Table grouping | ❌ | ✅ |
+| Streaming processing | ❌ | ✅ |
+| Custom strategies | ❌ | ✅ |
+| Performance monitoring | ❌ | ✅ |
 
 ## 🎯 Best Practices
 
-### Configuration Guidelines
+### Plugin UI Configuration
 
-1. **Start with profiles**: Use predefined profiles as starting points
-2. **Environment-specific**: Create different configs for dev/prod
-3. **Performance vs Features**: Balance features with performance needs
-4. **Validation**: Always validate configurations before use
-5. **Documentation**: Document custom configuration choices
+1. **Start with defaults**: Default parameters work well for most RAG use cases
+2. **Use hierarchical mode carefully**: Only enable when you need parent-child relationships
+3. **Consider chunk_overlap cap**: Plugin caps overlap at 35% of chunk size
+4. **Use leaf_only for vector DB**: Filters out structural headers
+
+### Direct chunkana Configuration
+
+1. **Profile-based approach**: Start with predefined profiles
+2. **Content-adaptive**: Analyze content to choose optimal configuration
+3. **Performance vs features**: Balance processing speed with feature completeness
+4. **Validation**: Always validate configurations before production use
+5. **Environment-specific**: Use different configs for dev/test/prod
 
 ### Common Patterns
 
 ```python
-# Development configuration
-dev_config = Stage1Config(
-    parser=ParserConfig(strict_mode=False),
-    analyzer=AnalyzerConfig(
-        analyze_languages=True,
-        calculate_complexity=True
-    )
+# Development: Full features for testing
+dev_config = ChunkConfig(
+    use_adaptive_sizing=True,
+    enable_code_context_binding=True,
+    group_related_tables=True,
+    debug_mode=True
 )
 
-# Production configuration
-prod_config = Stage1Config(
-    parser=ParserConfig(
-        enable_caching=True,
-        max_parse_time=5.0
-    ),
-    analyzer=AnalyzerConfig(
-        max_analysis_time=3.0,
-        enable_caching=True
-    )
+# Production: Optimized for performance
+prod_config = ChunkConfig(
+    max_chunk_size=2048,
+    overlap_size=100,
+    include_metadata=True,
+    strategy_override=None,  # Auto-select
+    use_adaptive_sizing=False  # Consistent sizing
 )
 
-# Testing configuration
-test_config = Stage1Config(
-    parser=ParserConfig(strict_mode=True),
-    extractor=ExtractorConfig(strict_mode=True),
-    detector=DetectorConfig(require_headers=True)
+# Vector DB indexing: Content chunks only
+vector_config = ChunkConfig(
+    enable_hierarchy=True,
+    leaf_only=True,
+    include_metadata=True,
+    debug_mode=False
 )
+```
+
+## 🆘 Troubleshooting
+
+### Common Configuration Issues
+
+**Issue**: Chunks too large/small
+**Solution**: Adjust `max_chunk_size` or enable adaptive sizing
+
+**Issue**: Missing context between chunks
+**Solution**: Increase `chunk_overlap` (plugin) or `overlap_size` (chunkana)
+
+**Issue**: Code blocks split incorrectly
+**Solution**: Use `strategy: code_aware` or enable code-context binding
+
+**Issue**: Need advanced features
+**Solution**: Use chunkana directly instead of plugin UI
+
+### Configuration Debugging
+
+```python
+# Debug configuration impact
+config = ChunkConfig(debug_mode=True)
+chunker = MarkdownChunker(config)
+result = chunker.chunk(markdown_text, include_analysis=True)
+
+print(f"Strategy used: {result.strategy_used}")
+print(f"Config applied: {result.config_summary}")
+print(f"Performance: {result.processing_time:.3f}s")
 ```

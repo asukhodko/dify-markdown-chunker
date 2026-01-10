@@ -9,11 +9,11 @@ identity:
 
 description:
   human:
-    en_US: Advanced Markdown chunking with structural awareness for better RAG performance. Intelligently splits documents while preserving context and structure.
-    zh_Hans: 具有结构感知的高级 Markdown 分块，提升 RAG 性能。智能分割文档，同时保留上下文和结构。
-    ru_RU: Продвинутое чанкование Markdown с учётом структуры для улучшения RAG. Интеллектуально разделяет документы, сохраняя контекст и структуру.
+    en_US: Advanced Markdown chunking with structural awareness for better RAG performance. Powered by chunkana engine, intelligently splits documents while preserving context and structure.
+    zh_Hans: 具有结构感知的高级 Markdown 分块，提升 RAG 性能。由 chunkana 引擎驱动，智能分割文档，同时保留上下文和结构。
+    ru_RU: Продвинутое чанкование Markdown с учётом структуры для улучшения RAG. Работает на движке chunkana, интеллектуально разделяет документы, сохраняя контекст и структуру.
   llm: |
-    A tool for chunking Markdown documents with structural awareness.
+    A tool for chunking Markdown documents with structural awareness, powered by the chunkana engine.
     
     This tool analyzes Markdown content and intelligently splits it into chunks while preserving document structure,
     maintaining semantic context, supporting configurable chunk size and overlap, and providing rich metadata.

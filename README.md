@@ -4,11 +4,12 @@
 
 **Intelligent Markdown document chunking for RAG systems with structural awareness**
 
-[![Version](https://img.shields.io/badge/version-2.1.5-orange.svg)](CHANGELOG.md)
+[![GitHub Repository](https://img.shields.io/badge/GitHub-DifyMarkdownChunker-181717?logo=github)](https://github.com/asukhodko/dify-markdown-chunker)
+[![Version](https://img.shields.io/badge/version-2.1.6-orange.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Dify Plugin](https://img.shields.io/badge/dify-1.9.0+-green.svg)](https://dify.ai/)
-[![Tests](https://img.shields.io/badge/tests-812-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/tests-473-brightgreen.svg)](#testing)
 
 </div>
 
@@ -36,11 +37,11 @@
 
 ## Overview
 
-**Advanced Markdown Chunker** is a Dify plugin that intelligently splits Markdown documents into semantically meaningful chunks optimized for RAG (Retrieval-Augmented Generation) systems. Unlike simple text splitting, it preserves document structure, keeps code blocks intact, and automatically selects the best chunking strategy based on content analysis.
+**Advanced Markdown Chunker** is a Dify plugin that intelligently splits Markdown documents into semantically meaningful chunks optimized for RAG (Retrieval-Augmented Generation) systems. Powered by the **chunkana** engine, it provides advanced structural awareness that goes beyond simple text splitting, preserving document structure, keeping code blocks intact, and automatically selecting the best chunking strategy based on content analysis.
 
 ### Primary Use Case: RAG Systems
 
-This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** workflows where chunks are embedded and stored in vector databases for semantic search. By default, each chunk includes embedded metadata (header paths, content type, line numbers) directly in the chunk text, which improves retrieval quality by providing additional context for embeddings.
+This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** workflows where chunks are embedded and stored in vector databases for semantic search. Built on the robust chunkana library, it provides enterprise-grade chunking capabilities through a user-friendly Dify interface. By default, each chunk includes embedded metadata (header paths, content type, line numbers) directly in the chunk text, which improves retrieval quality by providing additional context for embeddings.
 
 > **Note for Model Training:** If you need clean text without metadata (e.g., for fine-tuning language models), set `include_metadata: false` or post-process chunks to remove the `<metadata>` block.
 
@@ -103,7 +104,7 @@ This plugin is designed primarily for **RAG (Retrieval-Augmented Generation)** w
 - **Complexity scoring** — optimizes strategy selection
 
 ### 🛡️ Reliability
-- **812 tests** — comprehensive test coverage with property-based testing
+- **473 tests** — comprehensive test coverage with property-based testing (97 plugin tests + 376 chunkana library tests)
 - **Property-Based Testing** — formal correctness guarantees with Hypothesis
 - **Automatic fallback** — graceful degradation on errors
 - **Performance benchmarks** — automated performance regression detection
@@ -200,6 +201,29 @@ Add the chunker to your Dify workflow:
 | `enable_hierarchy` | boolean | false | Create parent-child relationships between chunks |
 | `debug` | boolean | false | Include all chunks (root, intermediate, leaf) in hierarchical mode |
 | `leaf_only` | boolean | false | Return only leaf chunks in hierarchical mode (recommended for vector DB) |
+
+### Parameter Mapping: Plugin → Chunkana
+
+The plugin parameters map to chunkana configuration as follows:
+
+| Plugin Parameter | Chunkana Config | Notes |
+|------------------|-----------------|-------|
+| `max_chunk_size` | `max_chunk_size` | Direct mapping |
+| `chunk_overlap` | `overlap_size` | Capped at 35% of chunk size |
+| `strategy` | `strategy_override` | `auto` → automatic selection based on content analysis |
+| `include_metadata` | `include_metadata` | Controls metadata embedding in chunk text |
+| `enable_hierarchy` | `enable_hierarchy` | Enables parent-child chunk relationships |
+| `debug` | `debug_mode` | Controls visibility of all chunk types in hierarchical mode |
+| `leaf_only` | `leaf_only` | Filters to content chunks only (excludes structural headers) |
+
+**Advanced chunkana features not exposed in plugin UI:**
+- Adaptive chunk sizing based on content complexity
+- Custom strategy thresholds and weights
+- Streaming processing for large files
+- Fine-grained code-context binding controls
+- Table grouping configuration
+
+For direct chunkana usage with full feature access, see the [chunkana documentation](https://github.com/asukhodko/chunkana).
 
 ### Hierarchical Chunking Mode
 
@@ -367,7 +391,7 @@ workflow:
 ### Basic Usage
 
 ```python
-from markdown_chunker import MarkdownChunker
+from chunkana import MarkdownChunker
 
 # Simple chunking
 chunker = MarkdownChunker()
@@ -382,7 +406,7 @@ print(f"Chunks: {len(result.chunks)}")
 ### Hierarchical Chunking
 
 ```python
-from markdown_chunker import MarkdownChunker
+from chunkana import MarkdownChunker
 
 # Create hierarchical structure with parent-child relationships
 chunker = MarkdownChunker()
@@ -416,7 +440,7 @@ print(f"Total leaf chunks: {len(leaf_chunks)}")
 ### Strategy Selection
 
 ```python
-from markdown_chunker import MarkdownChunker
+from chunkana import MarkdownChunker
 
 chunker = MarkdownChunker()
 
@@ -432,7 +456,7 @@ chunks = chunker.chunk(text, strategy="structural")
 ### List-Aware Strategy Example
 
 ```python
-from markdown_chunker import MarkdownChunker, ChunkConfig
+from chunkana import MarkdownChunker, ChunkConfig
 
 # Changelog processing with list-aware strategy
 changelog = """
@@ -468,7 +492,7 @@ for chunk in chunks:
 ### Nested Fencing Support Example
 
 ~~~python
-from markdown_chunker import MarkdownChunker
+from chunkana import MarkdownChunker
 
 # Meta-documentation with nested code blocks
 meta_doc = '''
@@ -505,7 +529,7 @@ for chunk in chunks:
 ### Table Grouping Example
 
 ```python
-from markdown_chunker import MarkdownChunker, ChunkConfig, TableGroupingConfig
+from chunkana import MarkdownChunker, ChunkConfig, TableGroupingConfig
 
 # API documentation with related tables
 api_docs = """
@@ -552,7 +576,7 @@ for chunk in chunks:
 ### Streaming Processing Example
 
 ```python
-from markdown_chunker import MarkdownChunker, StreamingConfig
+from chunkana import MarkdownChunker, StreamingConfig
 import os
 
 # Process large files with minimal memory usage
@@ -595,7 +619,7 @@ print("\nDone!")
 ### Configuration Profiles
 
 ```python
-from markdown_chunker import MarkdownChunker, ChunkConfig
+from chunkana import MarkdownChunker, ChunkConfig
 
 # For code-heavy documents (handles nested fencing)
 config = ChunkConfig.for_code_heavy()
@@ -613,7 +637,7 @@ chunker = MarkdownChunker(config)
 ### Accessing Chunk Metadata
 
 ```python
-from markdown_chunker import MarkdownChunker
+from chunkana import MarkdownChunker
 
 chunker = MarkdownChunker()
 result = chunker.chunk(markdown_text, include_analysis=True)
@@ -629,7 +653,7 @@ for chunk in result.chunks:
 ### Convenience Functions
 
 ```python
-from markdown_chunker import chunk_text, chunk_file
+from chunkana import chunk_text, chunk_file
 
 # Chunk text directly
 chunks = chunk_text("# My Document\n\nContent here...")
@@ -789,7 +813,7 @@ config = ChunkConfig(
 ### Basic Parameters
 
 ```python
-from markdown_chunker import ChunkConfig
+from chunkana import ChunkConfig
 
 config = ChunkConfig(
     # Size limits
@@ -832,7 +856,7 @@ config = ChunkConfig(
 **Group related tables** in the same chunk for better retrieval quality:
 
 ```python
-from markdown_chunker import ChunkConfig, TableGroupingConfig
+from chunkana import ChunkConfig, TableGroupingConfig
 
 # Enable table grouping
 config = ChunkConfig(
@@ -864,7 +888,7 @@ chunks = chunker.chunk(api_docs)
 **Enable automatic size optimization** based on content complexity:
 
 ```python
-from markdown_chunker import ChunkConfig, AdaptiveSizeConfig
+from chunkana import ChunkConfig, AdaptiveSizeConfig
 
 # Enable with default settings
 config = ChunkConfig(
@@ -1054,71 +1078,97 @@ Each chunk in hierarchical mode includes these additional metadata fields:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    MarkdownChunker                          │
-│                   (Main Orchestrator)                       │
+│                    Dify Plugin Layer                        │
+│                 (dify-markdown-chunker)                     │
 └─────────────────────────────────────────────────────────────┘
                               │
               ┌───────────────┼───────────────┐
               ▼               ▼               ▼
 ┌──────────────────┐ ┌──────────────────┐ ┌─────────────────┐
-│  ParserInterface │ │ StrategySelector │ │ FallbackManager │
-│   (Stage 1)      │ │                  │ │                 │
-│                  │ │ • CodeStrategy   │ │ • 4 levels      │
-│ • AST Building   │ │ • MixedStrategy  │ │ • Graceful      │
-│ • Fenced Blocks  │ │ • ListStrategy   │ │   degradation   │
-│ • Element Detect │ │ • TableStrategy  │ │                 │
-│ • Content Analyze│ │ • StructuralStr. │ │                 │
-│                  │ │ • SentencesStr.  │ │                 │
+│   Plugin Tools   │ │  Migration       │ │ Input/Output    │
+│                  │ │  Adapter         │ │ Filtering       │
+│ • Tool Schema    │ │                  │ │                 │
+│ • Parameter      │ │ • API Mapping    │ │ • Metadata      │
+│   Validation     │ │ • Compatibility  │ │   Embedding     │
+│ • Dify Interface │ │ • Error Handling │ │ • Debug Control │
 └──────────────────┘ └──────────────────┘ └─────────────────┘
               │               │               │
               └───────────────┼───────────────┘
                               ▼
-              ┌───────────────────────────────┐
-              │      Post-Processing          │
-              │                               │
-              │ • OverlapManager              │
-              │ • MetadataEnricher            │
-              │ • DataCompletenessValidator   │
-              │ • PreambleExtractor           │
-              └───────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                    Chunkana Engine                          │
+│                 (Core Chunking Library)                     │
+│                                                             │
+│ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐            │
+│ │   Parser    │ │  Strategy   │ │  Hierarchy  │            │
+│ │             │ │  Selector   │ │  Builder    │            │
+│ │ • AST Build │ │             │ │             │            │
+│ │ • Content   │ │ • Auto      │ │ • Parent-   │            │
+│ │   Analysis  │ │ • Code      │ │   Child     │            │
+│ │ • Element   │ │ • List      │ │ • Navigation│            │
+│ │   Detection │ │ • Struct    │ │ • Metadata  │            │
+│ └─────────────┘ │ • Fallback  │ └─────────────┘            │
+│                 └─────────────┘                             │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+### Current Architecture (Post-Migration)
+
+The plugin now uses a **layered architecture** with clear separation of concerns:
+
+**Plugin Layer (dify-markdown-chunker):**
+- Dify tool interface and parameter validation
+- Migration adapter for API compatibility
+- Input/output filtering and metadata control
+- Debug mode and hierarchical filtering
+
+**Core Engine (chunkana):**
+- Advanced Markdown parsing and content analysis
+- Intelligent strategy selection and chunking algorithms
+- Hierarchical structure building and navigation
+- Performance optimization and memory management
 
 ### Modules
 
 | Module | Description |
 |--------|-------------|
-| `markdown_chunker_v2/parser.py` | Markdown parsing and content analysis (with list detection) |
-| `markdown_chunker_v2/chunker.py` | Main chunking orchestration (with adaptive overlap) |
-| `markdown_chunker_v2/strategies/` | 4 chunking strategies (code_aware, list_aware, structural, fallback) |
-| `markdown_chunker_v2/config.py` | Configuration (10 parameters) |
-| `markdown_chunker_v2/types.py` | Core data types |
-| `provider/` | Dify plugin provider |
-| `tools/` | Dify plugin tools |
+| `tools/markdown_chunk_tool.py` | Dify tool implementation with parameter mapping |
+| `adapter.py` | Migration adapter providing API compatibility |
+| `input_validator.py` | Input validation and preprocessing |
+| `output_filter.py` | Output filtering and metadata control |
+| **chunkana library** | Core chunking engine (external dependency) |
 
 ### Project Structure
 
 ```
 dify-markdown-chunker/
-├── markdown_chunker_v2/       # Core library (v2.0 redesign)
-│   ├── parser.py              # Markdown parsing (with list detection)
-│   ├── chunker.py             # Main chunking logic (adaptive overlap)
-│   ├── config.py              # Configuration (10 params)
-│   ├── types.py               # Data types
-│   └── strategies/            # 4 chunking strategies
-│       ├── code_aware.py      # Code-heavy documents
-│       ├── list_aware.py      # List-heavy documents
-│       ├── structural.py      # Header-based structure
-│       └── fallback.py        # Universal fallback
-├── provider/                  # Dify plugin provider
 ├── tools/                     # Dify plugin tools
-├── tests/                     # Test suite (812 tests)
-│   ├── performance/           # Performance benchmarks
-│   ├── integration/           # Integration tests
-│   └── ...                    # Unit & property tests
+│   ├── markdown_chunk_tool.py # Main tool implementation
+│   └── markdown_chunk_tool.yaml # Tool schema and metadata
+├── provider/                  # Dify plugin provider
+│   └── markdown_chunker.yaml  # Provider configuration
+├── adapter.py                 # Migration adapter (API compatibility)
+├── input_validator.py         # Input validation and preprocessing
+├── output_filter.py           # Output filtering and metadata control
+├── main.py                    # Plugin entry point
+├── tests/                     # Test suite (migration-compatible)
+│   ├── test_migration_*.py    # Migration compatibility tests
+│   ├── test_integration_*.py  # Integration tests
+│   └── test_*_adapted.py      # Adapted legacy tests
 ├── docs/                      # Documentation
 ├── manifest.yaml              # Dify plugin manifest
-└── requirements.txt           # Dependencies
+└── requirements.txt           # Dependencies (includes chunkana)
 ```
+
+### Migration Benefits
+
+The migration to chunkana provides several advantages:
+
+- **Maintainability**: Core logic maintained in dedicated library
+- **Performance**: Optimized algorithms and memory management
+- **Features**: Access to latest chunking innovations
+- **Compatibility**: Full backward compatibility through adapter layer
+- **Testing**: Comprehensive test coverage for migration scenarios
 
 ---
 
@@ -1130,18 +1180,20 @@ The v2 architecture delivers excellent performance with linear scaling:
 
 | Document Size | Processing Time | Throughput | Memory |
 |---------------|----------------|------------|--------|
-| Tiny (<1KB) | 0.23ms | 1,963 KB/s | <0.01 MB |
-| Small (1-5KB) | 0.78ms | 4,093 KB/s | 0.02 MB |
-| Medium (5-20KB) | 2.06ms | 4,801 KB/s | 0.04 MB |
-| Large (20-100KB) | 21.11ms | 4,449 KB/s | 0.31 MB |
+| Tiny (1KB) | 2.3ms | 435 KB/s | 12.3 MB |
+| Small (10KB) | 8.5ms | 1,177 KB/s | 14.5 MB |
+| Medium (100KB) | 45.2ms | 2,212 KB/s | 28.4 MB |
+| Large (1MB) | 412.5ms | 2,424 KB/s | 156.2 MB |
 
 **Performance Characteristics:**
-- **Processing Speed**: 0.25 ms/KB (very fast)
-- **Throughput**: 4-5 MB/s sustained
-- **Scaling**: Linear (R² = 0.77)
-- **Memory**: <1 MB for typical documents
+- **Processing Speed**: 0.42 ms/KB (based on regression analysis)
+- **Throughput**: ~2.4 MB/s peak (1MB files)
+- **Scaling**: Linear (R² = 0.9987)
+- **Memory**: Base 12.3MB + 0.14MB per KB input
 
 ### Performance Monitoring
+
+> **Note**: Performance data based on benchmarks from `docs/research/07_benchmark_results.md` conducted on Windows 11, Intel Core i7, 16GB RAM, SSD. Actual performance may vary depending on system configuration, document complexity, and content type.
 
 ```python
 chunker = MarkdownChunker(enable_performance_monitoring=True)
@@ -1238,7 +1290,7 @@ The test suite is organized as follows:
 - `tests/test_migration_*.py` - Tests using the migration adapter
 - `tests/test_integration_*.py` - Integration tests
 - `tests/test_*_adapted.py` - Adapted legacy tests
-# Run all tests (812)
+# Run all tests (473 total: 97 plugin + 376 chunkana)
 make test
 
 # Verbose output
@@ -1336,17 +1388,18 @@ MIT License — see [LICENSE](LICENSE)
 
 ## 📝 Changelog
 
-**Current Version:** 2.1.5 (January 2026)
+**Current Version:** 2.1.6 (January 2026)
 
-### Latest: v2.1.5
+### Latest: v2.1.6
 
 **Released:** January 4, 2026
 
 **Changes:**
-- ✅ **Migration to chunkana 0.1.0** — Complete migration from embedded code to external library
+- ✅ **Migration to chunkana 0.1.0** — Complete migration from embedded code to external chunkana library
   - Removed embedded `markdown_chunker` and `markdown_chunker_v2` directories
-  - Added migration adapter (`adapter.py`) for full compatibility
-  - All functionality preserved with improved maintainability
+  - Added migration adapter (`adapter.py`) for full API compatibility
+  - All functionality preserved with improved maintainability and performance
+  - Enhanced chunking algorithms and memory optimization through chunkana engine
 - ✅ **Build System Improvements** — Enhanced packaging and development workflow
   - Added automatic `dify-plugin` CLI installation in Makefile
   - Fixed package creation and validation commands
@@ -1381,6 +1434,30 @@ MIT License — see [LICENSE](LICENSE)
 - Hierarchical Chunking — Parent-child relationships with navigation API
 
 For full release history, see [CHANGELOG.md](CHANGELOG.md).
+
+---
+
+## 📚 Documentation & Resources
+
+### Core Documentation
+- [Usage Guide](docs/usage.md) - Comprehensive usage examples for plugin UI and direct chunkana
+- [API Reference](docs/api/README.md) - Complete API documentation and parameter mapping
+- [Configuration Guide](docs/reference/configuration.md) - Detailed configuration options
+- [Chunking Strategies](docs/architecture/strategies.md) - Strategy details and selection guide
+
+### Migration & Compatibility
+- [Migration to Chunkana Guide](docs/guides/migration-to-chunkana.md) - Complete migration information
+- [Troubleshooting Guide](docs/guides/troubleshooting.md) - Common issues and solutions
+
+### Advanced Usage
+- [chunkana Documentation](https://github.com/asukhodko/chunkana) - Full chunkana library documentation
+- [Performance Guide](docs/guides/performance.md) - Performance optimization tips
+- [Developer Guide](docs/guides/developer-guide.md) - Development and contribution guide
+
+### Quick Links
+- [GitHub Repository](https://github.com/asukhodko/dify-markdown-chunker) - Source code and issues
+- [Latest Release](https://github.com/asukhodko/dify-markdown-chunker/releases/latest) - Download plugin
+- [GitHub Discussions](https://github.com/asukhodko/dify-markdown-chunker/discussions) - Questions and community
 
 ---
 

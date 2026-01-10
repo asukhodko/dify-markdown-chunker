@@ -55,7 +55,7 @@ The system follows a two-stage architecture:
 - `FencedBlockExtractor`: Extracts fenced code blocks
 - `PreambleExtractor`: Extracts document preamble/metadata
 
-**Output:** `Stage1Results` containing:
+**Output:** `ChunkingResult` containing:
 - AST (Abstract Syntax Tree)
 - Content analysis metrics
 - Detected elements (code, lists, tables, headers)
@@ -221,7 +221,7 @@ Create a new file in `markdown_chunker/chunker/strategies/`:
 
 from typing import List
 from ..types import Chunk, ChunkConfig
-from ...parser.types import Stage1Results
+from chunkana import ChunkingResult
 from .base import BaseStrategy
 
 
@@ -257,7 +257,7 @@ class MyStrategy(BaseStrategy):
     def apply(
         self,
         text: str,
-        stage1_results: Stage1Results,
+        chunking_result: ChunkingResult,
         config: ChunkConfig
     ) -> List[Chunk]:
         """
@@ -265,7 +265,7 @@ class MyStrategy(BaseStrategy):
         
         Args:
             text: Original markdown text
-            stage1_results: Results from Stage 1 analysis
+            chunking_result: Results from chunkana analysis
             config: Chunking configuration
         
         Returns:
@@ -367,10 +367,10 @@ class TestMyStrategy:
 Content for testing.
 """
         
-        stage1_results = parser.process_document(text)
+        chunking_result = parser.process_document(text)
         config = ChunkConfig()
         
-        chunks = strategy.apply(text, stage1_results, config)
+        chunks = strategy.apply(text, chunking_result, config)
         
         assert len(chunks) > 0
         assert all(isinstance(c, Chunk) for c in chunks)

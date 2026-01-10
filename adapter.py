@@ -1,24 +1,26 @@
 #!/usr/bin/env python3
-"""Migration adapter for dify-markdown-chunker to chunkana 0.1.3.
+"""Migration adapter for dify-markdown-chunker to chunkana engine.
 
-This adapter provides compatibility layer between the plugin's tool interface
-and the chunkana library, ensuring exact behavioral compatibility.
+This adapter provides a compatibility layer between the plugin's tool interface
+and the chunkana library, ensuring exact behavioral compatibility while leveraging
+the advanced chunking capabilities of the chunkana engine.
 
-CRITICAL CHANGE in 0.1.3:
-- Chunking and rendering are now SEPARATE stages
-- _perform_chunking() does NOT depend on include_metadata
-- Boundaries are INVARIANT to include_metadata parameter
+Key Responsibilities:
+- Parameter mapping from plugin UI to chunkana configuration
+- Input validation and preprocessing
+- Output filtering and formatting (metadata embedding, hierarchy filtering)
+- Backward compatibility with legacy plugin behavior
+- Error handling and graceful degradation
 
-New in chunkana 0.1.3:
-- SectionSplitter with header_stack repetition
-- InvariantValidator with recall-based coverage
-- Pipeline order fix: dangling fix → section split
-- Removed section_integrity oversize reason
+Architecture:
+- Two-stage processing: chunking (boundary-invariant) + rendering (formatting)
+- Boundary invariance: chunk boundaries don't depend on include_metadata
+- Configurable output filtering for different use cases (RAG, vector DB, etc.)
+- Migration adapter pattern for seamless library transition
 
-New in chunkana 0.1.2:
-- Universal dangling header fix (all sections)
-- section_tags recalculation after post-processing
-- header_moved_from_id tracking with chunk_id (stable)
+Author: asukhodko
+Version: 2.1.5 (chunkana integration)
+Date: 2026-01-10
 """
 
 import json
@@ -39,15 +41,31 @@ MarkdownChunker = None  # Will be set after MigrationAdapter is defined
 
 
 class MigrationAdapter:
-    """Adapter to migrate from embedded markdown_chunker to chunkana 0.1.3.
+    """Adapter to migrate from embedded chunking code to chunkana engine.
 
-    CRITICAL: Chunking and rendering are separate stages.
-    - _perform_chunking(): Single path, does NOT depend on include_metadata
-    - _render_chunks(): Only formatting, does NOT modify boundaries
+    This adapter provides a seamless transition from the plugin's legacy embedded
+    chunking code to the external chunkana library while maintaining full backward
+    compatibility.
 
-    Features enabled by default:
-    - validate_invariants=True: Validates tree structure in hierarchical mode
-    - strict_mode=False: Auto-fixes issues instead of raising exceptions
+    Key Features:
+    - Two-stage processing: chunking (boundary-invariant) + rendering (formatting)
+    - Parameter mapping from plugin UI to chunkana configuration
+    - Input validation and output filtering
+    - Hierarchical chunking support with configurable filtering
+    - Metadata embedding control for different output formats
+
+    Processing Pipeline:
+    1. Input validation and preprocessing
+    2. Parameter mapping to chunkana configuration
+    3. Chunking stage (boundary-invariant, independent of output format)
+    4. Rendering stage (format-dependent, metadata embedding)
+    5. Output filtering (hierarchy filtering, debug control)
+
+    Compatibility:
+    - Maintains exact behavioral compatibility with pre-migration versions
+    - Supports all plugin UI parameters
+    - Preserves chunk boundaries and content structure
+    - Provides enhanced features through chunkana engine
     """
 
     def __init__(self, leaf_only: bool = False) -> None:

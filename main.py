@@ -1,14 +1,21 @@
 """Dify Plugin Entry Point for Advanced Markdown Chunker
 
 This module serves as the entry point for the Dify plugin that provides
-advanced markdown chunking capabilities for Knowledge Base ingestion.
+advanced markdown chunking capabilities powered by the chunkana engine.
 
-The plugin wraps the markdown_chunker library and exposes it as a Dify Tool
-that can be used in Knowledge Base processing pipelines.
+The plugin wraps the chunkana library through a migration adapter and exposes 
+it as a Dify Tool that can be used in Knowledge Base processing pipelines.
+
+Key Features:
+- Intelligent strategy selection (code-aware, list-aware, structural, fallback)
+- Structure-preserving chunking (code blocks, tables, lists intact)
+- Hierarchical chunking with parent-child relationships
+- Configurable chunk size and overlap
+- Rich metadata embedding for improved RAG performance
 
 Author: asukhodko
-Version: 2.0.0
-Date: 2025-11-22
+Version: 2.1.5 (chunkana-powered)
+Date: 2026-01-10
 """
 
 from dify_plugin import Plugin, DifyPluginEnv
