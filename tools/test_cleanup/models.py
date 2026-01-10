@@ -4,12 +4,13 @@ Core data models for test cleanup system.
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Dict, Optional, Any
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 
 class TestType(Enum):
     """Types of tests identified in the test suite."""
+
     UNIT = "unit"
     INTEGRATION = "integration"
     PERFORMANCE = "performance"
@@ -20,6 +21,7 @@ class TestType(Enum):
 
 class TestCategory(Enum):
     """Categories for test processing decisions."""
+
     REDUNDANT = "redundant"
     VALUABLE = "valuable"
     UNIQUE = "unique"
@@ -29,6 +31,7 @@ class TestCategory(Enum):
 @dataclass
 class TestAnalysis:
     """Analysis results for a single test file."""
+
     file_path: str
     imports: List[str]
     test_functions: List[str]
@@ -38,7 +41,7 @@ class TestAnalysis:
     complexity_score: float
     has_legacy_imports: bool = False
     line_count: int = 0
-    
+
     @property
     def file_name(self) -> str:
         """Get the file name without path."""
@@ -48,10 +51,11 @@ class TestAnalysis:
 @dataclass
 class TestFile:
     """Represents a test file with its metadata."""
+
     path: str
     analysis: TestAnalysis
     category: TestCategory
-    
+
     @property
     def name(self) -> str:
         """Get the file name without path."""
@@ -61,24 +65,28 @@ class TestFile:
 @dataclass
 class TestCategorization:
     """Results of test categorization process."""
+
     redundant_tests: List[TestFile]
     valuable_tests: List[TestFile]
     unique_tests: List[TestFile]
     performance_tests: List[TestFile]
     property_tests: List[TestFile]
     migration_compatible_tests: List[TestFile]
-    
+
     @property
     def total_legacy_tests(self) -> int:
         """Total number of legacy tests analyzed."""
-        return (len(self.redundant_tests) + len(self.valuable_tests) + 
-                len(self.unique_tests))
-    
+        return (
+            len(self.redundant_tests)
+            + len(self.valuable_tests)
+            + len(self.unique_tests)
+        )
+
     @property
     def tests_to_remove(self) -> List[TestFile]:
         """Tests marked for removal."""
         return self.redundant_tests
-    
+
     @property
     def tests_to_adapt(self) -> List[TestFile]:
         """Tests that need adaptation."""
@@ -88,6 +96,7 @@ class TestCategorization:
 @dataclass
 class CodeChange:
     """Represents a code change made during adaptation."""
+
     line_number: int
     old_code: str
     new_code: str
@@ -97,6 +106,7 @@ class CodeChange:
 @dataclass
 class AdaptationPlan:
     """Plan for adapting a legacy test to new architecture."""
+
     original_file: str
     adapted_file: str
     import_changes: Dict[str, str]
@@ -108,6 +118,7 @@ class AdaptationPlan:
 @dataclass
 class RemovedTest:
     """Information about a removed test."""
+
     file_path: str
     test_functions: List[str]
     removal_reason: str
@@ -117,6 +128,7 @@ class RemovedTest:
 @dataclass
 class AdaptedTest:
     """Information about an adapted test."""
+
     original_path: str
     adapted_path: str
     changes_made: List[str]
@@ -127,6 +139,7 @@ class AdaptedTest:
 @dataclass
 class CoverageGap:
     """Represents a gap in test coverage."""
+
     functionality: str
     description: str
     severity: str  # "critical", "important", "minor"
@@ -136,11 +149,12 @@ class CoverageGap:
 @dataclass
 class CoverageReport:
     """Test coverage analysis results."""
+
     before_cleanup: Dict[str, float]
     after_cleanup: Dict[str, float]
     coverage_gaps: List[CoverageGap]
     coverage_improvements: List[str] = field(default_factory=list)
-    
+
     @property
     def coverage_change_percent(self) -> float:
         """Calculate overall coverage change percentage."""
@@ -154,6 +168,7 @@ class CoverageReport:
 @dataclass
 class Recommendation:
     """A recommendation for improving the test suite."""
+
     category: str
     priority: str  # "high", "medium", "low"
     description: str
@@ -163,6 +178,7 @@ class Recommendation:
 @dataclass
 class CleanupSummary:
     """Summary statistics for the cleanup operation."""
+
     total_legacy_tests: int
     tests_removed: int
     tests_adapted: int
@@ -174,13 +190,14 @@ class CleanupSummary:
 @dataclass
 class CleanupReport:
     """Comprehensive report of the cleanup operation."""
+
     summary: CleanupSummary
     removed_tests: List[RemovedTest]
     adapted_tests: List[AdaptedTest]
     coverage_changes: CoverageReport
     recommendations: List[Recommendation]
     errors_encountered: List[str] = field(default_factory=list)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert report to dictionary for serialization."""
         return {
@@ -214,7 +231,9 @@ class CleanupReport:
             "coverage_changes": {
                 "before_cleanup": self.coverage_changes.before_cleanup,
                 "after_cleanup": self.coverage_changes.after_cleanup,
-                "coverage_change_percent": self.coverage_changes.coverage_change_percent,
+                "coverage_change_percent": (
+                    self.coverage_changes.coverage_change_percent
+                ),
                 "coverage_gaps": [
                     {
                         "functionality": gap.functionality,
@@ -241,10 +260,11 @@ class CleanupReport:
 @dataclass
 class DuplicateReport:
     """Report of duplicate test detection."""
+
     duplicate_pairs: List[tuple[str, str]]  # (legacy_test, migration_test)
     redundant_files: List[str]
     unique_coverage_areas: List[str]
-    
+
     @property
     def total_duplicates(self) -> int:
         """Total number of duplicate test pairs found."""
@@ -254,6 +274,7 @@ class DuplicateReport:
 @dataclass
 class RemovalReport:
     """Report of test removal operations."""
+
     removed_files: List[str]
     preserved_assertions: Dict[str, List[str]]  # file -> assertions
     makefile_updates: List[str]
@@ -263,6 +284,7 @@ class RemovalReport:
 @dataclass
 class AdaptationReport:
     """Report of test adaptation operations."""
+
     adapted_files: List[str]
     adaptation_plans: List[AdaptationPlan]
     successful_adaptations: List[str]
@@ -273,6 +295,7 @@ class AdaptationReport:
 @dataclass
 class ValidationResult:
     """Result of test suite validation."""
+
     all_tests_pass: bool
     failed_tests: List[str]
     execution_time: float
@@ -284,15 +307,20 @@ class ValidationResult:
 @dataclass
 class ChangeReport:
     """Report of all changes made during cleanup."""
+
     removed_tests: List[RemovedTest] = field(default_factory=list)
     adapted_tests: List[AdaptedTest] = field(default_factory=list)
     makefile_changes: List[str] = field(default_factory=list)
     pytest_config_changes: List[str] = field(default_factory=list)
     documentation_changes: List[str] = field(default_factory=list)
-    
+
     @property
     def total_changes(self) -> int:
         """Total number of changes made."""
-        return (len(self.removed_tests) + len(self.adapted_tests) + 
-                len(self.makefile_changes) + len(self.pytest_config_changes) +
-                len(self.documentation_changes))
+        return (
+            len(self.removed_tests)
+            + len(self.adapted_tests)
+            + len(self.makefile_changes)
+            + len(self.pytest_config_changes)
+            + len(self.documentation_changes)
+        )

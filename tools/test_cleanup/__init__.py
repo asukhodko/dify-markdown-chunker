@@ -7,22 +7,31 @@ after migration to the Chunkana library.
 
 __version__ = "1.0.0"
 
+from .analyzer import CoverageAnalyzer, ImportAnalyzer, TestAnalyzer, TestCategorizer
+from .config import CleanupConfig
+from .logging_setup import LoggerMixin, get_logger, setup_logging
 from .models import (
-    TestAnalysis,
-    TestCategorization,
     AdaptationPlan,
     CleanupReport,
-    TestType,
     CoverageReport,
+    TestAnalysis,
+    TestCategorization,
+    TestType,
 )
-
-from .config import CleanupConfig
-from .logging_setup import setup_logging, get_logger, LoggerMixin
-from .analyzer import TestAnalyzer, ImportAnalyzer, CoverageAnalyzer, TestCategorizer
-from .processor import TestProcessor, RedundancyDetector, TestAdapter, FileManager
-from .updater import InfrastructureUpdater, MakefileUpdater, PytestConfigUpdater, DocumentationUpdater
-from .reporter import ReportGenerator, CoverageReporter, ChangeLogger, RecommendationEngine
 from .orchestrator import CleanupOrchestrator
+from .processor import FileManager, RedundancyDetector, TestAdapter, TestProcessor
+from .reporter import (
+    ChangeLogger,
+    CoverageReporter,
+    RecommendationEngine,
+    ReportGenerator,
+)
+from .updater import (
+    DocumentationUpdater,
+    InfrastructureUpdater,
+    MakefileUpdater,
+    PytestConfigUpdater,
+)
 
 # Components will be imported as they are implemented
 # from .processor import TestProcessor
@@ -32,7 +41,7 @@ from .orchestrator import CleanupOrchestrator
 
 __all__ = [
     "TestAnalysis",
-    "TestCategorization", 
+    "TestCategorization",
     "AdaptationPlan",
     "CleanupReport",
     "TestType",
