@@ -36,6 +36,7 @@ htmlcov/
 # Backup files
 *.backup
 *.bak
+.backup/
 
 .hypothesis/
 
@@ -52,3 +53,25 @@ manual_testing/
 tests/performance/results/
 *.log
 benchmark_output.log
+
+# Temporary migration and cleanup files
+analyze_*.py
+cleanup_*.py
+fix_*.py
+final_*.py
+run_*_test*.py
+test_*_simple.py
+test_*_compatibility.py
+preview_*.py
+quick_test.py
+
+# Temporary status and analysis files
+MIGRATION_*.md
+TEST_*_COMPLETE.md
+TEST_COMMANDS_*.md
+TESTING.md
+WORK_SUMMARY.md
+FACT_CHECK_*.md
+
+# MyPy cache
+.mypy_cache/

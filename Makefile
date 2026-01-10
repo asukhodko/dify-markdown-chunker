@@ -1,14 +1,17 @@
-.PHONY: test lint clean install test-quick validate package validate-package release help test-verbose test-coverage format benchmark demo quality-check install-dify-plugin
+.PHONY: test lint clean clean-all install test-quick validate package validate-package release help test-verbose test-coverage format benchmark demo quality-check install-dify-plugin venv setup
 
 # Python from venv
 PYTHON = venv/bin/python3.12
+PIP = venv/bin/pip
 
 help:
 	@echo "Dify Markdown Chunker - Development Commands (Post-Migration)"
 	@echo "=============================================================="
 	@echo ""
 	@echo "Setup:"
-	@echo "  make install         - Install dependencies"
+	@echo "  make venv            - Create Python virtual environment"
+	@echo "  make setup           - Create venv and install all dependencies"
+	@echo "  make install         - Install dependencies (requires existing venv)"
 	@echo "  make install-dev     - Install with dev tools (linters, formatters)"
 	@echo "  make install-dify-plugin - Install dify-plugin CLI"
 	@echo ""
@@ -34,9 +37,31 @@ help:
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean           - Clean temporary files"
+	@echo "  make clean-all       - Clean everything including venv"
 	@echo ""
 	@echo "Note: This plugin now uses chunkana==0.1.1 library via migration adapter."
 	@echo "      Legacy embedded code has been removed. Repository contains only working tests."
+
+# Virtual environment setup
+venv:
+	@echo "Creating Python virtual environment..."
+	@if [ ! -d "venv" ]; then \
+		python3.12 -m venv venv; \
+		echo "✅ Virtual environment created"; \
+	else \
+		echo "✅ Virtual environment already exists"; \
+	fi
+	@echo "To activate: source venv/bin/activate"
+
+setup: venv install install-dev
+	@echo ""
+	@echo "🎉 Development environment setup complete!"
+	@echo "Virtual environment created and all dependencies installed."
+	@echo ""
+	@echo "To get started:"
+	@echo "  source venv/bin/activate  # Activate the environment"
+	@echo "  make test                 # Run tests"
+	@echo "  make demo                 # Try the demo"
 
 test:
 	@echo "Running all tests..."
@@ -145,12 +170,25 @@ clean:
 	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
 	@echo "✅ Cleaned"
 
+clean-all: clean
+	@echo "Cleaning everything including virtual environment..."
+	@rm -rf venv/
+	@echo "✅ Virtual environment removed"
+
 install:
 	@echo "Installing dependencies..."
-	@$(PYTHON) -m pip install -r requirements.txt
+	@if [ ! -d "venv" ]; then \
+		echo "❌ Virtual environment not found. Run 'make venv' first."; \
+		exit 1; \
+	fi
+	@$(PIP) install --upgrade pip
+	@$(PIP) install -r requirements.txt
+	@echo "✅ Dependencies installed"
 
 install-dev: install
-	@echo "All dependencies (including dev tools) installed"
+	@echo "Installing development tools..."
+	@$(PIP) install black isort flake8 mypy pytest-cov
+	@echo "✅ All dependencies (including dev tools) installed"
 	@echo "✅ Ready for development"
 
 test-quick:

@@ -5,60 +5,110 @@
 venv/
 .venv/
 env/
-test_migration_env
+test_migration_env/
 
 # Python cache (MUST exclude)
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.mypy_cache/
 
-# Test files
+# Test files and testing infrastructure
 tests/
 *.test.py
 .pytest_cache/
 .coverage
 htmlcov/
+.tox/
+.hypothesis/
 
-# Documentation - exclude all .md except specific ones
+# Test cleanup tools (development only)
+tools/test_cleanup/
+
+# Documentation - exclude development docs, keep essential ones
 docs/
 CHANGELOG.md
 CONTRIBUTING.md
 DEVELOPMENT.md
 
+# Backup files
 *.backup
 *.bak
+.backup/
 
-# Development scripts
+# Development and build scripts
 validate_*.py
 package.sh
 package_official.sh
 create_package.py
-
-# Development config
-pytest.ini
+run_test.sh
+test_package_contents.sh
 Makefile
+
+# Development configuration
+pytest.ini
 .env.example
+.flake8
 
 # Build artifacts
 *.difypkg
+dist/
+build/
 
-# IDE
+# IDE and editor files
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-.hypothesis/
+# Version control
+.git/
+.github/
+.gitignore
 
-.git
-.github
+# Kiro specifications and tooling
+.kiro/
+.qoder/
 
-# All hidden files and directories
-.*
+# Temporary migration and cleanup files (prevent accidental inclusion)
+analyze_*.py
+cleanup_*.py
+fix_*.py
+final_*.py
+run_*_test*.py
+test_*_simple.py
+test_*_compatibility.py
+preview_*.py
+quick_test.py
 
-# Legacy lib
-markdown_chunker_legacy
-markdown_chunker_v1
+# Temporary status and analysis files
+MIGRATION_*.md
+TEST_*_COMPLETE.md
+TEST_COMMANDS_*.md
+TESTING.md
+WORK_SUMMARY.md
+FACT_CHECK_*.md
 
+# Legacy directories (if they exist)
+markdown_chunker_legacy/
+markdown_chunker_v1/
 manual_testing/
+
+# Log files
+*.log
+*.out
+
+# Performance benchmark results
+benchmark_output.log
+
+# Keep only essential files for plugin functionality:
+# - manifest.yaml (plugin definition)
+# - main.py (entry point)
+# - adapter.py, input_validator.py, output_filter.py (core components)
+# - provider/ (Dify provider configuration)
+# - tools/ (plugin tools, excluding test_cleanup)
+# - _assets/ (plugin assets like icon)
+# - README.md and PRIVACY.md (required by Dify)
+# - requirements.txt (dependencies)

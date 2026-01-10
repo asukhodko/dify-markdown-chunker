@@ -5,7 +5,7 @@
 **Intelligent Markdown document chunking for RAG systems with structural awareness**
 
 [![GitHub Repository](https://img.shields.io/badge/GitHub-DifyMarkdownChunker-181717?logo=github)](https://github.com/asukhodko/dify-markdown-chunker)
-[![Version](https://img.shields.io/badge/version-2.1.6-orange.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1.7-orange.svg)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Dify Plugin](https://img.shields.io/badge/dify-1.9.0+-green.svg)](https://dify.ai/)
