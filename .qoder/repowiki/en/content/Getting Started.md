@@ -4,155 +4,222 @@
 **Referenced Files in This Document**   
 - [README.md](file://README.md)
 - [requirements.txt](file://requirements.txt)
-- [installation.md](file://docs/installation.md)
-- [quickstart.md](file://docs/quickstart.md)
-- [usage.md](file://docs/usage.md)
-- [basic_usage.py](file://examples/basic_usage.py)
+- [Makefile](file://Makefile)
 - [manifest.yaml](file://manifest.yaml)
-- [main.py](file://main.py)
+- [provider/markdown_chunker.py](file://provider/markdown_chunker.py)
+- [provider/markdown_chunker.yaml](file://provider/markdown_chunker.yaml)
 - [tools/markdown_chunk_tool.py](file://tools/markdown_chunk_tool.py)
+- [tools/markdown_chunk_tool.yaml](file://tools/markdown_chunk_tool.yaml)
+- [main.py](file://main.py)
+- [adapter.py](file://adapter.py)
 </cite>
 
 ## Table of Contents
 1. [Installation](#installation)
-2. [Environment Setup](#environment-setup)
-3. [Quick Start Example](#quick-start-example)
-4. [Configuration and ChunkingResult](#configuration-and-chunkingresult)
-5. [Common Setup Issues and Troubleshooting](#common-setup-issues-and-troubleshooting)
+2. [Usage Modes](#usage-modes)
+3. [Configuration Basics](#configuration-basics)
+4. [Execution Flow](#execution-flow)
+5. [Common Initial Issues](#common-initial-issues)
 
 ## Installation
 
-The dify-markdown-chunker.qoder library can be installed through multiple methods depending on your use case. The primary installation methods are via pip for Python library usage or direct repository installation for development and Dify plugin integration.
+The dify-markdown-chunker-1 tool can be installed through package manager or direct cloning. The installation process requires Python 3.12 or higher and uses standard Python packaging tools.
 
-For Python library installation, you can install directly from the repository:
-
+To install via direct cloning:
 ```bash
-# Install from source
+# Clone the repository
 git clone https://github.com/asukhodko/dify-markdown-chunker.git
 cd dify-markdown-chunker
-pip install -e .
-```
 
-For Dify plugin installation, download the `.difypkg` file from the [Releases](https://github.com/asukhodko/dify-markdown-chunker/releases) page and upload it through the Dify interface under Settings → Plugins → Install Plugin. This method is recommended for users who want to integrate the chunker into Dify workflows without managing Python dependencies directly.
-
-**Section sources**
-- [README.md](file://README.md#L75-L87)
-- [installation.md](file://docs/installation.md#L55-L60)
-
-## Environment Setup
-
-Before using the dify-markdown-chunker.qoder library, ensure your environment meets the requirements. The library requires Python 3.12 or higher, as specified in the manifest.yaml file. This version requirement ensures compatibility with the latest language features and dependency requirements.
-
-After cloning the repository, create a virtual environment to isolate the dependencies:
-
-```bash
 # Create virtual environment
 python -m venv venv
-source venv/bin/activate  # Linux/Mac: venv\Scripts\activate on Windows
-```
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-Install the required dependencies using the provided requirements.txt file:
-
-```bash
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-The requirements.txt file contains all necessary dependencies including `dify_plugin==0.5.0b15`, `markdown-it-py>=3.0.0`, `pydantic>=2.0.0`, and other core packages needed for the chunker to function properly. Development dependencies can be installed with `pip install -e ".[dev]"` for contributors who need testing and code quality tools.
+The requirements.txt file specifies the core dependencies including dify_plugin>=0.7.0, chunkana>=0.1.6, and various Markdown processing libraries. Development dependencies like black, isort, flake8, and mypy are optional and can be installed separately for code quality checks.
+
+For Dify plugin installation, download the .difypkg file from Releases and upload it through Dify's plugin interface under Settings → Plugins → Install Plugin. The plugin requires Dify version 1.9.0 or higher to function properly.
+
+The Makefile provides convenient commands for development tasks. Key commands include:
+- `make setup`: Creates virtual environment and installs all dependencies
+- `make install`: Installs dependencies (requires existing venv)
+- `make install-dev`: Installs with development tools
+- `make test`: Runs all tests
+- `make lint`: Runs linter on adapter and tools
+- `make format`: Formats code with black
+- `make clean`: Cleans temporary files
+- `make clean-all`: Cleans everything including venv
 
 **Section sources**
-- [README.md](file://README.md#L95-L103)
-- [requirements.txt](file://requirements.txt#L1-L21)
-- [manifest.yaml](file://manifest.yaml#L38)
+- [README.md](file://README.md#L138-L168)
+- [requirements.txt](file://requirements.txt#L1-L22)
+- [Makefile](file://Makefile#L1-L196)
 
-## Quick Start Example
+## Usage Modes
 
-Let's walk through a complete example that demonstrates basic chunking of a simple Markdown document. This example shows the input, configuration, and expected output when using the library.
+The dify-markdown-chunker-1 tool can be used in three primary modes: as a Dify plugin, as a Python library, and via command-line interface.
 
+### As a Dify Plugin
+
+The tool is designed to integrate with Dify workflows through the manifest.yaml configuration. The plugin is defined in manifest.yaml with the entrypoint pointing to main.py. The plugin structure follows Dify's plugin architecture with provider/markdown_chunker.yaml defining the tool provider and tools/markdown_chunk_tool.yaml defining the specific tool.
+
+To use in a Dify workflow:
+```yaml
+- node: chunk_markdown
+  type: tool
+  tool: advanced_markdown_chunker
+  config:
+    max_chunk_size: 2048
+    strategy: auto
+    chunk_overlap: 100
+    include_metadata: true
+```
+
+The plugin parameters are defined in tools/markdown_chunk_tool.yaml and include input_text (required), max_chunk_size, chunk_overlap, strategy, include_metadata, enable_hierarchy, debug, and leaf_only. These parameters map to the underlying chunkana library configuration through the MigrationAdapter in adapter.py.
+
+### As a Python Library
+
+The tool can be used directly as a Python library by importing the chunkana functions. The adapter.py file provides a compatibility layer that exposes the chunkana library through a familiar interface.
+
+Basic usage:
 ```python
-from markdown_chunker import MarkdownChunker
+from chunkana import MarkdownChunker
 
-# Simple chunking with default configuration
+# Simple chunking
 chunker = MarkdownChunker()
-markdown = """# My Document
+chunks = chunker.chunk("# Hello\n\nWorld")
 
-This is an introduction paragraph with some text content.
+# With analysis
+result = chunker.chunk("# Hello\n\nWorld", include_analysis=True)
+print(f"Strategy: {result.strategy_used}")
+print(f"Chunks: {len(result.chunks)}")
+```
 
-## Section 1
-
-Here's some content in section 1.
-
+Convenience functions are also available:
 ```python
-def hello():
-    return "world"
+from chunkana import chunk_text, chunk_file
+
+# Chunk text directly
+chunks = chunk_text("# My Document\n\nContent here...")
+
+# Chunk from file
+chunks = chunk_file("README.md")
 ```
 
-## Section 2
+### Via Command-Line Interface
 
-More content in section 2."""
+The tool can be used through the command-line interface via tools/markdown_chunk_tool.py. This script implements the Tool class for the Advanced Markdown Chunker plugin and processes input through the MigrationAdapter.
 
-chunks = chunker.chunk(markdown)
-```
-
-This example demonstrates the core API usage pattern from examples/basic_usage.py. The MarkdownChunker class is instantiated without any configuration, using the default settings. The `chunk()` method processes the input Markdown text and returns a list of chunks. Each chunk preserves structural elements like headers and code blocks, ensuring that code blocks remain intact as atomic units and header hierarchy is maintained.
-
-For more detailed analysis, you can use the `chunk_with_analysis()` method which returns a ChunkingResult object containing additional metadata about the chunking process, including the strategy used, processing time, and any fallbacks that were applied.
+The command-line tool accepts parameters through the tool_parameters dictionary and yields results as ToolInvokeMessage objects. The processing pipeline includes input validation, parameter mapping to chunkana configuration, chunking through the adapter, and output formatting.
 
 **Section sources**
-- [basic_usage.py](file://examples/basic_usage.py#L14-L48)
-- [README.md](file://README.md#L181-L192)
+- [manifest.yaml](file://manifest.yaml#L1-L49)
+- [provider/markdown_chunker.yaml](file://provider/markdown_chunker.yaml#L1-L23)
+- [tools/markdown_chunk_tool.yaml](file://tools/markdown_chunk_tool.yaml#L1-L178)
+- [adapter.py](file://adapter.py#L1-L352)
+- [tools/markdown_chunk_tool.py](file://tools/markdown_chunk_tool.py#L1-L126)
 
-## Configuration and ChunkingResult
+## Configuration Basics
 
-The minimal configuration needed to run the chunker consists of creating a MarkdownChunker instance with optional ChunkConfig parameters. The default configuration works for most use cases, but you can customize behavior through the ChunkConfig class.
+The tool's behavior is controlled through configuration parameters that can be set at different levels. The default configuration is defined in the tool parameters with max_chunk_size defaulting to 4096 characters, chunk_overlap to 200 characters, strategy to "auto", and include_metadata to true.
 
-The ChunkingResult output provides comprehensive information about the chunking process. When using `include_analysis=True`, the result includes:
+The configuration is managed through the MigrationAdapter class in adapter.py which maps plugin parameters to chunkana library configuration. Key configuration options include:
 
-- `strategy_used`: The chunking strategy that was applied
-- `processing_time`: Time taken to process the document
-- `fallback_used`: Whether fallback strategies were needed
-- `chunks`: List of generated chunks with metadata
-- Various statistics like total characters, line count, and complexity score
+- **max_chunk_size**: Maximum size of each chunk in characters
+- **chunk_overlap**: Characters to overlap between chunks
+- **strategy**: Chunking strategy (auto, code_aware, list_aware, structural, fallback)
+- **include_metadata**: Whether to embed metadata in chunk text
+- **enable_hierarchy**: Whether to create parent-child relationships between chunks
+- **debug**: Debug mode to include all chunks
+- **leaf_only**: Whether to return only leaf chunks in hierarchical mode
 
-Each chunk in the result contains properties such as content, start_line, end_line, size, content_type, and strategy. The metadata includes additional context-specific information like programming language for code blocks, list types, or table dimensions. This rich metadata helps in downstream processing, especially in RAG systems where context preservation is critical.
+The tool uses a two-stage processing pipeline: chunking (boundary-invariant) and rendering (formatting). This ensures that chunk boundaries do not depend on include_metadata, maintaining consistency across different output formats.
 
-Configuration profiles are available for common use cases:
-- `ChunkConfig.for_code_heavy()` - Optimized for code documentation
-- `ChunkConfig.for_dify_rag()` - Tailored for Dify RAG systems
-- `ChunkConfig.for_search_indexing()` - Designed for search applications
-
-**Section sources**
-- [basic_usage.py](file://examples/basic_usage.py#L50-L93)
-- [README.md](file://README.md#L370-L388)
-- [tools/markdown_chunk_tool.py](file://tools/markdown_chunk_tool.py#L130-L137)
-
-## Common Setup Issues and Troubleshooting
-
-New users may encounter several common setup issues when getting started with the dify-markdown-chunker.qoder library. Understanding these issues and their solutions can help ensure a smooth onboarding experience.
-
-One frequent issue is the "ModuleNotFoundError: No module named 'markdown_chunker'" error. This typically occurs when the virtual environment is not activated or dependencies are not properly installed. Ensure you've activated your virtual environment with `source venv/bin/activate` (or `venv\Scripts\activate` on Windows) and installed dependencies with `pip install -r requirements.txt`.
-
-Another common problem is import errors due to incorrect import statements. Use the correct imports from the markdown_chunker package:
-```python
-# Correct
-from markdown_chunker import MarkdownChunker
-
-# Incorrect
-from stage1 import process_markdown
-```
-
-For Dify plugin users, "Plugin package is invalid" errors may occur if the wrong `.difypkg` file is downloaded or if there's a version compatibility issue with Dify. Ensure you're using Dify version 1.9.0 or higher, as specified in the manifest.yaml file.
-
-When using the library programmatically, configuration issues can arise from incorrect parameter usage. Always use the ChunkConfig class to set parameters rather than passing them directly to the chunker. For example:
-```python
-from markdown_chunker import ChunkConfig
-config = ChunkConfig(max_chunk_size=2048)
-chunker = MarkdownChunker(config)
-```
-
-For development environments, test failures may occur if development dependencies are missing. Install them with `pip install -e ".[dev]"` and run tests with `make test` to verify your setup.
+Configuration profiles are available for different use cases:
+- `for_code_heavy()`: For code-heavy documents
+- `for_dify_rag()`: For Dify RAG systems
+- `for_search_indexing()`: For search indexing
 
 **Section sources**
-- [installation.md](file://docs/installation.md#L128-L158)
-- [quickstart.md](file://docs/quickstart.md#L244-L268)
-- [test_dependencies.py](file://tests/test_dependencies.py#L15-L94)
-- [test_entry_point.py](file://tests/test_entry_point.py#L15-L240)
+- [tools/markdown_chunk_tool.yaml](file://tools/markdown_chunk_tool.yaml#L38-L167)
+- [adapter.py](file://adapter.py#L94-L119)
+- [README.md](file://README.md#L207-L225)
+
+## Execution Flow
+
+The execution flow of the dify-markdown-chunker-1 tool begins with the main.py entry point, which is specified in manifest.yaml as the entrypoint. The main.py file creates a Plugin instance with a 300-second timeout and runs it when executed directly.
+
+The execution flow proceeds as follows:
+1. main.py creates a Plugin instance and calls its run() method
+2. The plugin loads the tool provider from provider/markdown_chunker.py
+3. The tool provider manages the Advanced Markdown Chunker tool
+4. When the tool is invoked, tools/markdown_chunk_tool.py processes the request
+5. The tool extracts parameters and creates a MigrationAdapter instance
+6. The adapter builds chunker configuration and runs chunking
+7. Results are formatted and returned through the plugin interface
+
+The MigrationAdapter in adapter.py serves as a compatibility layer between the plugin interface and the chunkana library. It handles parameter mapping, input validation, and output formatting. The adapter uses a two-stage processing pipeline: chunking (which is boundary-invariant) and rendering (which depends on include_metadata).
+
+The chunking process preserves document structure including headers, code blocks, tables, and lists. The tool automatically selects the optimal strategy based on content analysis, with four available strategies: Code-Aware, List-Aware, Structural, and Fallback.
+
+**Section sources**
+- [main.py](file://main.py#L1-L38)
+- [provider/markdown_chunker.py](file://provider/markdown_chunker.py#L1-L36)
+- [tools/markdown_chunk_tool.py](file://tools/markdown_chunk_tool.py#L1-L126)
+- [adapter.py](file://adapter.py#L43-L352)
+
+## Common Initial Issues
+
+Common initial issues when using the dify-markdown-chunker-1 tool typically relate to environment setup, dependency resolution, and basic invocation patterns.
+
+### Environment Setup
+
+Ensure Python 3.12 or higher is installed and a virtual environment is created. The Makefile provides a convenient setup command:
+```bash
+make setup
+```
+
+This creates a virtual environment and installs all dependencies. Verify the installation by running tests:
+```bash
+make test
+```
+
+### Dependency Resolution
+
+The tool depends on several packages specified in requirements.txt. If encountering dependency issues, ensure pip is up to date:
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+For development, install additional tools:
+```bash
+make install-dev
+```
+
+### Basic Invocation Patterns
+
+When using as a Dify plugin, ensure the input_text parameter is provided and not empty. The tool will return an error if input_text is missing or empty.
+
+When using as a Python library, import from chunkana and use the provided functions:
+```python
+from chunkana import chunk_text, chunk_file
+chunks = chunk_text("Your markdown content")
+```
+
+For command-line usage, ensure the correct parameters are passed to the tool. The tool parameters are validated before processing, and appropriate error messages are returned for invalid inputs.
+
+Common configuration mistakes include:
+- Setting chunk_overlap too high, which can lead to excessive context duplication
+- Using inappropriate chunking strategies for the content type
+- Not considering the impact of include_metadata on downstream processing
+- Overlooking the hierarchical chunking options when they would be beneficial
+
+**Section sources**
+- [test_entry_point.py](file://tests/test_entry_point.py#L1-L240)
+- [test_manifest.py](file://tests/test_manifest.py#L1-L185)
+- [README.md](file://README.md#L152-L168)
+- [Makefile](file://Makefile#L1-L196)

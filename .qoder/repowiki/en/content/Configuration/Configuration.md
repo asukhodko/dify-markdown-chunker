@@ -2,742 +2,784 @@
 
 <cite>
 **Referenced Files in This Document**   
-- [markdown_chunker_v2/config.py](file://markdown_chunker_v2/config.py)
-- [markdown_chunker_v2/types.py](file://markdown_chunker_v2/types.py)
-- [markdown_chunker/chunker/types.py](file://markdown_chunker/chunker/types.py)
-- [markdown_chunker_legacy/chunker/types.py](file://markdown_chunker_legacy/chunker/types.py)
-- [examples/basic_usage.py](file://examples/basic_usage.py)
-- [examples/api_usage.py](file://examples/api_usage.py)
-- [examples/dify_integration.py](file://examples/dify_integration.py)
-- [tests/chunker/test_config_profiles.py](file://tests/chunker/test_config_profiles.py)
-- [tests/chunker/test_chunk_config_validation.py](file://tests/chunker/test_chunk_config_validation.py)
-- [docs/architecture/dify-integration.md](file://docs/architecture/dify-integration.md)
-- [docs/reference/configuration.md](file://docs/reference/configuration.md)
-- [markdown_chunker_v2/adaptive_sizing.py](file://markdown_chunker_v2/adaptive_sizing.py)
-- [docs/guides/adaptive-sizing-migration.md](file://docs/guides/adaptive-sizing-migration.md)
-- [docs/api/config.md](file://docs/api/config.md)
+- [markdown_chunker.yaml](file://provider/markdown_chunker.yaml)
+- [markdown_chunk_tool.yaml](file://tools/markdown_chunk_tool.yaml)
+- [adapter.py](file://adapter.py)
+- [input_validator.py](file://input_validator.py)
+- [output_filter.py](file://output_filter.py)
+- [configuration.md](file://docs/reference/configuration.md)
+- [performance.md](file://docs/guides/performance.md)
+- [debug-explain-mode.md](file://docs/research/features/10-debug-explain-mode.md)
 </cite>
-
-## Update Summary
-**Changes Made**   
-- Added new section on Adaptive Sizing Configuration to document the new adaptive chunk sizing feature
-- Added new section on Adaptive Sizing Profiles to document configuration profiles for adaptive sizing
-- Updated Core Configuration Parameters section to include new adaptive sizing parameters
-- Updated Configuration Profiles section to include adaptive sizing profiles
-- Updated Best Practices section to include tuning recommendations for adaptive sizing
-- Updated Troubleshooting section to include issues related to adaptive sizing
-- Added new section on Adaptive Sizing Behavior and Metadata to document behavior changes and new metadata fields
 
 ## Table of Contents
 1. [Introduction](#introduction)
-2. [Configuration Architecture](#configuration-architecture)
+2. [Configuration System Overview](#configuration-system-overview)
 3. [Core Configuration Parameters](#core-configuration-parameters)
 4. [Configuration Profiles](#configuration-profiles)
-5. [Adaptive Sizing Configuration](#adaptive-sizing-configuration)
-6. [Adaptive Sizing Profiles](#adaptive-sizing-profiles)
-7. [Validation System](#validation-system)
-8. [Context-Specific Configurations](#context-specific-configurations)
-9. [Adaptive Sizing Behavior and Metadata](#adaptive-sizing-behavior-and-metadata)
-10. [Best Practices](#best-practices)
-11. [Troubleshooting](#troubleshooting)
-12. [Migration Guide](#migration-guide)
+5. [YAML Configuration Format](#yaml-configuration-format)
+6. [Configuration Validation](#configuration-validation)
+7. [Advanced Configuration Settings](#advanced-configuration-settings)
+8. [Performance Tuning](#performance-tuning)
+9. [Best Practices](#best-practices)
+10. [Practical Examples](#practical-examples)
 
 ## Introduction
 
-The Markdown chunker provides a sophisticated configuration system that allows fine-tuned control over how markdown documents are split into semantic chunks. The configuration system balances simplicity with flexibility, offering both manual parameter tuning and pre-configured profiles for common use cases.
+The dify-markdown-chunker-1 configuration system provides a flexible and powerful way to control the behavior of the Markdown chunking process. The system supports both simple UI-based configuration through Dify tool parameters and advanced direct configuration through the underlying chunkana library. This document details all configurable parameters, configuration profiles for different document types, the YAML-based configuration format, validation mechanisms, and practical examples for various use cases.
 
-The configuration system operates at two levels:
-- **V2 Configuration**: Simplified 8-parameter system for modern usage
-- **Legacy Configuration**: Comprehensive 32-parameter system for backward compatibility
+**Section sources**
+- [configuration.md](file://docs/reference/configuration.md#L1-L530)
 
-Both systems share the same core validation logic while providing different interfaces for different use cases.
+## Configuration System Overview
 
-## Configuration Architecture
+The configuration system operates at two levels: the Dify plugin UI level and the direct chunkana library level. The plugin UI provides a simplified interface with essential parameters, while direct library usage exposes advanced features for fine-grained control.
 
-The configuration system is built around the `ChunkConfig` dataclass, which encapsulates all chunking behavior parameters. The architecture follows a layered approach:
+The configuration process follows a migration adapter pattern, where the `MigrationAdapter` class in `adapter.py` translates plugin parameters into chunkana configuration objects. This ensures backward compatibility while leveraging the advanced capabilities of the chunkana engine.
+
+The system uses a two-stage processing pipeline:
+1. **Chunking stage**: Boundary-invariant processing that determines chunk boundaries
+2. **Rendering stage**: Format-dependent processing that applies metadata embedding and output formatting
+
+This separation ensures that chunk boundaries remain consistent regardless of output formatting options like metadata inclusion.
+
+```mermaid
+graph TD
+A[Input Parameters] --> B[MigrationAdapter]
+B --> C[ChunkerConfig]
+C --> D[Chunking Stage]
+D --> E[Raw Chunks]
+E --> F[Rendering Stage]
+F --> G[Final Output]
+```
+
+**Diagram sources **
+- [adapter.py](file://adapter.py#L151-L155)
+
+**Section sources**
+- [adapter.py](file://adapter.py#L1-L352)
+- [configuration.md](file://docs/reference/configuration.md#L1-L530)
+
+## Core Configuration Parameters
+
+The configuration system exposes several key parameters that control the chunking behavior, including chunk size limits, strategy thresholds, metadata options, and streaming settings.
+
+### Chunk Size and Overlap Parameters
+
+The system provides parameters to control the size of chunks and the overlap between consecutive chunks:
+
+| Parameter | Type | Default | Range | Description |
+|---------|------|---------|-------|-------------|
+| `max_chunk_size` | number | 4096 | 512-16384 | Maximum chunk size in characters |
+| `chunk_overlap` | number | 200 | 0-35% of chunk_size | Overlap between consecutive chunks |
+
+The `max_chunk_size` parameter sets the upper limit for chunk size, while `chunk_overlap` controls the amount of context preserved between chunks. The overlap is capped at 35% of the chunk size to prevent excessive duplication.
+
+### Chunking Strategy Parameters
+
+The system supports multiple chunking strategies that can be selected based on document characteristics:
+
+| Parameter | Type | Default | Options | Description |
+|---------|------|---------|---------|-------------|
+| `strategy` | select | auto | auto, code_aware, list_aware, structural, fallback | Strategy for chunking the document |
+
+The `auto` strategy automatically detects the best approach based on content analysis, while specific strategies preserve different document structures:
+- `code_aware`: Preserves code blocks and their context
+- `list_aware`: Preserves list hierarchy and nesting
+- `structural`: Uses header-based segmentation
+- `fallback`: Simple splitting without structural awareness
+
+### Metadata and Output Control Parameters
+
+Several parameters control metadata inclusion and output formatting:
+
+| Parameter | Type | Default | Description |
+|---------|------|---------|-------------|
+| `include_metadata` | boolean | true | Embed metadata in chunk text |
+| `enable_hierarchy` | boolean | false | Create parent-child relationships between chunks |
+| `debug` | boolean | false | Include all chunk types (root, intermediate, leaf) |
+| `leaf_only` | boolean | false | Return only leaf chunks (content only, no headers) |
+
+When `include_metadata` is enabled, chunks include a metadata block with information like content type, header path, and line numbers. The `enable_hierarchy` parameter creates a hierarchical structure with navigation metadata, while `leaf_only` filters out structural headers for vector database indexing.
 
 ```mermaid
 classDiagram
 class ChunkConfig {
 +int max_chunk_size
-+int min_chunk_size
 +int overlap_size
-+bool preserve_atomic_blocks
-+bool extract_preamble
-+float code_threshold
-+int structure_threshold
-+Optional[str] strategy_override
-+bool use_adaptive_sizing
-+Optional[AdaptiveSizeConfig] adaptive_config
-+__post_init__()
-+from_legacy(**kwargs)
-+default()
-+for_code_heavy()
-+for_structured()
-+minimal()
++str strategy_override
++bool include_metadata
++bool enable_hierarchy
++bool debug_mode
++bool leaf_only
++dict adaptive_config
++dict table_grouping_config
 }
-class ValidationSystem {
-+validate_size_parameters()
-+validate_thresholds()
-+validate_strategy_override()
-+auto_adjust_defaults()
-+validate_adaptive_sizing_params()
+class FilterConfig {
++bool leaf_only
++bool add_indexable
 }
-class ProfileFactory {
-+for_code_heavy()
-+for_structured()
-+for_dify_rag()
-+for_fast_processing()
-+minimal()
-+with_adaptive_sizing()
-+for_code_heavy_adaptive()
-+for_text_heavy_adaptive()
+class MigrationAdapter {
+-dict _config_defaults
+-OutputFilter _output_filter
+-InputValidator _input_validator
++ChunkerConfig build_chunker_config(max_chunk_size, chunk_overlap, strategy)
++tuple parse_tool_flags(include_metadata, enable_hierarchy, debug, leaf_only)
++list[str] run_chunking(input_text, config, include_metadata, enable_hierarchy, debug)
 }
-class LegacyAdapter {
-+param_mapping
-+removed_params
-+from_legacy(**kwargs)
-}
-ChunkConfig --> ValidationSystem : validates
-ChunkConfig --> ProfileFactory : creates profiles
-ChunkConfig --> LegacyAdapter : converts legacy
+MigrationAdapter --> ChunkConfig : "creates"
+MigrationAdapter --> FilterConfig : "uses"
+MigrationAdapter --> InputValidator : "uses"
 ```
 
-**Diagram sources**
-- [markdown_chunker_v2/config.py](file://markdown_chunker_v2/config.py#L12-L170)
+**Diagram sources **
+- [adapter.py](file://adapter.py#L94-L119)
+- [output_filter.py](file://output_filter.py#L16-L22)
 
 **Section sources**
-- [markdown_chunker_v2/config.py](file://markdown_chunker_v2/config.py#L12-L170)
-
-## Core Configuration Parameters
-
-### Size Parameters
-
-The size parameters control the fundamental chunking behavior:
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `max_chunk_size` | int | 4096 | Maximum size of a chunk in characters |
-| `min_chunk_size` | int | 512 | Minimum size of a chunk in characters |
-| `overlap_size` | int | 200 | Size of overlap between chunks (0 = disabled) |
-
-**Key Behaviors:**
-- Chunks automatically adjust when `min_chunk_size > max_chunk_size`
-- Overlap size must be less than `max_chunk_size`
-- Zero overlap disables overlap functionality
-
-### Behavioral Parameters
-
-These parameters control chunking behavior:
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `preserve_atomic_blocks` | bool | True | Keep code blocks and tables intact |
-| `extract_preamble` | bool | True | Extract content before first header as preamble |
-
-**Key Behaviors:**
-- Atomic blocks (code, tables) are never split across chunks
-- Preamble extraction improves semantic coherence for some document types
-
-### Strategy Selection Parameters
-
-Parameters that influence strategy selection:
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `code_threshold` | float | 0.3 | Code ratio threshold for CodeAwareStrategy |
-| `structure_threshold` | int | 3 | Minimum headers for StructuralStrategy |
-
-**Key Behaviors:**
-- Code threshold determines when code-focused strategies activate
-- Structure threshold influences when structural analysis is prioritized
-
-### Strategy Override
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `strategy_override` | Optional[str] | None | Force specific strategy (code_aware, structural, fallback) |
-
-### Adaptive Sizing Parameters
-
-New parameters for the adaptive sizing feature:
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `use_adaptive_sizing` | bool | False | Enable adaptive chunk sizing based on content complexity |
-| `adaptive_config` | Optional[AdaptiveSizeConfig] | None | Configuration for adaptive sizing behavior (auto-created with defaults if use_adaptive_sizing=True) |
-
-**Key Behaviors:**
-- When `use_adaptive_sizing` is True, chunk sizes are automatically adjusted based on content complexity
-- `adaptive_config` uses default values if not provided when adaptive sizing is enabled
-- Adaptive sizing considers code ratio, table ratio, list ratio, and sentence length to determine optimal chunk size
-
-**Section sources**
-- [markdown_chunker_v2/config.py](file://markdown_chunker_v2/config.py#L31-L46)
-- [markdown_chunker_v2/adaptive_sizing.py](file://markdown_chunker_v2/adaptive_sizing.py#L14-L85)
+- [markdown_chunk_tool.yaml](file://tools/markdown_chunk_tool.yaml#L38-L167)
+- [configuration.md](file://docs/reference/configuration.md#L30-L45)
 
 ## Configuration Profiles
 
-The configuration system provides factory methods for common use cases, each optimized for specific document types and processing requirements.
+The system supports configuration profiles optimized for different document types and use cases. These profiles adjust parameters to handle specific content characteristics effectively.
 
-### Available Profiles
+### Code-Heavy Documents
 
-#### Code-Heavy Documents
-```python
-config = ChunkConfig.for_code_heavy()
-# Optimized for technical documentation
-# - max_chunk_size: 8192
-# - min_chunk_size: 1024
-# - overlap_size: 100
-# - code_threshold: 0.2
+For documents with significant code content, such as technical documentation or source code files, the following configuration is recommended:
+
+```yaml
+config:
+  max_chunk_size: 6144
+  chunk_overlap: 200
+  strategy: code_aware
+  include_metadata: true
+  enable_code_context_binding: true
+  preserve_before_after_pairs: true
 ```
 
-#### Structured Documents
-```python
-config = ChunkConfig.for_structured()
-# Balanced approach for well-structured content
-# - max_chunk_size: 4096
-# - min_chunk_size: 512
-# - overlap_size: 200
-# - structure_threshold: 2
+This profile uses larger chunk sizes to accommodate complete code blocks, enables code-aware strategy to preserve code structure, and activates code context binding to maintain relationships between code and explanatory text.
+
+### List-Heavy Documents
+
+For documents dominated by lists, such as changelogs or feature lists, use:
+
+```yaml
+config:
+  strategy: list_aware
+  list_ratio_threshold: 0.35
+  max_chunk_size: 4096
+  chunk_overlap: 100
 ```
 
-#### Minimal Configuration
-```python
-config = ChunkConfig.minimal()
-# Small chunks for testing/debugging
-# - max_chunk_size: 1024
-# - min_chunk_size: 256
-# - overlap_size: 50
+This configuration lowers the list ratio threshold to trigger list-aware processing earlier and preserves list hierarchy across chunk boundaries.
+
+### Scientific and Technical Documents
+
+For scientific documents with mathematical formulas, tables, and complex structures:
+
+```yaml
+config:
+  max_chunk_size: 4096
+  chunk_overlap: 200
+  strategy: structural
+  group_related_tables: true
+  table_grouping_config:
+    max_distance_lines: 15
+    require_same_section: true
+  use_adaptive_sizing: true
+  adaptive_config:
+    base_size: 1500
+    min_scale: 0.5
+    max_scale: 1.5
+    code_weight: 0.4
+    table_weight: 0.3
+    list_weight: 0.2
 ```
 
-### Profile Comparison
+This profile enables table grouping to keep related tables together, uses adaptive sizing to adjust chunk size based on content complexity, and preserves structural relationships.
 
-| Profile | Max Size | Min Size | Overlap | Code Thresh | Use Case |
-|---------|----------|----------|---------|-------------|----------|
-| `for_code_heavy()` | 8192 | 1024 | 100 | 0.2 | API docs, tutorials |
-| `for_structured()` | 4096 | 512 | 200 | 3 | Documentation sites |
-| `minimal()` | 1024 | 256 | 50 | N/A | Testing, development |
+### GitHub READMEs and Technical Documentation
+
+For processing GitHub README files and similar technical documentation:
+
+```yaml
+config:
+  max_chunk_size: 4096
+  chunk_overlap: 200
+  strategy: auto
+  include_metadata: true
+  enable_hierarchy: true
+  leaf_only: true
+```
+
+This configuration enables hierarchical chunking to capture the document structure while returning only leaf chunks for vector database indexing, ensuring that only content chunks are stored.
 
 **Section sources**
-- [markdown_chunker_v2/config.py](file://markdown_chunker_v2/config.py#L142-L170)
-- [tests/chunker/test_config_profiles.py](file://tests/chunker/test_config_profiles.py#L6-L69)
+- [configuration.md](file://docs/reference/configuration.md#L271-L296)
+- [performance.md](file://docs/guides/performance.md#L73-L83)
 
-## Adaptive Sizing Configuration
+## YAML Configuration Format
 
-The adaptive sizing feature automatically adjusts chunk sizes based on content complexity, using the `AdaptiveSizeConfig` class to control the behavior.
+The configuration system uses a YAML-based format for both the plugin definition and tool parameters. The primary configuration files are `markdown_chunker.yaml` and `markdown_chunk_tool.yaml`.
 
-### AdaptiveSizeConfig Parameters
+### Plugin Configuration (markdown_chunker.yaml)
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `base_size` | int | 1500 | Base chunk size for medium complexity content |
-| `min_scale` | float | 0.5 | Minimum scaling factor (for simple text) |
-| `max_scale` | float | 1.5 | Maximum scaling factor (for complex code) |
-| `code_weight` | float | 0.4 | Weight for code ratio in complexity calculation |
-| `table_weight` | float | 0.3 | Weight for table ratio in complexity calculation |
-| `list_weight` | float | 0.2 | Weight for list ratio in complexity calculation |
-| `sentence_length_weight` | float | 0.1 | Weight for sentence length in complexity calculation |
+The main plugin configuration file defines the plugin identity and references the tool configuration:
 
-**Key Behaviors:**
-- Complexity score is calculated as a weighted sum of content factors (0.0 = simple, 1.0 = complex)
-- Scale factor is linearly interpolated between min_scale and max_scale based on complexity
-- Adaptive size = base_size × scale_factor, constrained by min/max scale
-- All weights must sum to 1.0 (±0.001 tolerance)
+```yaml
+identity:
+  author: asukhodko
+  name: markdown_chunker
+  label:
+    en_US: Advanced Markdown Chunker
+    zh_Hans: 高级 Markdown 分块器
+    ru_RU: Продвинутый Markdown чанкер
+  description:
+    en_US: Advanced Markdown chunking powered by chunkana library with structural awareness for better RAG performance
+    zh_Hans: 基于 chunkana 库的高级 Markdown 分块，具有结构感知，提升 RAG 性能
+    ru_RU: Продвинутое чанкование Markdown на основе библиотеки chunkana с учётом структуры для улучшения RAG
+  icon: icon.svg
+  tags:
+    - productivity
+    - business
 
-### Example Configurations
+tools:
+  - tools/markdown_chunk_tool.yaml
 
-**Default Adaptive Configuration:**
+extra:
+  python:
+    source: provider/markdown_chunker.py
+```
+
+### Tool Configuration (markdown_chunk_tool.yaml)
+
+The tool configuration file defines the parameters available to users and their properties:
+
+```yaml
+identity:
+  name: markdown_chunk_tool
+  author: asukhodko
+  label:
+    en_US: Markdown Chunker
+    zh_Hans: Markdown 分块器
+    ru_RU: Markdown чанкер
+  icon: icon.svg
+
+description:
+  human:
+    en_US: Advanced Markdown chunking with structural awareness for better RAG performance. Powered by chunkana engine, intelligently splits documents while preserving context and structure.
+    zh_Hans: 具有结构感知的高级 Markdown 分块，提升 RAG 性能。由 chunkana 引擎驱动，智能分割文档，同时保留上下文和结构。
+    ru_RU: Продвинутое чанкование Markdown с учётом структуры для улучшения RAG. Работает на движке chunkana, интеллектуально разделяет документы, сохраняя контекст и структуру.
+  llm: |
+    A tool for chunking Markdown documents with structural awareness, powered by the chunkana engine.
+    
+    This tool analyzes Markdown content and intelligently splits it into chunks while preserving document structure,
+    maintaining semantic context, supporting configurable chunk size and overlap, and providing rich metadata.
+    
+    Use this tool when you need to process large Markdown documents for RAG systems.
+
+parameters:
+  - name: input_text
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Input Text
+      zh_Hans: 输入文本
+      ru_RU: Входной текст
+    human_description:
+      en_US: The Markdown text content to be chunked
+      zh_Hans: 要分块的 Markdown 文本内容
+      ru_RU: Текстовое содержимое Markdown для разделения на части
+    llm_description: The Markdown document text that needs to be split into chunks for processing
+
+  - name: max_chunk_size
+    type: number
+    required: false
+    default: 4096
+    form: form
+    label:
+      en_US: Max Chunk Size
+      zh_Hans: 最大块大小
+      ru_RU: Максимальный размер части
+    human_description:
+      en_US: "Maximum size of each chunk in characters (default: 4096)"
+      zh_Hans: "每个块的最大字符数（默认：4096）"
+      ru_RU: "Максимальный размер каждой части в символах (по умолчанию: 4096)"
+    llm_description: Maximum number of characters allowed in each chunk. Larger values create bigger chunks with more context.
+
+  # Additional parameters...
+```
+
+The configuration format supports internationalization with multiple language options for labels and descriptions, making the tool accessible to users worldwide.
+
+**Section sources**
+- [markdown_chunker.yaml](file://provider/markdown_chunker.yaml#L1-L23)
+- [markdown_chunk_tool.yaml](file://tools/markdown_chunk_tool.yaml#L1-L178)
+
+## Configuration Validation
+
+The system includes robust validation mechanisms to ensure configuration integrity and handle edge cases gracefully.
+
+### Input Validation
+
+The `InputValidator` class in `input_validator.py` validates and fixes data from the chunkana library to ensure resilience to library changes and missing fields:
+
+```python
+class InputValidator:
+    """Validates and fixes data from chunkana library."""
+
+    def validate_and_fix(
+        self, chunks: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
+        """
+        Validate chunks and set default values for missing fields.
+
+        Args:
+            chunks: Raw chunks from chunkana
+
+        Returns:
+            Validated chunks with defaults applied
+        """
+        for i, chunk in enumerate(chunks):
+            metadata = chunk.get("metadata", {})
+
+            # Set default for is_leaf if missing
+            if "is_leaf" not in metadata:
+                metadata["is_leaf"] = True
+                logger.warning(
+                    f"[ChunkanaAdapter] Chunk {i} missing is_leaf, defaulting to True"
+                )
+
+            # Set default for is_root if missing
+            if "is_root" not in metadata:
+                metadata["is_root"] = False
+
+            chunk["metadata"] = metadata
+
+        return chunks
+```
+
+This validation ensures that critical metadata fields like `is_leaf` and `is_root` are always present, setting sensible defaults when they are missing from the chunkana output.
+
+### Configuration Defaults
+
+The system maintains a snapshot of configuration defaults in `config_defaults_snapshot.json` to ensure backward compatibility:
+
+```json
+{
+  "captured_at": "pre-migration",
+  "defaults": {
+    "max_chunk_size": 4096,
+    "min_chunk_size": 512,
+    "overlap_size": 200,
+    "preserve_atomic_blocks": true,
+    "extract_preamble": true,
+    "code_threshold": 0.3,
+    "structure_threshold": 3,
+    "list_ratio_threshold": 0.4,
+    "list_count_threshold": 5,
+    "strategy_override": null,
+    "enable_code_context_binding": true,
+    "max_context_chars_before": 500,
+    "max_context_chars_after": 300,
+    "related_block_max_gap": 5,
+    "bind_output_blocks": true,
+    "preserve_before_after_pairs": true,
+    "enable_overlap": true
+  }
+}
+```
+
+These defaults are loaded by the `MigrationAdapter` and merged with user-provided parameters, ensuring consistent behavior across versions.
+
+### Output Filtering
+
+The `OutputFilter` class in `output_filter.py` handles filtering of hierarchical output for downstream consumers:
+
+```python
+class OutputFilter:
+    """Filters hierarchical output for downstream consumers."""
+
+    def __init__(self, config: FilterConfig | None = None) -> None:
+        self.config = config or FilterConfig()
+
+    def filter(
+        self, chunks: list[dict[str, Any]], debug: bool = False
+    ) -> list[dict[str, Any]]:
+        """
+        Filter chunks for indexing.
+
+        Args:
+            chunks: Raw result from chunkana
+            debug: Include all chunks for debugging
+
+        Returns:
+            Filtered list of chunks with indexable field
+        """
+        # Add indexable field (respecting library value)
+        chunks = self._add_indexable_field(chunks)
+
+        if debug:
+            return chunks  # All chunks for debugging
+
+        # Exclude root chunk
+        chunks = [
+            c for c in chunks if not c.get("metadata", {}).get("is_root", False)
+        ]
+
+        # Optionally: filter for indexing (uses indexable, not just is_leaf)
+        if self.config.leaf_only:
+            chunks = self._filter_for_indexing(chunks)
+
+        return chunks
+```
+
+This filtering ensures that only appropriate chunks are returned based on the configuration, such as excluding root chunks and filtering for leaf-only mode.
+
+```mermaid
+sequenceDiagram
+participant User as "User"
+participant Tool as "MarkdownChunkTool"
+participant Adapter as "MigrationAdapter"
+participant Validator as "InputValidator"
+participant Filter as "OutputFilter"
+participant Chunker as "chunkana"
+User->>Tool : Provide parameters
+Tool->>Adapter : build_chunker_config()
+Adapter->>Chunker : chunk_markdown() or chunk_hierarchical()
+Chunker-->>Adapter : Raw chunks
+Adapter->>Validator : validate_and_fix()
+Validator-->>Adapter : Validated chunks
+Adapter->>Filter : filter()
+Filter-->>Adapter : Filtered chunks
+Adapter->>Tool : Rendered output
+Tool-->>User : Final chunks
+```
+
+**Diagram sources **
+- [input_validator.py](file://input_validator.py#L14-L45)
+- [output_filter.py](file://output_filter.py#L24-L58)
+- [adapter.py](file://adapter.py#L151-L155)
+
+**Section sources**
+- [input_validator.py](file://input_validator.py#L1-L46)
+- [output_filter.py](file://output_filter.py#L1-L116)
+- [config_defaults_snapshot.json](file://tests/config_defaults_snapshot.json#L1-L22)
+
+## Advanced Configuration Settings
+
+The system supports several advanced configuration settings that provide fine-grained control over the chunking process.
+
+### Debug and Explain Mode
+
+The debug mode provides detailed insights into the chunking process, including all chunk types (root, intermediate, and leaf) when hierarchical chunking is enabled. This is particularly useful for understanding the chunking decisions and debugging suboptimal results.
+
+The explain mode, documented in `debug-explain-mode.md`, provides detailed explanations of why specific chunking decisions were made:
+
+```python
+class ExplainResult:
+    """Full result with explanations."""
+    chunks: list[Chunk]
+    strategy_used: str
+    explanations: list[ChunkExplanation]
+    global_decisions: list[Decision]
+    
+    def print_report(self) -> None:
+        """Print human-readable report."""
+        print(f"=== Chunking Explanation ===\n")
+        print(f"Strategy: {self.strategy_used}")
+        print(f"Total chunks: {len(self.chunks)}\n")
+        
+        print("Global Decisions:")
+        for decision in self.global_decisions:
+            print(f"  - {decision.description}")
+            print(f"    Reason: {decision.reason}")
+        
+        print("\nChunk Details:")
+        for explanation in self.explanations:
+            print(f"\n  Chunk {explanation.chunk_index} "
+                  f"(lines {explanation.start_line}-{explanation.end_line}):")
+            for decision in explanation.decisions:
+                print(f"    - {decision.description}")
+```
+
+This feature helps users understand why the chunker made specific decisions about boundaries and strategy selection, making it easier to debug and optimize results.
+
+### Strategy Overrides
+
+The system allows for strategy overrides to force specific chunking behavior regardless of content analysis:
+
+```python
+def build_chunker_config(
+    self,
+    max_chunk_size: int = 4096,
+    chunk_overlap: int = 200,
+    strategy: str = "auto",
+) -> ChunkerConfig:
+    """Build ChunkerConfig from tool parameters."""
+    strategy_override = None if strategy == "auto" else strategy
+    
+    config_dict = self._config_defaults.copy()
+    config_dict.update(
+        {
+            "max_chunk_size": max_chunk_size,
+            "overlap_size": chunk_overlap,
+            "strategy_override": strategy_override,
+            "validate_invariants": True,
+            "strict_mode": False,
+        }
+    )
+    
+    unsupported_params = {"enable_overlap"}
+    filtered_config = {
+        k: v for k, v in config_dict.items() if k not in unsupported_params
+    }
+    
+    return ChunkerConfig(**filtered_config)
+```
+
+When `strategy` is set to a specific value (e.g., "code_aware"), the `strategy_override` parameter is set accordingly. When set to "auto", the override is `None`, allowing the system to automatically select the best strategy based on content analysis.
+
+### Adaptive Sizing
+
+The adaptive sizing feature automatically adjusts chunk size based on content complexity:
+
 ```python
 config = ChunkConfig(
     use_adaptive_sizing=True,
     adaptive_config=AdaptiveSizeConfig(
         base_size=1500,
-        min_scale=0.5,   # 750 chars minimum
-        max_scale=1.5,   # 2250 chars maximum
+        min_scale=0.5,
+        max_scale=1.5,
+        code_weight=0.4,
+        table_weight=0.3,
+        list_weight=0.2,
+        sentence_length_weight=0.1
     )
 )
 ```
 
-**Code-Heavy Document Configuration:**
-```python
-config = ChunkConfig(
-    use_adaptive_sizing=True,
-    adaptive_config=AdaptiveSizeConfig(
-        base_size=2000,
-        min_scale=0.7,   # 1400 chars minimum
-        max_scale=1.8,   # 3600 chars maximum
-        code_weight=0.6, # Higher weight for code
-    )
-)
-```
-
-**Text-Heavy Document Configuration:**
-```python
-config = ChunkConfig(
-    use_adaptive_sizing=True,
-    adaptive_config=AdaptiveSizeConfig(
-        base_size=1200,
-        min_scale=0.5,   # 600 chars minimum
-        max_scale=1.2,   # 1440 chars maximum
-        sentence_length_weight=0.4, # Higher weight for text complexity
-    )
-)
-```
+This configuration dynamically scales chunk size between 750 and 2250 characters based on the content's complexity, with different weights assigned to code, tables, lists, and sentence length.
 
 **Section sources**
-- [markdown_chunker_v2/adaptive_sizing.py](file://markdown_chunker_v2/adaptive_sizing.py#L14-L85)
-- [docs/guides/adaptive-sizing-migration.md](file://docs/guides/adaptive-sizing-migration.md#L68-L164)
+- [debug-explain-mode.md](file://docs/research/features/10-debug-explain-mode.md#L1-L405)
+- [adapter.py](file://adapter.py#L94-L119)
 
-## Adaptive Sizing Profiles
+## Performance Tuning
 
-The configuration system provides factory methods for common adaptive sizing use cases.
+The configuration system provides several options for performance tuning based on specific use cases and requirements.
 
-### Available Adaptive Profiles
+### Performance Characteristics
 
-#### Default Adaptive Sizing
-```python
-config = ChunkConfig.with_adaptive_sizing()
-# Configuration with adaptive sizing enabled (default profile)
-# - max_chunk_size: 4096
-# - min_chunk_size: 512
-# - overlap_size: 200
-# - use_adaptive_sizing: True
-# - adaptive_config: base_size=1500, min_scale=0.5, max_scale=1.5
-```
+The system exhibits linear scaling with document size, with predictable performance across different document categories:
 
-#### Code-Heavy Documents with Adaptive Sizing
-```python
-config = ChunkConfig.for_code_heavy_adaptive()
-# Configuration for code-heavy documents with adaptive sizing
-# - max_chunk_size: 8192
-# - min_chunk_size: 1024
-# - overlap_size: 100
-# - code_threshold: 0.2
-# - use_adaptive_sizing: True
-# - adaptive_config: base_size=2000, min_scale=0.7, max_scale=1.8, code_weight=0.6
-```
+| Metric | Value | Context |
+|--------|-------|---------|  
+| Typical Processing Speed | 5-15ms per 10KB | Medium-sized documents |
+| Throughput | 500-2000 KB/s | Varies by content type |
+| Memory Efficiency | <0.2 MB per KB | Excluding Python base |
+| Scaling | Linear (R² > 0.95) | Up to 1MB documents |
 
-#### Text-Heavy Documents with Adaptive Sizing
-```python
-config = ChunkConfig.for_text_heavy_adaptive()
-# Configuration for text-heavy documents with adaptive sizing
-# - max_chunk_size: 4096
-# - min_chunk_size: 512
-# - overlap_size: 200
-# - use_adaptive_sizing: True
-# - adaptive_config: base_size=1200, min_scale=0.5, max_scale=1.2, sentence_length_weight=0.4
-```
+### Configuration Impact on Performance
 
-### Adaptive Profile Comparison
+Different configuration profiles have varying performance impacts:
 
-| Profile | Base Size | Min Scale | Max Scale | Code Weight | Use Case |
-|---------|-----------|-----------|-----------|-------------|----------|
-| `with_adaptive_sizing()` | 1500 | 0.5 | 1.5 | 0.4 | General purpose adaptive |
-| `for_code_heavy_adaptive()` | 2000 | 0.7 | 1.8 | 0.6 | Technical documentation |
-| `for_text_heavy_adaptive()` | 1200 | 0.5 | 1.2 | 0.2 | Blogs, articles, notes |
+| Profile | max_chunk_size | overlap_size | Performance Impact | Use Case |
+|---------|----------------|--------------|--------------------|-----------|
+| Default | 4096 | 200 | Baseline | General purpose |
+| Code Heavy | 8192 | 100 | ~10% slower | Technical docs |
+| Structured | 4096 | 200 | Baseline | User guides |
+| Minimal | 1024 | 50 | ~15% faster | Small chunks |
+| No Overlap | 4096 | 0 | ~5% faster | No context needed |
 
-**Section sources**
-- [markdown_chunker_v2/config.py](file://markdown_chunker_v2/config.py#L290-L341)
-- [docs/guides/adaptive-sizing-migration.md](file://docs/guides/adaptive-sizing-migration.md#L107-L118)
+The v2 architecture uses metadata-only overlap, resulting in minimal overhead compared to legacy architectures with physical text duplication.
 
-## Validation System
+### Optimization Recommendations
 
-The configuration validation system ensures parameter integrity and provides automatic adjustments when necessary.
+For optimal performance, consider the following recommendations:
 
-### Validation Rules
+1. **Reuse chunker instances** across multiple documents to avoid initialization overhead
+2. **Use appropriate configuration profiles** for common use cases
+3. **Validate document size** before processing to handle large documents appropriately
+4. **Monitor memory usage** in production environments
+5. **Disable overlap** when context preservation is not needed to reduce processing time
 
 ```mermaid
 flowchart TD
-Start([Configuration Creation]) --> ValidateSizes["Validate Size Parameters"]
-ValidateSizes --> SizeOK{"Sizes Valid?"}
-SizeOK --> |No| AutoAdjust["Auto-adjust min/max"]
-SizeOK --> |Yes| ValidateThresholds["Validate Thresholds"]
-AutoAdjust --> ValidateThresholds
-ValidateThresholds --> ThresholdOK{"Thresholds Valid?"}
-ThresholdOK --> |No| RaiseError["Raise ValueError"]
-ThresholdOK --> |Yes| ValidateStrategy["Validate Strategy Override"]
-ValidateStrategy --> StrategyOK{"Strategy Valid?"}
-StrategyOK --> |No| RaiseError
-StrategyOK --> |Yes| ValidateAdaptive["Validate Adaptive Sizing"]
-ValidateAdaptive --> AdaptiveOK{"Adaptive Valid?"}
-AdaptiveOK --> |No| RaiseError
-AdaptiveOK --> |Yes| Success([Configuration Ready])
-RaiseError --> End([Validation Failed])
-Success --> End
+A[Start] --> B{Document Size < 1MB?}
+B --> |Yes| C[Process with default config]
+B --> |No| D{Streaming Available?}
+D --> |Yes| E[Process with streaming]
+D --> |No| F[Split into sections]
+F --> G[Process sections independently]
+C --> H[Return chunks]
+E --> H
+G --> H
 ```
 
-**Diagram sources**
-- [markdown_chunker_v2/config.py](file://markdown_chunker_v2/config.py#L47-L74)
-
-### Automatic Adjustments
-
-The validation system performs several automatic corrections:
-
-1. **Size Relationship Adjustment**: When `min_chunk_size > max_chunk_size`, `min_chunk_size` becomes `max_chunk_size // 2`
-2. **Target Size Adjustment**: `target_chunk_size` is constrained to stay within size bounds
-3. **Percentage Validation**: Threshold values are clamped to [0.0, 1.0] range
-4. **Adaptive Sizing Adjustment**: When `use_adaptive_sizing` is True and `adaptive_config` is None, a default `AdaptiveSizeConfig` is created
-
-### Validation Examples
-
-```python
-# Automatic adjustment example
-config = ChunkConfig(max_chunk_size=500)  # min_chunk_size becomes 250
-assert config.min_chunk_size == 250
-
-# Threshold validation
-try:
-    config = ChunkConfig(code_threshold=1.5)  # Raises ValueError
-except ValueError as e:
-    assert "must be between 0 and 1" in str(e)
-
-# Adaptive sizing validation
-config = ChunkConfig(use_adaptive_sizing=True)
-assert config.adaptive_config is not None  # Auto-created default config
-```
+**Diagram sources **
+- [performance.md](file://docs/guides/performance.md#L20-L25)
+- [performance.md](file://docs/guides/performance.md#L128-L134)
 
 **Section sources**
-- [markdown_chunker_v2/config.py](file://markdown_chunker_v2/config.py#L47-L74)
-- [tests/chunker/test_chunk_config_validation.py](file://tests/chunker/test_chunk_config_validation.py#L13-L207)
-
-## Context-Specific Configurations
-
-### Dify RAG Integration
-
-For RAG (Retrieval-Augmented Generation) applications, the chunker provides specialized configurations:
-
-```python
-# Dify RAG optimized configuration
-config = ChunkConfig(
-    max_chunk_size=3072,    # Optimal for embedding models
-    min_chunk_size=256,     # Small chunks for precision
-    overlap_size=150,       # Context preservation
-    code_threshold=0.6,     # Moderate code detection
-    structure_threshold=3,  # Standard structural analysis
-)
-```
-
-### API Documentation
-
-Optimized for API reference materials with extensive code examples:
-
-```python
-# API documentation configuration
-config = ChunkConfig(
-    max_chunk_size=6144,    # Larger chunks for code blocks
-    min_chunk_size=1024,    # Minimum code block size
-    overlap_size=300,       # Extended overlap for context
-    code_threshold=0.5,     # Aggressive code detection,
-    use_adaptive_sizing=True,  # Enable adaptive sizing for mixed content
-    adaptive_config=AdaptiveSizeConfig(
-        base_size=2000,
-        min_scale=0.7,
-        max_scale=1.8,
-        code_weight=0.6
-    )
-)
-```
-
-### Chat/LLM Context
-
-Configured for optimal performance in conversational AI contexts:
-
-```python
-# Chat context configuration
-config = ChunkConfig(
-    max_chunk_size=1536,    # Fits typical context windows
-    min_chunk_size=200,     # Small chunks for flexibility
-    overlap_size=200,       # Context preservation
-    structure_threshold=2,  # Lighter structural analysis
-    use_adaptive_sizing=True,  # Enable adaptive sizing for better coherence
-    adaptive_config=AdaptiveSizeConfig(
-        base_size=1200,
-        min_scale=0.5,
-        max_scale=1.2
-    )
-)
-```
-
-**Section sources**
-- [examples/dify_integration.py](file://examples/dify_integration.py#L76-L132)
-- [docs/architecture/dify-integration.md](file://docs/architecture/dify-integration.md#L70-L82)
-
-## Adaptive Sizing Behavior and Metadata
-
-The adaptive sizing feature introduces new behavior patterns and metadata fields to provide insights into the chunking process.
-
-### Chunk Size Distribution
-
-When adaptive sizing is enabled, chunk sizes vary based on content complexity:
-
-| Content Type | Complexity | Scale Factor | Adaptive Size (base=1500) |
-|--------------|------------|--------------|---------------------------|
-| Simple text, short sentences | 0.0 | 0.5 | 750 chars |
-| Mixed content | 0.5 | 1.0 | 1500 chars |
-| Code-heavy documentation | 1.0 | 1.5 | 2250 chars |
-
-**Note:** Actual chunk size may differ from adaptive size due to:
-- Atomic block preservation (code blocks, tables)
-- Header boundaries
-- Min/max size constraints
-- Strategy-specific splitting rules
-
-### New Metadata Fields
-
-When adaptive sizing is enabled, chunks include additional metadata fields:
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `adaptive_size` | `int` | Calculated optimal chunk size |
-| `content_complexity` | `float` | Complexity score 0.0-1.0 |
-| `size_scale_factor` | `float` | Applied scaling factor |
-
-**Example:**
-```python
-chunks = chunker.chunk(document)
-
-for chunk in chunks:
-    if 'adaptive_size' in chunk.metadata:
-        print(f"Complexity: {chunk.metadata['content_complexity']:.2f}")
-        print(f"Adaptive Size: {chunk.metadata['adaptive_size']} chars")
-        print(f"Actual Size: {len(chunk.content)} chars")
-```
-
-**Section sources**
-- [docs/guides/adaptive-sizing-migration.md](file://docs/guides/adaptive-sizing-migration.md#L208-L249)
-- [markdown_chunker_v2/types.py](file://markdown_chunker_v2/types.py#L200-L235)
+- [performance.md](file://docs/guides/performance.md#L1-L502)
 
 ## Best Practices
 
-### Configuration Selection Guidelines
+Following these best practices will help ensure optimal configuration and performance:
 
-1. **Start with Profiles**: Use predefined profiles as starting points
-2. **Consider Use Case**: Choose profiles matching your document type
-3. **Validate Parameters**: Always validate custom configurations
-4. **Monitor Performance**: Track chunking performance and quality metrics
+### Configuration Management
 
-### Parameter Tuning Strategies
+1. **Start with defaults**: The default parameters work well for most RAG use cases
+2. **Use hierarchical mode carefully**: Only enable when you need parent-child relationships
+3. **Consider chunk_overlap cap**: The plugin caps overlap at 35% of chunk size
+4. **Use leaf_only for vector DB**: Filters out structural headers, returning only content chunks
 
-#### For Code Documentation
-- Increase `max_chunk_size` to accommodate large code blocks
-- Lower `code_threshold` for early code strategy activation
-- Enable overlap for better context preservation
-- Use adaptive sizing with higher `base_size` and `code_weight`
+### Environment-Specific Configuration
 
-#### For General Documentation
-- Use default or structured profiles
-- Balance overlap size with memory constraints
-- Monitor chunk coherence and semantic integrity
-- Consider adaptive sizing for mixed content
-
-#### For RAG Applications
-- Optimize for embedding model constraints
-- Use moderate overlap for context preservation
-- Consider chunk size relative to embedding dimensions
-- Enable adaptive sizing to optimize for content complexity
-
-### Performance Optimization
+Use different configurations for different environments:
 
 ```python
-# Fast processing configuration
-config = ChunkConfig(
-    max_chunk_size=8192,    # Larger chunks reduce overhead
-    min_chunk_size=1024,    # Skip small chunk processing
-    overlap_size=0,         # Disable overlap for speed
-    structure_threshold=5,  # Reduce structural analysis
-)
-```
+import os
+from chunkana import ChunkConfig
 
-### Quality Assurance
-
-```python
-# Quality-focused configuration
-config = ChunkConfig(
-    max_chunk_size=2048,    # Balanced chunk size
-    min_chunk_size=256,     # Prevent overly small chunks
-    overlap_size=200,       # Preserve context
-    code_threshold=0.3,     # Conservative code detection
-    structure_threshold=3,  # Standard structural analysis
-    use_adaptive_sizing=True,  # Optimize for content complexity
-    adaptive_config=AdaptiveSizeConfig(
-        base_size=1500,
-        min_scale=0.5,
-        max_scale=1.5
+def create_config_from_env() -> ChunkConfig:
+    """Create configuration from environment variables."""
+    return ChunkConfig(
+        max_chunk_size=int(os.getenv("CHUNK_SIZE", "4096")),
+        overlap_size=int(os.getenv("CHUNK_OVERLAP", "200")),
+        include_metadata=os.getenv("INCLUDE_METADATA", "true").lower() == "true",
+        strategy_override=os.getenv("STRATEGY_OVERRIDE", None)
     )
-)
+
+config = create_config_from_env()
 ```
 
-### Adaptive Sizing Tuning
+This approach allows for environment-specific tuning without code changes.
 
-When using adaptive sizing, consider these tuning recommendations:
+### Content-Adaptive Configuration
 
-1. **Adjust base_size** based on typical content:
-   - 1000-1500 for simple notes and blogs
-   - 1500-2000 for mixed documentation
-   - 2000-2500 for code-heavy technical docs
+Create configurations based on content analysis:
 
-2. **Adjust scale range** based on content variance:
-   - 0.8-1.2 for uniform content
-   - 0.6-1.4 for some variation
-   - 0.5-1.5 for mixed content (default)
-
-3. **Adjust complexity weights** to prioritize content types:
-   - Increase `code_weight` for technical documentation
-   - Increase `table_weight` for data-heavy content
-   - Increase `list_weight` for structured documentation
-   - Adjust `sentence_length_weight` based on text complexity
-
-**Section sources**
-- [docs/guides/adaptive-sizing-migration.md](file://docs/guides/adaptive-sizing-migration.md#L122-L206)
-- [docs/api/config.md](file://docs/api/config.md#L168-L182)
-
-## Troubleshooting
-
-### Common Configuration Issues
-
-#### Invalid Size Relationships
 ```python
-# Problem: min_chunk_size > max_chunk_size
-config = ChunkConfig(max_chunk_size=500, min_chunk_size=1000)
-# Automatically adjusted to min_chunk_size = 250
-```
-
-#### Threshold Validation Errors
-```python
-# Problem: Threshold out of range
-config = ChunkConfig(code_threshold=1.5)  # Raises ValueError
-```
-
-#### Strategy Override Errors
-```python
-# Problem: Invalid strategy
-config = ChunkConfig(strategy_override="invalid")  # Raises ValueError
-```
-
-#### Adaptive Sizing Issues
-
-**Weights Don't Sum to 1.0:**
-```python
-# Error: Weights must sum to 1.0
-config = AdaptiveSizeConfig(
-    code_weight=0.4,
-    table_weight=0.3,
-    list_weight=0.2
-    # Missing sentence_length_weight - sum = 0.9
-)
-```
-
-**Scale Range Invalid:**
-```python
-# Error: min_scale must be less than max_scale
-config = AdaptiveSizeConfig(
-    min_scale=1.2,
-    max_scale=1.0  # Invalid
-)
-```
-
-**Unexpected Chunk Sizes:**
-```python
-# Debug adaptive sizing
-for chunk in chunks:
-    adaptive = chunk.metadata.get('adaptive_size', 'N/A')
-    actual = len(chunk.content)
-    complexity = chunk.metadata.get('content_complexity', 'N/A')
+def adaptive_config(md_text: str) -> ChunkConfig:
+    """Create configuration based on content analysis."""
+    # Quick analysis
+    chunker = MarkdownChunker()
+    analysis = chunker.analyze_content(md_text)
     
-    print(f"Adaptive: {adaptive}, Actual: {actual}, Complexity: {complexity}")
-    
-    if actual > adaptive * 1.5:
-        print("  → Likely atomic block (code/table) preserved")
-    elif actual < adaptive * 0.5:
-        print("  → Likely forced merge due to min_chunk_size")
+    if analysis.code_ratio > 0.5:
+        # Code-heavy document
+        return ChunkConfig(
+            max_chunk_size=6144,
+            strategy_override="code_aware",
+            enable_code_context_binding=True,
+            preserve_before_after_pairs=True
+        )
+    elif analysis.list_ratio > 0.4:
+        # List-heavy document
+        return ChunkConfig(
+            strategy_override="list_aware",
+            list_ratio_threshold=0.35
+        )
+    elif analysis.table_count > 3:
+        # Table-heavy document
+        return ChunkConfig(
+            group_related_tables=True,
+            table_grouping_config=TableGroupingConfig(
+                max_distance_lines=15,
+                require_same_section=True
+            )
+        )
+    else:
+        # Standard document
+        return ChunkConfig.for_dify_rag()
+
+# Use adaptive configuration
+config = adaptive_config(markdown_text)
+chunker = MarkdownChunker(config)
 ```
 
-### Debugging Configuration Problems
-
-1. **Enable Logging**: Use the chunker's logging capabilities
-2. **Validate Manually**: Check parameter relationships
-3. **Test with Samples**: Validate configurations with representative documents
-4. **Monitor Metrics**: Track chunk size distribution and strategy usage
-5. **Check Adaptive Metadata**: Examine `content_complexity`, `adaptive_size`, and `size_scale_factor` for adaptive sizing issues
-
-### Migration from Legacy Configuration
-
-When migrating from legacy configurations:
-
-```python
-# Legacy to V2 migration
-legacy_config = {
-    "max_chunk_size": 4096,
-    "min_chunk_size": 512,
-    "enable_overlap": True,
-    "overlap_size": 200
-}
-
-# Convert to V2
-v2_config = ChunkConfig.from_legacy(**legacy_config)
-```
+This approach optimizes the configuration for the specific characteristics of each document.
 
 **Section sources**
-- [markdown_chunker_v2/config.py](file://markdown_chunker_v2/config.py#L81-L135)
+- [configuration.md](file://docs/reference/configuration.md#L457-L501)
 
-## Migration Guide
+## Practical Examples
 
-### From Legacy to V2 Configuration
+Here are practical examples of custom configurations for specific scenarios:
 
-The V2 configuration system simplifies the 32-parameter legacy system to 8 core parameters:
+### Processing GitHub READMEs
 
-#### Parameter Mapping
+For GitHub README files, which typically contain a mix of code, text, and structure:
 
-| Legacy Parameter | V2 Equivalent | Notes |
-|------------------|---------------|-------|
-| `max_size` | `max_chunk_size` | Renamed parameter |
-| `min_size` | `min_chunk_size` | Renamed parameter |
-| `enable_overlap` | `overlap_size > 0` | Boolean converted to size |
-| `block_based_splitting` | Always enabled | Removed parameter |
-| `preserve_code_blocks` | `preserve_atomic_blocks` | Always enabled |
-| `preserve_tables` | `preserve_atomic_blocks` | Always enabled |
-
-#### Removed Parameters
-
-Parameters that are no longer configurable in V2:
-- `enable_deduplication`: Always enabled
-- `enable_regression_validation`: Always enabled
-- `enable_header_path_validation`: Always enabled
-- `use_enhanced_parser`: Always enabled
-- `enable_sentence_splitting`: Removed
-- `enable_paragraph_merging`: Removed
-- `enable_list_preservation`: Always enabled
-- `enable_metadata_enrichment`: Always enabled
-- `enable_size_normalization`: Removed
-- `enable_fallback_strategy`: Always enabled
-
-### Migration Examples
-
-```python
-# Legacy configuration
-legacy_config = ChunkConfig(
-    max_chunk_size=4096,
-    min_chunk_size=512,
-    enable_overlap=True,
-    overlap_size=200,
-    code_ratio_threshold=0.7,
-    header_count_threshold=3
-)
-
-# Equivalent V2 configuration
-v2_config = ChunkConfig(
-    max_chunk_size=4096,
-    min_chunk_size=512,
-    overlap_size=200,
-    code_threshold=0.7,
-    structure_threshold=3
-)
+```yaml
+- node: process_readme
+  type: tool
+  tool: advanced_markdown_chunker
+  config:
+    max_chunk_size: 4096
+    chunk_overlap: 200
+    strategy: auto
+    include_metadata: true
+    enable_hierarchy: true
+    leaf_only: true
 ```
 
-### Backward Compatibility
+This configuration enables hierarchical chunking to capture the document structure while returning only leaf chunks for vector database indexing, ensuring that only content chunks are stored.
 
-The V2 system maintains backward compatibility through the `from_legacy()` method, which handles parameter mapping and deprecation warnings.
+### Technical Documentation Processing
+
+For technical documentation with extensive code examples:
+
+```yaml
+- node: process_docs
+  type: tool
+  tool: advanced_markdown_chunker
+  config:
+    max_chunk_size: 6144
+    chunk_overlap: 200
+    strategy: code_aware
+    include_metadata: true
+    enable_hierarchy: true
+```
+
+This configuration uses larger chunk sizes to accommodate complete code blocks and enables code-aware strategy to preserve code structure and context.
+
+### Clean Text Output for Analysis
+
+For scenarios requiring clean text output without metadata:
+
+```yaml
+- node: clean_output
+  type: tool
+  tool: advanced_markdown_chunker
+  config:
+    max_chunk_size: 2048
+    chunk_overlap: 100
+    include_metadata: false
+```
+
+This configuration disables metadata embedding, instead embedding the overlap directly into the chunk text as `previous_content + main + next_content`.
+
+### Debugging and Analysis
+
+For debugging chunking behavior and understanding decisions:
+
+```yaml
+- node: debug_chunks
+  type: tool
+  tool: advanced_markdown_chunker
+  config:
+    max_chunk_size: 4096
+    enable_hierarchy: true
+    debug: true
+    leaf_only: false
+```
+
+This configuration enables debug mode to include all chunks (root, intermediate, and leaf), providing complete visibility into the hierarchical structure for analysis.
 
 **Section sources**
-- [markdown_chunker_v2/config.py](file://markdown_chunker_v2/config.py#L81-L135)
+- [configuration.md](file://docs/reference/configuration.md#L48-L98)

@@ -3,314 +3,142 @@
 <cite>
 **Referenced Files in This Document**   
 - [README.md](file://README.md)
-- [docs/architecture-audit-to-be/01-overview.md](file://docs/architecture-audit-to-be/01-overview.md)
-- [markdown_chunker/__init__.py](file://markdown_chunker/__init__.py)
-- [markdown_chunker_legacy/__init__.py](file://markdown_chunker_legacy/__init__.py)
-- [markdown_chunker_v2/__init__.py](file://markdown_chunker_v2/__init__.py)
 - [main.py](file://main.py)
 - [provider/markdown_chunker.py](file://provider/markdown_chunker.py)
-- [markdown_chunker_v2/chunker.py](file://markdown_chunker_v2/chunker.py)
-- [markdown_chunker_v2/strategies/base.py](file://markdown_chunker_v2/strategies/base.py)
-- [markdown_chunker_v2/strategies/code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py)
-- [markdown_chunker_v2/strategies/structural.py](file://markdown_chunker_v2/strategies/structural.py)
-- [markdown_chunker_v2/strategies/fallback.py](file://markdown_chunker_v2/strategies/fallback.py)
-- [examples/basic_usage.py](file://examples/basic_usage.py)
-- [examples/dify_integration.py](file://examples/dify_integration.py)
+- [provider/markdown_chunker.yaml](file://provider/markdown_chunker.yaml)
+- [manifest.yaml](file://manifest.yaml)
+- [docs/architecture/README.md](file://docs/architecture/README.md)
+- [docs/architecture/strategies.md](file://docs/architecture/strategies.md)
+- [docs/research/USAGE.md](file://docs/research/USAGE.md)
+- [tests/corpus/README.md](file://tests/corpus/README.md)
 </cite>
 
 ## Table of Contents
-1. [Core Purpose and Functionality](#core-purpose-and-functionality)
-2. [Processing Pipeline](#processing-pipeline)
-3. [Chunking Strategies](#chunking-strategies)
-4. [Configuration and Metadata](#configuration-and-metadata)
-5. [Integration with Dify Platform](#integration-with-dify-platform)
-6. [Versioning Strategy](#versioning-strategy)
-7. [Use Cases](#use-cases)
-8. [Architecture Overview](#architecture-overview)
+1. [Introduction](#introduction)
+2. [Core Purpose and Functionality](#core-purpose-and-functionality)
+3. [Key Features and Capabilities](#key-features-and-capabilities)
+4. [Architecture and Design Concepts](#architecture-and-design-concepts)
+5. [Integration with Dify Workflows](#integration-with-dify-workflows)
+6. [Real-World Use Cases](#real-world-use-cases)
+7. [Technical Implementation](#technical-implementation)
+8. [Conclusion](#conclusion)
+
+## Introduction
+
+The dify-markdown-chunker-1 project is a specialized Python library called **chunkana** that has been wrapped as a Dify plugin for intelligent Markdown chunking in Retrieval-Augmented Generation (RAG) systems. This tool addresses the critical challenge of preserving document structure during the chunking process, which is essential for maintaining context and improving retrieval quality in AI applications. The project combines advanced parsing techniques with adaptive strategies to handle complex Markdown content while supporting both plugin-based integration with Dify and standalone library usage.
+
+**Section sources**
+- [README.md](file://README.md#L1-L800)
+- [main.py](file://main.py#L1-L38)
 
 ## Core Purpose and Functionality
 
-The **dify-markdown-chunker.qoder** project is a specialized Python library designed for intelligent Markdown chunking optimized for Retrieval-Augmented Generation (RAG) systems. It addresses the limitations of simple text splitting by preserving document structure, maintaining context, and enabling efficient retrieval through advanced content-aware strategies.
+The primary purpose of the dify-markdown-chunker-1 project is to provide intelligent, structure-aware Markdown chunking for RAG systems. Unlike naive text splitters that simply divide content at fixed intervals, this tool preserves the semantic integrity of documents by maintaining structural elements such as code blocks, lists, tables, and mathematical expressions. The chunkana engine analyzes document content and automatically selects the most appropriate chunking strategy based on the document's characteristics, ensuring optimal results across diverse content types.
 
-Unlike basic chunking tools that split text at fixed intervals, this library performs deep content analysis using Abstract Syntax Tree (AST) parsing to understand the semantic structure of Markdown documents. It intelligently preserves atomic elements such as code blocks, tables, and lists while automatically selecting the most appropriate chunking strategy based on document characteristics.
+This tool serves a dual role as both a Dify plugin and a standalone Python library. As a plugin, it integrates seamlessly into Dify workflows for knowledge base processing, while the underlying chunkana library can be used independently in other applications. The system is designed to process Markdown content locally within the Dify instance, ensuring data privacy and security by avoiding external service calls.
 
-The library serves dual purposes: as a standalone Python package for developers building RAG systems, and as a Dify plugin that integrates seamlessly into the Dify platform's knowledge base ingestion workflows. Its primary function is to transform large Markdown documents into semantically meaningful chunks that maintain contextual integrity, making them ideal for vector embedding and retrieval in AI applications.
+The core functionality revolves around the concept of "structured chunking," which recognizes that different types of content require different processing approaches. For example, code-heavy documentation needs to preserve code blocks intact, while changelogs require preservation of list hierarchies. The tool addresses these needs through its adaptive strategy selection mechanism, which evaluates content characteristics such as code ratio, list density, and header hierarchy to determine the optimal processing approach.
 
 **Section sources**
-- [README.md](file://README.md#L35-L37)
-- [docs/architecture-audit-to-be/01-overview.md](file://docs/architecture-audit-to-be/01-overview.md#L1-L152)
+- [README.md](file://README.md#L38-L117)
+- [main.py](file://main.py#L9-L14)
 
-## Processing Pipeline
+## Key Features and Capabilities
 
-The library implements a linear, single-pass processing pipeline that ensures efficiency and consistency while maintaining content integrity. The pipeline consists of five sequential stages:
+The dify-markdown-chunker-1 project offers several advanced features that distinguish it from basic chunking solutions. The most significant capability is its adaptive strategy selection, which automatically chooses from four intelligent strategies based on content analysis: Code-Aware, List-Aware, Structural, and Fallback. This ensures that each document is processed using the most appropriate method for its content type.
 
-1. **Parsing**: The input Markdown text is parsed using AST analysis to extract structural elements, content types, and metadata. During this stage, line endings are normalized to Unix-style (`\n`) for consistent processing.
+One of the standout features is the preservation of complex content structures. The tool maintains code blocks as atomic units, preventing them from being split mid-function or mid-statement. It also preserves tables and lists in their entirety, ensuring that related information remains together. For technical documentation containing LaTeX formulas, the tool treats mathematical expressions as atomic blocks, preventing them from being split across chunks.
 
-2. **Analysis**: The parser generates a comprehensive `ContentAnalysis` object that includes metrics such as code ratio, table count, header hierarchy, and complexity scoring. This analysis informs the strategy selection process.
+The List-Aware strategy provides a competitive advantage by preserving nested list hierarchies and binding context to lists. This is particularly valuable for processing changelogs, feature lists, and task lists where maintaining the relationship between parent and child items is crucial. Similarly, the Code-Aware strategy includes enhanced code-context binding that recognizes patterns such as Before/After comparisons and Code+Output pairs, keeping related code blocks together.
 
-3. **Strategy Selection**: Based on the content analysis, the system automatically selects the optimal chunking strategy from its available options. The selection follows a priority-based system where strategies are evaluated in order of specificity.
+Additional capabilities include hierarchical chunking, which creates parent-child relationships between chunks for multi-level retrieval, and streaming processing for memory-efficient handling of large files. The tool also supports metadata enrichment, embedding contextual information such as header paths, content types, and line numbers directly into chunks to improve retrieval quality.
 
-4. **Chunking**: The selected strategy processes the normalized Markdown text to produce chunks according to its specific algorithm. Each strategy preserves atomic blocks (code, tables) and respects document structure.
+**Section sources**
+- [README.md](file://README.md#L66-L304)
+- [docs/architecture/strategies.md](file://docs/architecture/strategies.md#L1-L529)
 
-5. **Post-processing**: Final processing includes applying configurable overlap between chunks, enriching metadata, and validating the output against domain properties to ensure content completeness and integrity.
+## Architecture and Design Concepts
 
-This linear pipeline eliminates redundant processing and conditional branching, resulting in predictable performance and easier testing. The entire process is designed to be deterministic, ensuring that the same input always produces the same output.
+The architecture of the dify-markdown-chunker-1 project is built around several key concepts that enable its advanced functionality. At the core is the chunkana engine, which implements a modular design with clear separation of responsibilities between components. The system follows a pipeline approach where Markdown content is first parsed into an Abstract Syntax Tree (AST), then analyzed for content characteristics, and finally chunked according to the selected strategy.
+
+Adaptive strategies form a fundamental architectural concept, with the system automatically selecting the optimal approach based on content analysis. The strategy selection algorithm evaluates multiple factors including code ratio, list density, and header hierarchy to determine the best processing method. This adaptive approach ensures that different document types receive appropriate treatment without requiring manual configuration.
+
+Hierarchical chunking is another key architectural feature, enabling the creation of parent-child relationships between chunks. This allows for multi-level retrieval where users can navigate from overview sections to detailed content while maintaining context. The hierarchical structure also supports programmatic navigation between related chunks, such as moving between siblings or accessing ancestor information.
+
+Streaming processing represents a significant architectural innovation, allowing the tool to handle large files efficiently with minimal memory usage. This is achieved through a window-based approach that processes the document in manageable chunks while maintaining quality by detecting safe split boundaries. The streaming architecture includes sophisticated fence tracking to prevent splitting code blocks and other fenced content.
 
 ```mermaid
-flowchart TD
-A[Input Markdown] --> B[Parse]
-B --> C[Analyze Content]
-C --> D[Select Strategy]
-D --> E[Apply Chunking]
-E --> F[Apply Overlap]
-F --> G[Enrich Metadata]
-G --> H[Validate]
-H --> I[Output Chunks]
+graph TB
+A[Markdown Text] --> B[AST Parser]
+B --> C[Content Analyzer]
+C --> D[Strategy Selector]
+D --> E{Code-Aware?}
+E --> |Yes| F[Preserve Code Blocks]
+E --> |No| G{List-Heavy?}
+G --> |Yes| H[Preserve List Hierarchy]
+G --> |No| I{Structured?}
+I --> |Yes| J[Chunk by Sections]
+I --> |No| K[Paragraph-Based Splitting]
+F --> L[Output Chunks]
+H --> L
+J --> L
+K --> L
 ```
 
 **Diagram sources**
-- [docs/architecture-audit-to-be/01-overview.md](file://docs/architecture-audit-to-be/01-overview.md#L137-L179)
-- [markdown_chunker_v2/chunker.py](file://markdown_chunker_v2/chunker.py#L43-L90)
+- [docs/architecture/README.md](file://docs/architecture/README.md#L35-L54)
+- [docs/architecture/strategies.md](file://docs/architecture/strategies.md#L280-L313)
 
-## Chunking Strategies
+## Integration with Dify Workflows
 
-The library implements three primary chunking strategies in its v2 architecture, each designed for specific document types and use cases. These strategies are selected automatically based on content analysis, with a fallback mechanism ensuring coverage for all document types.
+The dify-markdown-chunker-1 project integrates seamlessly with Dify workflows as a tool plugin, enabling intelligent Markdown processing within knowledge base pipelines. The integration is configured through a YAML specification that defines the plugin parameters and their mapping to the underlying chunkana configuration. This allows users to control chunking behavior directly from the Dify interface without requiring code changes.
 
-### Code-Aware Strategy
-The highest-priority strategy, designed for documents containing code blocks or tables. It preserves atomic blocks intact while splitting surrounding text. This strategy activates when the document contains at least one code block or table, or when the code ratio exceeds the configured threshold. It ensures that code snippets remain complete and functional within their chunks.
+In a typical Dify workflow, the chunker is added as a tool node that processes Markdown content from a document loader. The output chunks are then passed to an embedding node for vectorization before being stored in a vector database. The plugin exposes key parameters such as max_chunk_size, strategy, and include_metadata, giving users control over the chunking process while maintaining simplicity.
 
-### Structural Strategy
-The second-priority strategy, optimized for documents with hierarchical header structures. It splits content by headers while maintaining the header path hierarchy, allowing retrieval systems to understand the context of each chunk within the document's overall structure. This strategy requires a minimum number of headers and a header depth greater than one.
+The integration supports hierarchical chunking mode, which returns chunks organized in a tree structure with parent-child relationships. This enables advanced retrieval patterns where users can request either leaf chunks for indexing or the complete hierarchy for debugging purposes. The recommended configuration for vector database indexing uses leaf_only mode to ensure only content chunks are stored.
 
-### Fallback Strategy
-The universal strategy with the lowest priority, designed to handle any document type. It splits content by paragraph boundaries and groups paragraphs to fit within the maximum chunk size. This strategy serves as a safety net, ensuring that all documents can be processed even if they don't match the criteria for more specialized strategies.
-
-The strategy selection process follows a clear priority order, with each strategy implementing a `can_handle` method that evaluates whether it should process the document based on the content analysis. This approach ensures that the most appropriate strategy is always selected while maintaining a graceful fallback path.
-
-```mermaid
-classDiagram
-class BaseStrategy {
-<<abstract>>
-+name : str
-+priority : int
-+can_handle(analysis, config) bool
-+apply(md_text, analysis, config) List[Chunk]
--create_chunk(content, start_line, end_line, **metadata) Chunk
--set_oversize_metadata(chunk, reason, config) void
--ensure_fence_balance(chunks) List[Chunk]
--split_text_to_size(text, start_line, config) List[Chunk]
-}
-class CodeAwareStrategy {
-+name : "code_aware"
-+priority : 1
-+can_handle(analysis, config) bool
-+apply(md_text, analysis, config) List[Chunk]
--get_atomic_ranges(analysis) List[Tuple[int, int, str]]
-}
-class StructuralStrategy {
-+name : "structural"
-+priority : 2
-+can_handle(analysis, config) bool
-+apply(md_text, analysis, config) List[Chunk]
--build_header_path(headers) str
-}
-class FallbackStrategy {
-+name : "fallback"
-+priority : 3
-+can_handle(analysis, config) bool
-+apply(md_text, analysis, config) List[Chunk]
-}
-BaseStrategy <|-- CodeAwareStrategy
-BaseStrategy <|-- StructuralStrategy
-BaseStrategy <|-- FallbackStrategy
-```
-
-**Diagram sources**
-- [markdown_chunker_v2/strategies/base.py](file://markdown_chunker_v2/strategies/base.py#L12-L233)
-- [markdown_chunker_v2/strategies/code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py#L15-L149)
-- [markdown_chunker_v2/strategies/structural.py](file://markdown_chunker_v2/strategies/structural.py#L15-L151)
-- [markdown_chunker_v2/strategies/fallback.py](file://markdown_chunker_v2/strategies/fallback.py#L15-L96)
-
-## Configuration and Metadata
-
-The library provides flexible configuration options through the `ChunkConfig` class, allowing users to customize chunking behavior for different use cases. The v2 architecture simplified configuration from 32 parameters to 8 core parameters, improving usability while maintaining functionality.
-
-Key configuration options include:
-- `max_chunk_size`: Maximum size of chunks in characters
-- `min_chunk_size`: Minimum size of chunks in characters
-- `enable_overlap`: Whether to enable overlap between consecutive chunks
-- `overlap_size`: Size of overlap in characters
-- `code_threshold`: Ratio threshold for code-heavy document detection
-- `structure_threshold`: Minimum number of headers for structural strategy
-
-The library offers predefined configuration profiles for common use cases, including `for_code_heavy()`, `for_dify_rag()`, `for_search_indexing()`, and `for_chat_context()`. These profiles provide optimized settings for specific scenarios, reducing the need for manual configuration.
-
-Each chunk includes rich metadata that enhances retrieval and analysis capabilities. Metadata fields include:
-- `content_type`: Type of content (code, text, list, table, mixed)
-- `strategy`: Strategy used to create the chunk
-- `header_path`: Hierarchical path of headers for context
-- `previous_content` and `next_content`: Overlap content for context preservation
-- `line_count` and `size`: Statistical information
-- `language`: Programming language for code blocks
-
-This metadata enrichment enables sophisticated retrieval patterns and provides valuable context for downstream processing in RAG systems.
+For users requiring advanced features not exposed in the plugin UI, the underlying chunkana library can be used directly. This provides access to capabilities such as adaptive chunk sizing based on content complexity, fine-grained code-context binding controls, and table grouping configuration. The dual nature of the tool—both as a plugin and standalone library—makes it flexible for different use cases and integration requirements.
 
 **Section sources**
-- [README.md](file://README.md#L274-L315)
-- [examples/basic_usage.py](file://examples/basic_usage.py#L94-L138)
+- [README.md](file://README.md#L175-L373)
+- [provider/markdown_chunker.yaml](file://provider/markdown_chunker.yaml#L1-L23)
+- [manifest.yaml](file://manifest.yaml#L1-L49)
 
-## Integration with Dify Platform
+## Real-World Use Cases
 
-The library integrates with the Dify platform through a dedicated plugin system, enabling seamless use within Dify's workflow automation and knowledge base management features. The integration is implemented through several components:
+The dify-markdown-chunker-1 project has been designed and tested against a diverse corpus of real-world documents, demonstrating its effectiveness across various content types. The test corpus includes engineering blogs, GitHub READMEs, scientific documents, and other common Markdown formats, ensuring the tool performs well in practical scenarios.
 
-The `main.py` file serves as the entry point for the Dify plugin, configuring the plugin environment with a 300-second timeout to accommodate large document processing. It uses the Dify Plugin SDK to expose the chunking functionality as a tool within Dify workflows.
+For engineering blogs from sources like Netflix Tech Blog and Uber Engineering, the tool excels at preserving code examples within their explanatory context. These documents often contain complex code snippets in multiple languages, diagrams, and technical explanations that require careful handling to maintain coherence. The adaptive strategy selection ensures that code-heavy sections are processed with the Code-Aware strategy, keeping related code blocks and explanations together.
 
-The `provider/markdown_chunker.py` file implements the `MarkdownChunkerProvider` class, which manages the tool provider interface. Notably, this provider requires no credentials as chunking is a local operation that doesn't depend on external services or API keys.
+GitHub READMEs from popular repositories like Kubernetes, React, and TensorFlow present another important use case. These documents typically include badges, installation instructions with code examples, usage guides, and contribution guidelines. The tool's ability to preserve code blocks, tables, and lists ensures that installation commands and configuration examples remain intact and properly contextualized.
 
-The integration supports both direct API usage and workflow-based processing. In Dify workflows, the chunker can be configured with parameters such as `max_chunk_size`, `strategy`, and `chunk_overlap`. The output is formatted to be compatible with Dify's knowledge base ingestion pipeline, where chunks can be embedded and stored in vector databases.
+Scientific documents and research notes containing mathematical formulas represent a specialized use case where the tool's LaTeX formula handling is critical. The system preserves display math (`$$...$$`) and environment blocks (`\begin{equation}`, `\begin{align}`) as atomic units, preventing mathematical expressions from being split across chunks. This is essential for maintaining the integrity of scientific content in retrieval systems.
 
-Example use cases in Dify include:
-- Knowledge base ingestion with automatic chunking of documentation
-- API documentation processing with code-aware chunking
-- Technical article processing with structural preservation
-- Batch document processing for semantic search preparation
-
-The examples in `dify_integration.py` demonstrate various integration scenarios, including RAG-optimized chunking, semantic search preparation, and embedding generation.
-
-```mermaid
-sequenceDiagram
-participant Dify as Dify Platform
-participant Plugin as Plugin Interface
-participant Chunker as MarkdownChunker
-participant Config as ChunkConfig
-Dify->>Plugin : Execute tool with config
-Plugin->>Chunker : Initialize with config
-Chunker->>Config : Apply profile (e.g., for_dify_rag)
-Chunker->>Chunker : Parse Markdown
-Chunker->>Chunker : Analyze content
-Chunker->>Chunker : Select strategy
-Chunker->>Chunker : Generate chunks
-Chunker->>Chunker : Apply overlap
-Chunker->>Plugin : Return chunks with metadata
-Plugin->>Dify : Format for Dify workflow
-```
-
-**Diagram sources**
-- [main.py](file://main.py#L1-L31)
-- [provider/markdown_chunker.py](file://provider/markdown_chunker.py#L1-L36)
-- [examples/dify_integration.py](file://examples/dify_integration.py#L1-L487)
-
-## Versioning Strategy
-
-The project employs a sophisticated versioning strategy that maintains backward compatibility while introducing architectural improvements. Three versions coexist within the codebase:
-
-### Legacy Implementation (markdown_chunker_legacy)
-The original implementation with 55 files and approximately 24,000 lines of code. This version includes six chunking strategies and a complex configuration system with 32 parameters. It serves as the foundation for the current system but is being phased out in favor of the simplified v2 architecture.
-
-### Current Implementation (markdown_chunker)
-This is the primary interface that re-exports the v2 implementation. The `__init__.py` file in this directory imports all components from `markdown_chunker_v2`, making them available under the main package namespace. This layer provides backward compatibility and a stable API surface.
-
-### V2 Implementation (markdown_chunker_v2)
-The redesigned architecture that reduces complexity and improves maintainability. Key improvements include:
-- Reduced from 55 to 12 files
-- Codebase reduced from ~24,000 to ~5,000 lines
-- Configuration parameters reduced from 32 to 8
-- Chunking strategies consolidated from 6 to 3
-- Test count reduced from 1,853 to approximately 100 (focused on property-based testing)
-
-The v2 architecture follows semantic versioning (2.0.0) due to breaking changes in the API. However, the project maintains backward compatibility through re-exports and compatibility modules. The versioning strategy allows users to migrate gradually while benefiting from the improved performance and reliability of the v2 implementation.
-
-The `MIGRATION.md` document provides detailed guidance for upgrading from v1.x to v2.0, including changes to the API, configuration, and strategy selection process.
+Changelogs and release notes demonstrate the effectiveness of the List-Aware strategy, which preserves nested list hierarchies and binds context to lists. This ensures that version release notes with nested changes remain coherent, with parent items kept together with their children. Similarly, API documentation benefits from the table grouping feature, which keeps related tables such as parameters, response fields, and error codes together in the same chunk.
 
 **Section sources**
-- [docs/architecture-audit-to-be/01-overview.md](file://docs/architecture-audit-to-be/01-overview.md#L1-L33)
-- [markdown_chunker/__init__.py](file://markdown_chunker/__init__.py#L1-L33)
-- [markdown_chunker_legacy/__init__.py](file://markdown_chunker_legacy/__init__.py#L1-L74)
-- [markdown_chunker_v2/__init__.py](file://markdown_chunker_v2/__init__.py#L1-L41)
+- [tests/corpus/README.md](file://tests/corpus/README.md#L1-L426)
+- [README.md](file://README.md#L456-L574)
 
-## Use Cases
+## Technical Implementation
 
-The dify-markdown-chunker.qoder library addresses several key use cases in AI and knowledge management systems:
+The technical implementation of the dify-markdown-chunker-1 project follows a modular architecture with distinct components for parsing, analysis, and chunking. The system begins with AST parsing of Markdown content, which provides a structured representation of the document that preserves all syntactic elements. This foundation enables the subsequent analysis and chunking stages to make informed decisions based on the document's actual structure rather than simple text patterns.
 
-### AI Knowledge Base Construction
-The library excels at preparing documentation for AI knowledge bases by intelligently chunking technical documentation, API references, and user guides. Its ability to preserve code blocks and maintain structural context ensures that AI systems can retrieve relevant information with proper context. For example, when processing API documentation, the code-aware strategy keeps code examples intact while the structural strategy maintains the relationship between endpoints and their descriptions.
+The chunking process is driven by the StrategySelector component, which analyzes content characteristics and selects the appropriate strategy. Each strategy implements specific rules for handling different content types: Code-Aware preserves code blocks and tables, List-Aware maintains list hierarchies, Structural chunks by sections, and Fallback provides reliable paragraph-based splitting. The selection algorithm uses configurable thresholds for factors like code ratio and list density, allowing customization for specific use cases.
 
-### Technical Documentation Processing
-For technical documentation containing code snippets, configuration examples, and command-line instructions, the library ensures that executable content remains complete and functional. The overlap feature provides context around code blocks, helping AI systems understand how to use the code in practice. Configuration profiles like `for_code_docs()` optimize chunking for technical content with appropriate size limits and overlap settings.
+Metadata enrichment is implemented through the addition of structured metadata blocks to each chunk. These blocks contain information such as content type, header path, line numbers, and relationship indicators that enhance retrieval quality. When include_metadata is enabled, this information is embedded directly in the chunk text; when disabled, it can be accessed through the API for downstream processing.
 
-### Semantic Search Preparation
-The library prepares documents for semantic search by creating chunks with rich metadata that enhance retrieval accuracy. The header path information allows search systems to understand the context of each chunk within the document hierarchy. The `for_search_indexing()` configuration profile creates smaller, more focused chunks ideal for search applications.
-
-### Batch Document Processing
-In enterprise scenarios involving large collections of Markdown documents, the library provides consistent, reliable chunking across diverse document types. The automatic strategy selection ensures that each document is processed with the most appropriate method, whether it's a code-heavy tutorial, a structured user manual, or a simple informational article.
-
-### LLM Context Optimization
-The library helps optimize content for Large Language Model (LLM) context windows by creating chunks that fit within specific token limits. Configuration profiles for different LLMs (GPT-3.5, GPT-4) ensure that chunks are sized appropriately for the target model's context window, maximizing information density while maintaining coherence.
+The streaming processing implementation uses a window-based approach with configurable buffer sizes to handle large files efficiently. A FenceTracker component monitors code block boundaries to prevent inappropriate splits, while a SplitDetector identifies safe boundary points based on header positions and paragraph breaks. This ensures that even with streaming processing, the quality of chunking remains high and structural integrity is maintained.
 
 **Section sources**
-- [README.md](file://README.md#L257-L269)
-- [examples/basic_usage.py](file://examples/basic_usage.py#L1-L364)
-- [examples/dify_integration.py](file://examples/dify_integration.py#L1-L487)
+- [docs/architecture/README.md](file://docs/architecture/README.md#L1-L307)
+- [docs/architecture/strategies.md](file://docs/architecture/strategies.md#L1-L529)
+- [main.py](file://main.py#L1-L38)
 
-## Architecture Overview
+## Conclusion
 
-The architecture of the dify-markdown-chunker.qoder project follows a clean, modular design with clear separation of concerns. The system is organized into distinct components that work together to provide intelligent Markdown chunking.
+The dify-markdown-chunker-1 project represents a significant advancement in Markdown chunking technology for RAG systems. By combining the power of the chunkana library with seamless Dify integration, it provides a comprehensive solution for intelligent, structure-aware document processing. The tool's ability to preserve complex content structures while adapting to different document types makes it uniquely suited for modern AI applications that require high-quality retrieval.
 
-```mermaid
-graph TD
-subgraph "Public Interface"
-A[MarkdownChunker]
-B[ChunkConfig]
-C[Convenience Functions]
-end
-subgraph "Core Components"
-D[Parser]
-E[StrategySelector]
-F[Validator]
-end
-subgraph "Strategies"
-G[CodeAwareStrategy]
-H[StructuralStrategy]
-I[FallbackStrategy]
-end
-subgraph "Data Models"
-J[Chunk]
-K[ContentAnalysis]
-L[ChunkingResult]
-end
-A --> D
-A --> E
-A --> F
-E --> G
-E --> H
-E --> I
-A --> J
-A --> K
-A --> L
-G --> J
-H --> J
-I --> J
-D --> K
-F --> J
-style A fill:#f9f,stroke:#333
-style D fill:#bbf,stroke:#333
-style E fill:#bbf,stroke:#333
-style F fill:#bbf,stroke:#333
-style G fill:#f96,stroke:#333
-style H fill:#f96,stroke:#333
-style I fill:#f96,stroke:#333
-```
+Through its adaptive strategies, hierarchical chunking, and streaming processing capabilities, the project addresses the limitations of naive text splitting methods that often destroy document context and relationships. The extensive testing against a diverse corpus of real-world documents demonstrates its effectiveness across various content types, from engineering blogs to scientific papers.
 
-The architecture implements several key principles:
-- **Single Responsibility**: Each module has a focused purpose (parsing, chunking, validation)
-- **No Duplication**: Shared functionality is centralized (overlap handling, metadata enrichment)
-- **Linear Pipeline**: Processing follows a straight-through flow without conditional branching
-- **Contract-First**: Domain properties define the expected behavior, with tests verifying these contracts
-
-The public interface exposes a simplified API through the `MarkdownChunker` class and convenience functions like `chunk_text()` and `chunk_file()`. The core components handle the heavy lifting of parsing, strategy selection, and validation. The strategy implementations focus on their specific chunking algorithms, while the data models provide a consistent structure for input and output.
-
-This architecture balances simplicity with functionality, making the library both powerful and easy to use. The modular design allows for future extensions while maintaining the core principles of reliability and performance.
-
-**Diagram sources**
-- [docs/architecture-audit-to-be/01-overview.md](file://docs/architecture-audit-to-be/01-overview.md#L94-L135)
-- [markdown_chunker_v2/chunker.py](file://markdown_chunker_v2/chunker.py#L21-L90)
+The dual nature of the tool—as both a Dify plugin and standalone library—provides flexibility for different integration scenarios. While the plugin interface offers simplicity for Dify users, direct access to the chunkana library enables advanced customization for specialized requirements. This combination of accessibility and power makes the dify-markdown-chunker-1 project a valuable asset for any organization implementing RAG systems with Markdown content.
