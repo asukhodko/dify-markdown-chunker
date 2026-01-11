@@ -5,30 +5,19 @@
 - [README.md](file://docs/architecture/README.md)
 - [strategies.md](file://docs/architecture/strategies.md)
 - [dify-integration.md](file://docs/architecture/dify-integration.md)
-- [chunker.py](file://markdown_chunker_v2/chunker.py)
-- [parser.py](file://markdown_chunker_v2/parser.py)
-- [types.py](file://markdown_chunker_v2/types.py)
-- [config.py](file://markdown_chunker_v2/config.py)
-- [base.py](file://markdown_chunker_v2/strategies/base.py)
-- [code_aware.py](file://markdown_chunker_v2/strategies/code_aware.py)
-- [structural.py](file://markdown_chunker_v2/strategies/structural.py)
-- [fallback.py](file://markdown_chunker_v2/strategies/fallback.py)
-- [orchestrator.py](file://markdown_chunker_legacy/chunker/orchestrator.py)
-- [streaming_chunker.py](file://markdown_chunker_v2/streaming/streaming_chunker.py)
-- [buffer_manager.py](file://markdown_chunker_v2/streaming/buffer_manager.py)
-- [split_detector.py](file://markdown_chunker_v2/streaming/split_detector.py)
-- [fence_tracker.py](file://markdown_chunker_v2/streaming/fence_tracker.py)
-- [config.py](file://markdown_chunker_v2/streaming/config.py)
+- [adapter.py](file://adapter.py)
+- [migration-to-chunkana.md](file://docs/guides/migration-to-chunkana.md)
+- [configuration.md](file://docs/reference/configuration.md)
 </cite>
 
 ## Update Summary
 **Changes Made**   
-- Added new section on Parallel Processing Paths (Batch and Streaming)
-- Introduced dedicated Streaming Module architecture
-- Updated architecture overview diagram to include streaming path
-- Added detailed component analysis for streaming components
-- Enhanced performance considerations with streaming benchmarks
-- Updated troubleshooting guide with streaming-specific issues
+- Updated architecture overview to reflect migration from embedded chunking to external chunkana library
+- Added new section on Migration Adapter Architecture with two-stage processing pipeline
+- Updated architecture overview diagram to show new adapter pattern
+- Added detailed component analysis for the MigrationAdapter class
+- Updated dependency analysis to reflect new chunkana dependency
+- Enhanced performance considerations with migration benefits
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -53,38 +42,24 @@ The project follows a layered architecture with distinct modules for parsing, ch
 
 ```mermaid
 graph TD
-A[Root] --> B[markdown_chunker_v2]
-A --> C[markdown_chunker_legacy]
-A --> D[docs]
-A --> E[examples]
+A[Root] --> B[adapter.py]
+A --> C[input_validator.py]
+A --> D[output_filter.py]
+A --> E[docs]
 A --> F[tests]
-B --> G[chunker.py]
-B --> H[parser.py]
-B --> I[strategies/]
-B --> J[config.py]
-B --> K[types.py]
-B --> L[streaming/]
-C --> M[chunker/]
-C --> N[parser/]
-C --> O[api/]
-D --> P[architecture/]
-D --> Q[architecture-audit/]
-D --> R[guides/]
-I --> S[base.py]
-I --> T[code_aware.py]
-I --> U[structural.py]
-I --> V[fallback.py]
-L --> W[streaming_chunker.py]
-L --> X[buffer_manager.py]
-L --> Y[split_detector.py]
-L --> Z[fence_tracker.py]
-L --> AA[config.py]
-M --> AB[orchestrator.py]
-M --> AC[strategies/]
-M --> AD[components/]
-P --> AE[README.md]
-P --> AF[strategies.md]
-P --> AG[dify-integration.md]
+A --> G[requirements.txt]
+B --> H[MigrationAdapter]
+H --> I[ChunkerConfig]
+H --> J[chunk_markdown]
+H --> K[chunk_hierarchical]
+E --> L[architecture/]
+E --> M[guides/]
+E --> N[reference/]
+L --> O[README.md]
+L --> P[strategies.md]
+L --> Q[dify-integration.md]
+M --> R[migration-to-chunkana.md]
+N --> S[configuration.md]
 ```
 
 **Diagram sources**
@@ -101,9 +76,9 @@ The Markdown Chunker system consists of several core components that work togeth
 The system's design emphasizes structural accuracy through AST-based parsing and adaptive chunking through the strategy pattern. This allows the system to handle diverse document types appropriately, from code-heavy technical documentation to structured articles with hierarchical headers. The modular design enables easy extension with new strategies or parsing capabilities without affecting the core pipeline.
 
 **Section sources**
-- [chunker.py](file://markdown_chunker_v2/chunker.py#L1-L357)
-- [parser.py](file://markdown_chunker_v2/parser.py#L1-L282)
-- [types.py](file://markdown_chunker_v2/types.py#L1-L272)
+- [adapter.py](file://adapter.py#L42-L346)
+- [migration-to-chunkana.md](file://docs/guides/migration-to-chunkana.md#L1-L212)
+- [configuration.md](file://docs/reference/configuration.md#L1-L530)
 
 ## Architecture Overview
 
@@ -111,139 +86,139 @@ The Markdown Chunker system follows a modular, layered architecture that process
 
 The core architectural pattern is a simplified pipeline that processes documents in four main phases: parsing, strategy selection, chunking, and post-processing. This linear flow replaces the more complex orchestration model of the legacy system while preserving all essential functionality. The v2 architecture consolidates 15 legacy files into just 5 core files, reducing the codebase from over 10,000 lines to approximately 2,000 lines while maintaining or improving functionality.
 
-A significant architectural enhancement is the introduction of parallel processing paths: batch and streaming. This dual-path approach allows the system to handle both small-to-medium documents efficiently through the traditional batch processing path, while providing memory-efficient processing for large documents (>10MB) through the streaming path. The streaming complexity is isolated in a dedicated module, ensuring that the core batch processing pipeline remains simple and performant.
+A significant architectural enhancement is the introduction of the migration adapter pattern, which facilitates the transition from embedded markdown chunking implementation to the external chunkana library. This adapter provides a compatibility layer that ensures exact behavioral compatibility while leveraging the advanced chunking capabilities of the chunkana engine. The migration adapter implements a two-stage processing pipeline (chunking and rendering) that guarantees boundary invariance regardless of output format requirements.
 
 ```mermaid
 graph TD
-A[Raw Markdown Input] --> B[Parser]
-B --> C[Content Analysis]
-C --> D[Strategy Selector]
-D --> E[Chunking Strategy]
-E --> F[Overlap Application]
-F --> G[Validation]
-G --> H[Chunk Output]
-I[Dify Platform] --> J[Plugin Integration]
-J --> A
-H --> K[RAG System]
-L[Large File] --> M[Streaming Buffer]
-M --> N[Window Processing]
-N --> O[Safe Split Detection]
-O --> P[Chunk Window]
-P --> Q[Stream Output]
+A[Raw Markdown Input] --> B[MigrationAdapter]
+B --> C[Input Validation]
+C --> D[Parameter Mapping]
+D --> E[ChunkerConfig]
+E --> F[chunkana Engine]
+F --> G[Chunking Stage]
+G --> H[Rendering Stage]
+H --> I[Output Filtering]
+I --> J[Chunk Output]
+K[Dify Platform] --> A
+J --> L[RAG System]
+M[chunkana Library] --> F
 style A fill:#f9f,stroke:#333
-style H fill:#bbf,stroke:#333
-style L fill:#f9f,stroke:#333
-style Q fill:#bbf,stroke:#333
+style J fill:#bbf,stroke:#333
+style M fill:#f9f,stroke:#333
 ```
 
 **Diagram sources**
-- [chunker.py](file://markdown_chunker_v2/chunker.py#L43-L90)
-- [parser.py](file://markdown_chunker_v2/parser.py#L38-L81)
+- [adapter.py](file://adapter.py#L15-L20)
+- [migration-to-chunkana.md](file://docs/guides/migration-to-chunkana.md#L1-L212)
 - [README.md](file://docs/architecture/README.md#L148-L307)
 
 ## Detailed Component Analysis
 
-### Parser Component
+### Migration Adapter Architecture
 
-The parser component is responsible for analyzing markdown documents and extracting structural information that informs the chunking strategy selection. Unlike traditional parsers that convert markdown to HTML, this parser focuses on extracting metadata about the document's structure, including code blocks, headers, and tables. The parser normalizes line endings at the start of processing to ensure consistent behavior across platforms, then analyzes the document to calculate content ratios and extract structural elements.
+The MigrationAdapter class is the cornerstone of the architectural migration from embedded markdown chunking to the external chunkana library. It provides a seamless transition while maintaining full backward compatibility with existing workflows. The adapter implements a two-stage processing pipeline that separates chunking boundaries from output formatting, ensuring that chunk boundaries remain invariant regardless of metadata embedding requirements.
 
-The parser's output, encapsulated in the ContentAnalysis class, provides the strategy selector with the information needed to make intelligent decisions about chunking approaches. This includes metrics like code ratio, header count, and table count, which are critical for determining whether a document should be chunked using a code-aware strategy, structural strategy, or fallback approach.
+The adapter's key responsibilities include parameter mapping from plugin UI to chunkana configuration, input validation and preprocessing, output filtering and formatting, and backward compatibility with legacy plugin behavior. This design follows the adapter pattern, allowing the system to leverage the advanced capabilities of the chunkana engine while preserving the existing interface contract.
 
 #### For Object-Oriented Components:
 ```mermaid
 classDiagram
-class Parser {
-+analyze(md_text : str) ContentAnalysis
--_normalize_line_endings(text : str) str
--_extract_code_blocks(md_text : str) List[FencedBlock]
--_extract_headers(md_text : str) List[Header]
--_extract_tables(md_text : str) List[TableBlock]
--_detect_preamble(md_text : str, headers : List[Header]) Tuple[bool, int]
+class MigrationAdapter {
++__init__(leaf_only : bool)
++build_chunker_config(max_chunk_size : int, chunk_overlap : int, strategy : str) ChunkerConfig
++run_chunking(input_text : str, config : ChunkerConfig, include_metadata : bool, enable_hierarchy : bool, debug : bool) list[str]
++_perform_chunking(input_text : str, config : ChunkerConfig, enable_hierarchy : bool, debug : bool) list[dict[str, Any]]
++_render_chunks(raw_chunks : list[dict[str, Any]], include_metadata : bool, debug : bool) list[str]
++_render_with_metadata(raw_chunks : list[dict[str, Any]], debug : bool) list[str]
++_render_without_metadata(raw_chunks : list[dict[str, Any]]) list[str]
++_embed_overlap(chunk : dict[str, Any]) str
++_chunk_to_dict(chunk : Any) dict[str, Any]
++_filter_metadata_for_rag(metadata : dict) dict
 }
-class ContentAnalysis {
-+total_chars : int
-+total_lines : int
-+code_ratio : float
-+code_block_count : int
-+header_count : int
-+max_header_depth : int
-+table_count : int
-+code_blocks : List[FencedBlock]
-+headers : List[Header]
-+tables : List[TableBlock]
-+has_preamble : bool
-+preamble_end_line : int
+class ChunkerConfig {
++max_chunk_size : int
++overlap_size : int
++strategy_override : str
++validate_invariants : bool
++strict_mode : bool
 }
-class FencedBlock {
-+language : Optional[str]
-+content : str
-+start_line : int
-+end_line : int
-+start_pos : int
-+end_pos : int
+class FilterConfig {
++leaf_only : bool
 }
-class Header {
-+level : int
-+text : str
-+line : int
-+pos : int
+class OutputFilter {
++filter(chunks : list[dict], debug : bool) list[dict]
 }
-class TableBlock {
-+content : str
-+start_line : int
-+end_line : int
-+column_count : int
-+row_count : int
+class InputValidator {
++validate_and_fix(chunks : list[dict]) list[dict]
 }
-Parser --> ContentAnalysis : "produces"
-ContentAnalysis --> FencedBlock : "contains"
-ContentAnalysis --> Header : "contains"
-ContentAnalysis --> TableBlock : "contains"
+MigrationAdapter --> ChunkerConfig : "creates"
+MigrationAdapter --> OutputFilter : "uses"
+MigrationAdapter --> InputValidator : "uses"
+MigrationAdapter --> chunk_markdown : "calls"
+MigrationAdapter --> chunk_hierarchical : "calls"
 ```
 
 **Diagram sources**
-- [parser.py](file://markdown_chunker_v2/parser.py#L14-L82)
-- [types.py](file://markdown_chunker_v2/types.py#L68-L97)
+- [adapter.py](file://adapter.py#L42-L346)
+- [configuration.md](file://docs/reference/configuration.md#L106-L117)
 
-**Section sources**
-- [parser.py](file://markdown_chunker_v2/parser.py#L14-L282)
-- [types.py](file://markdown_chunker_v2/types.py#L11-L97)
+**Section sources**   
+- [adapter.py](file://adapter.py#L42-L346)
+- [migration-to-chunkana.md](file://docs/guides/migration-to-chunkana.md#L1-L212)
 
-### Strategy Selector and Chunking Orchestrator
+### Two-Stage Processing Pipeline
 
-The strategy selector and chunking orchestrator work together to determine the most appropriate way to chunk a document based on its characteristics. The strategy selector evaluates the content analysis results against configurable thresholds to determine which strategy should be applied. The chunking orchestrator then applies the selected strategy in a linear pipeline that ensures consistent processing.
+The migration adapter implements a two-stage processing pipeline that separates the chunking process from the rendering process. This architectural decision ensures that chunk boundaries are determined independently of output formatting requirements, providing boundary invariance across different use cases.
 
-The v2 architecture simplifies this process compared to the legacy implementation by eliminating the complex fallback manager and multiple validation stages. Instead, it uses a straightforward approach where the MarkdownChunker class coordinates the entire process: parsing the document once, selecting a strategy, applying that strategy, merging small chunks, applying overlap, adding metadata, and validating the results.
+#### Stage 1: Chunking (Boundary-Invariant)
+
+The first stage focuses solely on determining optimal chunk boundaries based on content structure and configuration parameters. This stage is completely independent of output format requirements, ensuring that the same input document will always produce identical chunk boundaries regardless of whether metadata is included in the output.
+
+Key characteristics of the chunking stage:
+- Processes input text through the chunkana engine
+- Applies strategy selection based on content analysis
+- Generates raw chunks with content, positions, and metadata
+- Validates and fixes chunk boundaries
+- Applies hierarchical filtering when enabled
+- Returns raw chunk dictionaries without formatting
+
+#### Stage 2: Rendering (Format-Dependent)
+
+The second stage handles output formatting based on the specified requirements. This stage takes the raw chunks from stage 1 and applies the appropriate formatting without modifying the underlying chunk boundaries or content.
+
+Key characteristics of the rendering stage:
+- Depends on include_metadata parameter
+- For include_metadata=True: formats chunks with embedded metadata blocks
+- For include_metadata=False: embeds overlap content (previous + current + next) for context preservation
+- Applies metadata filtering for RAG use cases
+- Returns formatted strings ready for output
 
 #### For API/Service Components:
 ```mermaid
 sequenceDiagram
 participant Client as "Client Application"
-participant Chunker as "MarkdownChunker"
-participant Parser as "Parser"
-participant Selector as "StrategySelector"
-participant Strategy as "Chunking Strategy"
-Client->>Chunker : chunk(md_text)
-Chunker->>Parser : analyze(md_text)
-Parser-->>Chunker : ContentAnalysis
-Chunker->>Selector : select(analysis, config)
-Selector-->>Chunker : Strategy
-Chunker->>Strategy : apply(text, analysis, config)
-Strategy-->>Chunker : List[Chunk]
-Chunker->>Chunker : merge_small_chunks()
-Chunker->>Chunker : apply_overlap()
-Chunker->>Chunker : add_metadata()
-Chunker->>Chunker : validate()
-Chunker-->>Client : List[Chunk]
+participant Adapter as "MigrationAdapter"
+participant Chunkana as "chunkana Engine"
+participant Validator as "InputValidator"
+participant Filter as "OutputFilter"
+Client->>Adapter : run_chunking(text, config, include_metadata)
+Adapter->>Adapter : build_chunker_config()
+Adapter->>Validator : validate_and_fix()
+Adapter->>Chunkana : chunk_markdown() or chunk_hierarchical()
+Chunkana-->>Adapter : raw_chunks (list[dict])
+Adapter->>Filter : filter() (if hierarchical)
+Adapter->>Adapter : _render_chunks(raw_chunks, include_metadata)
+Adapter->>Adapter : _render_with_metadata() or _render_without_metadata()
+Adapter-->>Client : formatted_chunks (list[str])
 ```
 
 **Diagram sources**
-- [chunker.py](file://markdown_chunker_v2/chunker.py#L43-L90)
-- [strategies/base.py](file://markdown_chunker_v2/strategies/base.py#L12-L67)
+- [adapter.py](file://adapter.py#L131-L155)
+- [migration-to-chunkana.md](file://docs/guides/migration-to-chunkana.md#L56-L62)
 
-**Section sources**
-- [chunker.py](file://markdown_chunker_v2/chunker.py#L21-L357)
-- [strategies/base.py](file://markdown_chunker_v2/strategies/base.py#L12-L233)
+**Section sources**   
+- [adapter.py](file://adapter.py#L131-L234)
+- [migration-to-chunkana.md](file://docs/guides/migration-to-chunkana.md#L56-L62)
 
 ### Chunking Strategies
 
@@ -396,42 +371,38 @@ SplitDetector --> FenceTracker
 
 The Markdown Chunker system has a well-defined dependency structure that supports its modular design. The v2 architecture significantly simplifies dependencies compared to the legacy implementation by consolidating functionality and removing circular dependencies. The core dependencies flow in a single direction from the main chunker class to supporting components, creating a clean, linear pipeline.
 
-The system depends on standard Python libraries for regular expressions and dataclasses, with no external package dependencies for the core functionality. This design choice enhances reliability and reduces the attack surface. The backward compatibility layer depends on the v2 implementation, allowing legacy code to work with the new architecture without modification.
+The system depends on standard Python libraries for regular expressions and dataclasses, with the key external dependency being the chunkana library for core chunking functionality. This design choice enhances reliability and reduces the attack surface while leveraging the advanced capabilities of the external library. The backward compatibility layer depends on the v2 implementation, allowing legacy code to work with the new architecture without modification.
 
 ```mermaid
 graph LR
-A[MarkdownChunker] --> B[Parser]
-A --> C[StrategySelector]
-A --> D[ChunkConfig]
-C --> E[BaseStrategy]
-E --> F[CodeAwareStrategy]
-E --> G[StructuralStrategy]
-E --> H[FallbackStrategy]
-A --> I[Chunk]
-A --> J[ContentAnalysis]
-K[MarkdownChunker] --> L[StreamingChunker]
-L --> M[BufferManager]
-L --> N[SplitDetector]
-L --> O[FenceTracker]
-L --> P[StreamingConfig]
+A[MigrationAdapter] --> B[chunkana]
+A --> C[InputValidator]
+A --> D[OutputFilter]
+A --> E[ChunkerConfig]
+B --> F[chunk_markdown]
+B --> G[chunk_hierarchical]
 style A fill:#f9f,stroke:#333
 style B fill:#bbf,stroke:#333
 style C fill:#bbf,stroke:#333
-style K fill:#f9f,stroke:#333
-style L fill:#bbf,stroke:#333
+style D fill:#bbf,stroke:#333
 ```
 
 **Diagram sources**
-- [chunker.py](file://markdown_chunker_v2/chunker.py#L17-L18)
-- [__init__.py](file://markdown_chunker/__init__.py#L8-L15)
+- [adapter.py](file://adapter.py#L30-L34)
+- [requirements.txt](file://requirements.txt#L2)
 
 **Section sources**
-- [chunker.py](file://markdown_chunker_v2/chunker.py#L1-L357)
-- [__init__.py](file://markdown_chunker/__init__.py#L1-L33)
+- [adapter.py](file://adapter.py#L1-L352)
+- [requirements.txt](file://requirements.txt#L1-L22)
 
 ## Performance Considerations
 
 The Markdown Chunker system is designed with performance in mind, particularly for processing large documents in RAG pipelines. The v2 architecture improves performance by reducing the number of processing passes from multiple to just one, eliminating redundant parsing and analysis. The parser normalizes line endings at the start of processing, which prevents repeated normalization operations throughout the pipeline.
+
+The migration to the chunkana library brings several performance benefits:
+- **Faster Processing**: Optimized algorithms in chunkana core
+- **Lower Memory Usage**: Improved memory management
+- **Better Scaling**: Linear performance scaling for large documents
 
 The system uses efficient algorithms for extracting structural elements, leveraging regular expressions for pattern matching while maintaining accuracy. The strategy selection process is lightweight, relying on pre-computed metrics from the content analysis phase rather than performing additional document processing. For large documents, the system processes content in a streaming fashion where possible, minimizing memory usage.
 
@@ -443,6 +414,7 @@ The introduction of the streaming path adds approximately 10-15% overhead compar
 - [test_streaming_benchmarks.py](file://tests/integration/test_streaming_benchmarks.py#L1-L165)
 - [streaming.md](file://docs/api/streaming.md#L180-L210)
 - [README.md](file://docs/architecture/README.md#L240-L251)
+- [migration-to-chunkana.md](file://docs/guides/migration-to-chunkana.md#L97-L104)
 
 ## Troubleshooting Guide
 
@@ -471,4 +443,4 @@ The architectural decisions to use AST-based parsing for structural accuracy and
 
 The system successfully balances the competing demands of RAG applications: preserving semantic meaning while creating chunks of appropriate size, handling diverse content types effectively, and providing reliable performance at scale. Its integration with the Dify platform as a tool plugin demonstrates its versatility and readiness for production use in AI-powered applications.
 
-A key enhancement in this version is the introduction of parallel processing paths (batch and streaming) with streaming complexity isolated in a dedicated module. This allows the system to efficiently process documents of all sizes while maintaining memory efficiency for large files. The streaming path provides a robust solution for processing very large documentation (100MB+) in memory-constrained environments, expanding the system's applicability to new use cases.
+A key enhancement in this version is the introduction of the migration adapter pattern, which facilitates the transition from embedded markdown chunking implementation to the external chunkana library. This adapter provides a compatibility layer that ensures exact behavioral compatibility while leveraging the advanced chunking capabilities of the chunkana engine. The adapter implements a two-stage processing pipeline (chunking and rendering) that guarantees boundary invariance regardless of output format requirements, ensuring consistent chunk boundaries across different use cases.

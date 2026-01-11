@@ -6,13 +6,24 @@
 - [pytest.ini](file://pytest.ini)
 - [test_dependencies.py](file://tests/test_dependencies.py)
 - [test_entry_point.py](file://tests/test_entry_point.py)
-- [test_chunker.py](file://tests/chunker/test_chunker.py)
-- [test_dify_plugin_integration.py](file://tests/integration/test_dify_plugin_integration.py)
-- [test_fallback_manager.py](file://tests/chunker/test_components/test_fallback_manager.py)
-- [test_code_strategy.py](file://tests/chunker/test_strategies/test_code_strategy.py)
-- [test_benchmarks.py](file://tests/performance/test_benchmarks.py)
-- [test_readme_examples.py](file://tests/documentation/test_readme_examples.py)
+- [test_migration_adapter.py](file://tests/test_migration_adapter.py)
+- [test_migration_regression.py](file://tests/test_migration_regression.py)
+- [adapter.py](file://adapter.py)
+- [tools/test_cleanup/orchestrator.py](file://tools/test_cleanup/orchestrator.py)
+- [tools/test_cleanup/analyzer.py](file://tools/test_cleanup/analyzer.py)
+- [tools/test_cleanup/processor.py](file://tools/test_cleanup/processor.py)
+- [tools/test_cleanup/updater.py](file://tools/test_cleanup/updater.py)
+- [tools/test_cleanup/models.py](file://tools/test_cleanup/models.py)
+- [tools/test_cleanup/config.py](file://tools/test_cleanup/config.py)
 </cite>
+
+## Update Summary
+**Changes Made**   
+- Updated documentation to reflect the new test infrastructure overhaul using the tools/test_cleanup package
+- Added detailed explanation of the migration adapter pattern for preserving critical test assertions
+- Introduced new sections on the test cleanup orchestrator, analysis, processing, and infrastructure updates
+- Updated test organization and discovery section to reflect changes in test structure
+- Added information about the new test migration adapter and regression testing strategy
 
 ## Table of Contents
 1. [Introduction](#introduction)
@@ -27,6 +38,8 @@
 10. [Documentation and Example Validation](#documentation-and-example-validation)
 11. [Best Practices for Writing Tests](#best-practices-for-writing-tests)
 12. [Common Testing Challenges](#common-testing-challenges)
+13. [Test Infrastructure Cleanup and Migration](#test-infrastructure-cleanup-and-migration)
+14. [Migration Adapter Pattern](#migration-adapter-pattern)
 
 ## Introduction
 
@@ -159,3 +172,113 @@ The test suite addresses several common testing challenges, particularly around 
 **Section sources**
 - [test_entry_point.py](file://tests/test_entry_point.py#L1-L240)
 - [test_fallback_manager.py](file://tests/chunker/test_components/test_fallback_manager.py#L1-L371)
+
+## Test Infrastructure Cleanup and Migration
+
+The test infrastructure has undergone a comprehensive overhaul with the introduction of the tools/test_cleanup package, which systematically cleans up the legacy test suite while preserving critical test assertions through the migration adapter pattern. This new system provides a structured approach to test suite modernization, ensuring that valuable test coverage is maintained while eliminating redundancy and technical debt.
+
+The cleanup process is orchestrated by the CleanupOrchestrator class, which coordinates a multi-phase operation:
+
+1. **Analysis Phase**: The TestAnalyzer scans the test directory, categorizing tests based on their characteristics and identifying duplicates between legacy and migration-compatible tests.
+2. **Processing Phase**: The TestProcessor removes redundant tests and adapts valuable legacy tests to work with the new architecture.
+3. **Infrastructure Update Phase**: The InfrastructureUpdater modifies configuration files and documentation to reflect the changes.
+4. **Validation Phase**: The system validates that the cleanup was successful and that critical functionality remains covered.
+5. **Reporting Phase**: The ReportGenerator creates comprehensive reports detailing the changes made.
+
+```mermaid
+graph TD
+A[CleanupOrchestrator] --> B[Analysis Phase]
+A --> C[Processing Phase]
+A --> D[Infrastructure Update Phase]
+A --> E[Validation Phase]
+A --> F[Reporting Phase]
+B --> B1[TestAnalyzer]
+B --> B2[Scan test directory]
+B --> B3[Categorize tests]
+B --> B4[Identify duplicates]
+C --> C1[TestProcessor]
+C --> C2[Remove redundant tests]
+C --> C3[Adapt valuable tests]
+D --> D1[InfrastructureUpdater]
+D --> D2[Update Makefile]
+D --> D3[Update pytest config]
+D --> D4[Update documentation]
+E --> E1[Validation]
+E --> E2[Check migration-compatible tests]
+F --> F1[ReportGenerator]
+F --> F2[Generate cleanup report]
+```
+
+**Section sources**
+- [tools/test_cleanup/orchestrator.py](file://tools/test_cleanup/orchestrator.py#L1-L307)
+- [tools/test_cleanup/analyzer.py](file://tools/test_cleanup/analyzer.py#L1-L544)
+- [tools/test_cleanup/processor.py](file://tools/test_cleanup/processor.py#L1-L700)
+- [tools/test_cleanup/updater.py](file://tools/test_cleanup/updater.py#L1-L600)
+
+The cleanup process preserves critical test assertions by extracting unique assertions from redundant tests before removal. The system uses AST (Abstract Syntax Tree) analysis to identify complex assertions worth preserving, while filtering out basic ones like "assert True" or "assert len(x) > 0". This ensures that valuable test logic is not lost during the cleanup process.
+
+Configuration for the cleanup system is managed through the CleanupConfig class, which defines parameters such as:
+- Test file patterns and exclusion patterns
+- Legacy import patterns to detect
+- Similarity thresholds for duplicate detection
+- Backup and output directory settings
+
+The system supports dry-run mode for previewing changes without making actual modifications, allowing teams to review the proposed changes before execution.
+
+**Section sources**
+- [tools/test_cleanup/config.py](file://tools/test_cleanup/config.py#L1-L108)
+- [tools/test_cleanup/models.py](file://tools/test_cleanup/models.py#L1-L327)
+
+## Migration Adapter Pattern
+
+The migration adapter pattern is a key architectural component that enables the transition from the legacy test suite to the new chunkana-based implementation while maintaining backward compatibility. This pattern is implemented through the MigrationAdapter class in the adapter.py module, which serves as a compatibility layer between the plugin's tool interface and the chunkana library.
+
+The adapter provides a two-stage processing pipeline that ensures boundary invariance - meaning that chunk boundaries do not depend on output formatting options like include_metadata:
+
+1. **Chunking Stage**: Performs the actual chunking operation, producing raw chunks as dictionaries with content, line numbers, and metadata. This stage is independent of output formatting.
+2. **Rendering Stage**: Formats the raw chunks according to the requested output format (with or without metadata).
+
+```mermaid
+graph TD
+A[Input Text] --> B[run_chunking]
+B --> C[_perform_chunking]
+C --> D[Raw Chunks]
+D --> E{_render_chunks}
+E --> F[include_metadata=True]
+E --> G[include_metadata=False]
+F --> H[_render_with_metadata]
+G --> I[_render_without_metadata]
+H --> J[Output with Metadata]
+I --> K[Output without Metadata]
+```
+
+**Diagram sources**
+- [adapter.py](file://adapter.py#L131-L155)
+
+The MigrationAdapter class implements several key methods:
+
+- **build_chunker_config**: Maps tool parameters to chunkana configuration, with special handling for the "auto" strategy which maps to None.
+- **parse_tool_flags**: Extracts control flags from tool parameters.
+- **run_chunking**: Orchestrates the two-stage processing pipeline.
+- **_perform_chunking**: Single chunking path that does not depend on include_metadata.
+- **_render_chunks**: Formats output based on include_metadata parameter.
+- **_filter_metadata_for_rag**: Filters metadata to keep only fields useful for RAG search by removing statistical and execution-related fields.
+
+A critical aspect of the migration strategy is the compatibility alias at the end of the adapter module:
+```python
+# Compatibility alias for legacy tests that import MarkdownChunker
+MarkdownChunker = MigrationAdapter
+```
+
+This allows legacy tests that import MarkdownChunker to continue working without modification, as they will now receive the MigrationAdapter instance. This seamless transition enables the test cleanup system to adapt valuable legacy tests by simply updating their import statements while preserving their test logic.
+
+The test suite includes specific tests for the migration adapter:
+- **test_migration_adapter.py**: Validates the core functionality of the MigrationAdapter class.
+- **test_migration_regression.py**: Ensures that the adapter produces the same output as pre-migration snapshots, maintaining exact behavioral compatibility.
+
+These tests use golden master snapshots stored in the tests/golden_before_migration directory to verify that the migration does not introduce regressions in chunking behavior.
+
+**Section sources**
+- [adapter.py](file://adapter.py#L1-L352)
+- [tests/test_migration_adapter.py](file://tests/test_migration_adapter.py#L1-L189)
+- [tests/test_migration_regression.py](file://tests/test_migration_regression.py#L1-L205)
