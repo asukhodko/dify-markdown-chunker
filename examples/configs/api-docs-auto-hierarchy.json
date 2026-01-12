@@ -1,0 +1,13 @@
+{
+  "description": "API documentation with auto strategy and hierarchy - shows automatic detection with navigation",
+  "input_file": "api-docs.md",
+  "parameters": {
+    "max_chunk_size": 3500,
+    "chunk_overlap": 150,
+    "strategy": "auto",
+    "include_metadata": true,
+    "enable_hierarchy": true,
+    "debug": false,
+    "leaf_only": true
+  }
+}

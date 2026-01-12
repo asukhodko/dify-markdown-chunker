@@ -1,0 +1,13 @@
+{
+  "description": "Legal document with auto strategy and metadata enabled - shows structural detection",
+  "input_file": "legal.md",
+  "parameters": {
+    "max_chunk_size": 2048,
+    "chunk_overlap": 150,
+    "strategy": "auto",
+    "include_metadata": true,
+    "enable_hierarchy": false,
+    "debug": false,
+    "leaf_only": false
+  }
+}

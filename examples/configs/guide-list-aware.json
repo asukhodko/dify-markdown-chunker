@@ -1,0 +1,13 @@
+{
+  "description": "Mixed content guide with list-aware strategy - preserves list hierarchy and structure",
+  "input_file": "guide.md",
+  "parameters": {
+    "max_chunk_size": 3000,
+    "chunk_overlap": 200,
+    "strategy": "list_aware",
+    "include_metadata": true,
+    "enable_hierarchy": false,
+    "debug": false,
+    "leaf_only": false
+  }
+}

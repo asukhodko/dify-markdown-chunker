@@ -1,0 +1,13 @@
+{
+  "description": "Legal document without metadata - shows embedded overlap in text",
+  "input_file": "legal.md",
+  "parameters": {
+    "max_chunk_size": 2500,
+    "chunk_overlap": 100,
+    "strategy": "structural",
+    "include_metadata": false,
+    "enable_hierarchy": false,
+    "debug": false,
+    "leaf_only": false
+  }
+}

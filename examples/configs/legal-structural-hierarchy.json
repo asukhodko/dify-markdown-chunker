@@ -1,0 +1,13 @@
+{
+  "description": "Legal document with structural strategy and hierarchy enabled - shows parent-child relationships",
+  "input_file": "legal.md",
+  "parameters": {
+    "max_chunk_size": 3000,
+    "chunk_overlap": 200,
+    "strategy": "structural",
+    "include_metadata": true,
+    "enable_hierarchy": true,
+    "debug": true,
+    "leaf_only": false
+  }
+}

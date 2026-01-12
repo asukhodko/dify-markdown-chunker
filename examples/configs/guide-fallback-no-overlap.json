@@ -1,0 +1,13 @@
+{
+  "description": "Mixed content guide with fallback strategy and no overlap - shows simple splitting behavior",
+  "input_file": "guide.md",
+  "parameters": {
+    "max_chunk_size": 2000,
+    "chunk_overlap": 0,
+    "strategy": "fallback",
+    "include_metadata": true,
+    "enable_hierarchy": false,
+    "debug": false,
+    "leaf_only": false
+  }
+}

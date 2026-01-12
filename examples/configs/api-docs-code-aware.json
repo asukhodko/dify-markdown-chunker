@@ -1,0 +1,13 @@
+{
+  "description": "API documentation with code-aware strategy - preserves code blocks and tables",
+  "input_file": "api-docs.md",
+  "parameters": {
+    "max_chunk_size": 4096,
+    "chunk_overlap": 200,
+    "strategy": "code_aware",
+    "include_metadata": true,
+    "enable_hierarchy": false,
+    "debug": false,
+    "leaf_only": false
+  }
+}
